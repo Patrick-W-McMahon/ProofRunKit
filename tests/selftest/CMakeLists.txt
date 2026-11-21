@@ -11,6 +11,7 @@ add_executable(proofrunkit_selftest
     test_script_process_api.cpp
     test_c_driver.cpp
     test_c_driver_toolchain.cpp
+    test_msvc_discovery_text.cpp
     test_asm_driver.cpp
     test_junit_reporting.cpp
     test_registry.cpp

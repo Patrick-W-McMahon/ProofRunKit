@@ -107,12 +107,13 @@ only when a compiler fails to start; a compiler that runs and reports errors is 
 When the MSVC family is chosen (explicitly or by AUTO) and `cl` (or `lib`) is not on PATH, ProofRunKit finds Visual
 Studio itself, so tests do not need a Developer Command Prompt:
 
-1. `cmd.exe /d /c call "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products *
-   -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath -utf8 -nologo` gives the
-   newest installation (Community, Professional, Enterprise, or Build Tools) with the C++ tools.
-2. `cmd.exe /d /c chcp 65001 >nul && call "<installation>\VC\Auxiliary\Build\vcvarsall.bat" <arch> >nul && echo
-   ::prk-where:: && where cl.exe && echo ::prk-environment:: && set` loads the environment for `<arch>` and prints
-   the full path of `cl.exe` and every environment variable (as UTF-8).
+1. `"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires
+   Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath -utf8 -nologo`, started directly (the
+   folder is read from the environment, default `C:\Program Files (x86)`), gives the newest installation
+   (Community, Professional, Enterprise, or Build Tools) with the C++ tools.
+2. `cmd.exe /d /u /c call "<installation>\VC\Auxiliary\Build\vcvarsall.bat" <arch> >nul && set` loads the
+   environment for `<arch>` and lists it; `/u` makes the listing UTF-16LE, so any text in it survives. `cl.exe` is
+   `%VCToolsInstallDir%bin\Host%VSCMD_ARG_HOST_ARCH%\%VSCMD_ARG_TGT_ARCH%\cl.exe` from that environment.
 3. `cl.exe` (and `lib.exe` next to it) then run by full path with exactly that environment.
 
 Discovery takes a few seconds, so its result (found or not) is cached for the whole `prk run`: every script and test
@@ -123,6 +124,12 @@ there is no `cmd.exe`, so MSVC is simply "not found".
 Requirements: Visual Studio 2017 or later (vswhere ships with the installer since 15.2) or the Build Tools, with the
 "Desktop development with C++" workload. On 32-bit Windows `%ProgramFiles(x86)%` does not exist and discovery reports
 that vswhere did not run; use a Developer Command Prompt there.
+
+Why it is built this way ([#74](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/74)): an earlier version ran
+vswhere through `cmd.exe /c` and chained `chcp`, `echo`, and `where` into the vcvarsall command, and the x86 self-test
+binary (which also held test strings such as `x64&calc`) disappeared right after linking, most likely removed by an
+antivirus heuristic (not confirmed). The command lines are now as short as possible and the tests use harmless
+strings.
 
 ## Diagnostics parsing
 

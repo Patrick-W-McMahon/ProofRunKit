@@ -27,7 +27,7 @@ namespace prk::selftest {
 
 namespace {
 
-/** @brief Fake runner: records programs and the last arguments; cmd.exe plays vswhere and vcvarsall. */
+/** @brief Fake runner: records programs and the last arguments; vswhere and cmd.exe (vcvarsall) answer discovery. */
 struct FakeAssemblerRunner {
     std::set<std::string> missing;
     std::string standard_error;
@@ -48,26 +48,27 @@ private:
 
     static PrkStatus spawn(void* state, const PrkProcessRequest* request, PrkProcessResult* out_result) {
         FakeAssemblerRunner& fake = *static_cast<FakeAssemblerRunner*>(state);
-        const std::string program = request->executable;
+        const std::string executable = request->executable;
+        const bool is_vswhere =
+            executable.size() > 11 && executable.compare(executable.size() - 11, 11, "vswhere.exe") == 0;
+        const std::string program = is_vswhere ? "vswhere" : executable;
         fake.programs.push_back(program);
         if (fake.missing.count(program) != 0) {
             return prk_set_process_start_failure(("executable not found: " + program).c_str(), out_result);
         }
         fake.arguments.assign(request->arguments, request->arguments + request->argument_count);
-        std::string output;
-        if (program == "cmd.exe") {
-            const bool is_vswhere = fake.arguments.size() > 3 && fake.arguments[3].find("vswhere") != std::string::npos;
-            output = is_vswhere ? "C:\\VS\r\n"
-                                : "::prk-where::\r\nC:\\VS\\bin\\Hostx64\\x64\\cl.exe\r\n::prk-environment::\r\n"
-                                  "Path=C:\\VS\\bin\r\n";
-        }
+        const bool is_discovery = is_vswhere || program == "cmd.exe";
+        const std::string output = is_vswhere             ? "C:\\VS\r\n"
+                                   : program == "cmd.exe" ? "Path=C:\\VS\\bin\r\nVCToolsInstallDir=C:\\VS\\\r\n"
+                                                            "VSCMD_ARG_HOST_ARCH=x64\r\nVSCMD_ARG_TGT_ARCH=x64\r\n"
+                                                          : "";
         std::memset(out_result, 0, sizeof *out_result);
         out_result->outcome = PRK_PROCESS_EXITED;
-        out_result->exit_code = program == "cmd.exe" ? 0 : fake.exit_code;
+        out_result->exit_code = is_discovery ? 0 : fake.exit_code;
         out_result->standard_output = copy_text(output);
         out_result->standard_output_length = output.size();
-        out_result->standard_error = copy_text(program == "cmd.exe" ? "" : fake.standard_error);
-        out_result->standard_error_length = program == "cmd.exe" ? 0 : fake.standard_error.size();
+        out_result->standard_error = copy_text(is_discovery ? "" : fake.standard_error);
+        out_result->standard_error_length = is_discovery ? 0 : fake.standard_error.size();
         return out_result->standard_output != nullptr && out_result->standard_error != nullptr
                    ? PRK_STATUS_OK
                    : PRK_STATUS_OUT_OF_MEMORY;
@@ -191,7 +192,7 @@ void test_masm_falls_back_to_discovery(PrkTestContext* context, void*) {
     PrkCompileResult result{};
     PRK_EXPECT(prk_assemble_source(&runner, &request, &result) == PRK_STATUS_OK);
     PRK_EXPECT(fake.programs ==
-               std::vector<std::string>({"ml64", "cmd.exe", "cmd.exe", "C:\\VS\\bin\\Hostx64\\x64\\ml64.exe"}));
+               std::vector<std::string>({"ml64", "vswhere", "cmd.exe", "C:\\VS\\bin\\Hostx64\\x64\\ml64.exe"}));
     PRK_EXPECT(result.is_msvc_discovered == 1 && result.family == PRK_COMPILER_MSVC);
     prk_release_compile_result(&result);
     fake.programs.clear();

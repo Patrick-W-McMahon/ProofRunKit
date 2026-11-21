@@ -61,7 +61,25 @@ void prk_append_argument(PrkArgumentList* arguments, const char* prefix, const c
 int prk_parse_vswhere_output(const char* text, size_t length, char* out_path, size_t capacity);
 
 /**
- * @brief Builds the cmd.exe arguments that run vcvarsall.bat and print the cl.exe path and the environment.
+ * @brief Formats the vswhere.exe path: "<program_files_x86>\Microsoft Visual Studio\Installer\vswhere.exe".
+ * @param program_files_x86 Value of %ProgramFiles(x86)%; NULL or "" selects "C:\Program Files (x86)".
+ * @param out_path Receives the path. @param capacity Bytes in @p out_path (at least 1).
+ * @return Nothing. Pure function.
+ */
+void prk_build_vswhere_path(const char* program_files_x86, char* out_path, size_t capacity);
+
+/**
+ * @brief Converts UTF-16LE tool output to UTF-8 when it is UTF-16LE (the second byte is 0); lone surrogates
+ *        become U+FFFD. Otherwise sets *out_text to NULL and the caller keeps @p text as it is.
+ * @param text Output bytes. @param length Bytes in @p text.
+ * @param out_text Receives the malloc'd, terminated UTF-8 text or NULL. @param out_length Receives its length.
+ * @return PRK_STATUS_OK or PRK_STATUS_OUT_OF_MEMORY. Pure apart from the allocation.
+ */
+PrkStatus prk_decode_utf16le_if_wide(const char* text, size_t length, char** out_text, size_t* out_length);
+
+/**
+ * @brief Builds the cmd.exe arguments that run vcvarsall.bat and list the environment:
+ *        /d /u /c call "<installation>\VC\Auxiliary\Build\vcvarsall.bat" <arch> >nul && set
  * @param installation_path Visual Studio folder (validated by prk_parse_vswhere_output).
  * @param architecture An allowed vcvarsall architecture. @param out_arguments Receives the list (free it).
  * @return PRK_STATUS_OK or PRK_STATUS_OUT_OF_MEMORY. Pure apart from the allocation.
@@ -70,8 +88,9 @@ PrkStatus prk_build_vcvars_arguments(const char* installation_path, const char* 
                                      PrkArgumentList* out_arguments);
 
 /**
- * @brief Parses the vcvars output (marker lines, `where cl.exe`, then `set`) into @p out_toolchain:
- *        cl_path, lib_path, environment, and is_found (error_message when cl.exe is missing).
+ * @brief Parses the `set` listing after vcvarsall (UTF-16LE or 8-bit) into @p out_toolchain: environment, then
+ *        cl_path = %VCToolsInstallDir%bin\Host%VSCMD_ARG_HOST_ARCH%\%VSCMD_ARG_TGT_ARCH%\cl.exe and lib.exe beside
+ *        it, and is_found (error_message when those variables are missing).
  * @param text cmd.exe stdout. @param length Bytes in @p text. @param out_toolchain Toolchain to fill (a mutator).
  * @return PRK_STATUS_OK or PRK_STATUS_OUT_OF_MEMORY. Pure apart from the allocation.
  */

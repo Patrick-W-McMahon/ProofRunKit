@@ -262,11 +262,15 @@ executable on every build:
 | [`tests/lua/self/process_test.lua`](../tests/lua/self/process_test.lua) | `prk_self_process_test` | `prk.run_process` starting `prk` itself: stdout, a non-zero exit with stderr, exact arguments, and a missing program as a result. |
 | [`tests/lua/self/compile_test.lua.in`](../tests/lua/self/compile_test.lua.in) | `prk_self_compile_test` | `prk.compile` on the samples in `tests/drivers/c`: C and C++ programs built and run, warnings, `werror`, parsed errors; skips without a compiler. |
 | [`tests/lua/self/reports_test.lua`](../tests/lua/self/reports_test.lua) | `prk_self_reports_test` (after `prk_self_reports_fixture` and `prk_self_reports_builtin`) | The runner and reporters, end to end. The fixture runs write JSON and JUnit files with `--filter`, `--exclude-tag`, `--json-file`, and `--junit-file`. The script then checks totals, order, outcomes, name mapping, escaping, and the built-in cycle-counter checks. |
+| [`tests/lua/self/sandbox_test.lua`](../tests/lua/self/sandbox_test.lua) | `prk_self_sandbox_test` | Ambient access hidden, text-only `load`, the memory limit as a catchable failure, `add_test` only while loading, versions. |
+| [`tests/lua/self/process_options_test.lua`](../tests/lua/self/process_options_test.lua) | `prk_self_process_options_test` | `prk.run_process` options with the `prk_spawn_child` helper: `env`, `inherit_env = false`, `cwd`, exact `stdin`, the timeout kill, and `output_limit`. |
+| [`tests/js/self/cli_test.js.in`](../tests/js/self/cli_test.js.in) | `prk_js_cli_test` | The command line and runner by running `./prk`: help, usage errors, exit codes, the version line, order and counts, filters, JSON escapes, script problems, report errors, the Lua memory limit. |
 
 Samples under `tests/lua/samples/` show that failures, syntax errors, missing files, endless loops (instruction budget
 and `--timeout`) are reported correctly.
 
-The C++ harness `proofrunkit_selftest` stays in place as the fallback (#27). Some of its cases cover the C ABI
+The C++ harness `proofrunkit_selftest` stays in place as the fallback (#27). [`self-hosting.md`](self-hosting.md)
+maps every C++ case to its prk equivalent or says why it is internal only. Some of its cases cover the C ABI
 directly (registry growth and duplicate names, invalid arguments, the memory limit, parser edge cases). Scripts can
 now reach command-line behavior through `prk.run_process` (#13), but not the C ABI itself. The harness can only be retired once the
 self-hosted suite covers every case, is green on Windows x64 and x86, and Patrick approves.

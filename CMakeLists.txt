@@ -56,4 +56,10 @@ prk_apply_project_warnings(proofrunkit)
 include(ProofRunKitWindowsResources)
 prk_add_windows_resources(proofrunkit)
 
+# ------------------------------------------------------------------------------- self-test (#23)
+if(PRK_BUILD_SELFTEST)
+    enable_testing()
+    add_subdirectory(tests/selftest)
+endif()
+
 message(STATUS "ProofRunKit ${PROJECT_VERSION}: cycle counter = ${PRK_CYCLE_COUNTER_IMPLEMENTATION}")

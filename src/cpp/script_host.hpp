@@ -49,6 +49,9 @@ public:
      * @param print_output Stream that receives script print() text. Not owned.
      */
     ScriptHost(ScriptHostServices services, std::ostream& print_output);
+    ~ScriptHost();
+    ScriptHost(const ScriptHost&) = delete;
+    ScriptHost& operator=(const ScriptHost&) = delete;
 
     /** @brief Returns C callbacks that point at this object. Callbacks never throw. */
     [[nodiscard]] PrkScriptHost make_c_host();
@@ -62,6 +65,7 @@ private:
 
     ScriptHostServices services_;
     std::ostream& print_output_;
+    PrkMsvcToolchain msvc_toolchain_{};  ///< MSVC discovery cache shared by every script of this host (#14).
 };
 
 }  // namespace prk

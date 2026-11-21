@@ -28,3 +28,14 @@ prk.addTest('self.compile_js.errors_are_parsed', () => {
     prk.expectEqual(first.line, 2);
     prk.expectTrue(first.file.endsWith('broken.c'));
 });
+
+prk.addTest('self.compile_js.compile_then_link', () => {
+    const probe = compileOrSkip({sources: samples + '/hello.c', output: './prk_js_probe'});
+    const object = probe.compiler === 'msvc' ? './prk_js_mathlib.obj' : './prk_js_mathlib.o';
+    prk.expectExitCode(prk.compile({sources: samples + '/mathlib.c', output: object, kind: 'object',
+                                    compiler: probe.compiler}), 0);
+    const program = prk.compile({sources: [samples + '/uses_mathlib.c', object], output: './prk_js_uses_mathlib',
+                                 compiler: probe.compiler, includes: [samples]});
+    prk.expectExitCode(program, 0);
+    prk.expectExitCode(prk.runProcess({program: program.output}), 0);
+});

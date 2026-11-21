@@ -46,12 +46,15 @@ if(WIN32)
 else()
     set(_prk_process_adapter src/process/prk_process_posix.c)
 endif()
-add_library(prk_process STATIC src/process/prk_process.c ${_prk_process_adapter})
+add_library(prk_process STATIC src/process/prk_process.c src/process/prk_environment_variable.c
+    ${_prk_process_adapter})
 target_link_libraries(prk_process PUBLIC prk_core)
 prk_apply_project_warnings(prk_process)
 
 # ------------------------------------------------------------- language drivers (#14 ...)
-add_library(prk_drivers STATIC src/drivers/prk_c_driver.c src/drivers/prk_c_diagnostics.c)
+add_library(prk_drivers STATIC src/drivers/prk_c_driver.c src/drivers/prk_c_arguments.c src/drivers/prk_c_diagnostics.c
+    src/drivers/prk_msvc_toolchain.c
+    src/drivers/prk_utf16_text.c)
 target_include_directories(prk_drivers PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(prk_drivers PUBLIC prk_core prk_process)
 prk_apply_project_warnings(prk_drivers)

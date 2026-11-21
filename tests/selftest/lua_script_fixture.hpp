@@ -103,7 +103,8 @@ inline PrkScriptHost make_fake_host(FakeScriptHostState& state) {
                          &find_fake_file,
                          &read_fake_file,
                          static_cast<FakeScriptHostState*>(&state),
-                         state.process_runner};
+                         state.process_runner,
+                         nullptr};
 }
 
 }  // namespace fixture_detail

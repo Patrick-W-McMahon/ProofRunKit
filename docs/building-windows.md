@@ -75,7 +75,7 @@ resets, or discards changes.
 | `prk_js_stops_infinite_loop`, `prk_js_timeout_option` | The uncatchable instruction budget and `--timeout` stop an endless loop that tries `try`/`catch`. |
 | `prk_mixed_lua_and_js_list` | One `prk list` loads a Lua and a JavaScript script together. |
 | `prk_self_process_test`, `prk_js_process_test` | Lua and JavaScript scripts start `prk` itself with `prk.run_process` / `prk.runProcess` (run in prk's folder). |
-| `prk_self_compile_test`, `prk_js_compile_test` | `prk.compile` builds and runs the samples in `tests/drivers/c` with the compiler on `PATH` (`cl` in a Developer Prompt); each test skips when there is none. |
+| `prk_self_compile_test`, `prk_js_compile_test` | `prk.compile` builds and runs the samples in `tests/drivers/c` (programs, compile-then-link, a static and a shared library) with `cl` from PATH or found with vswhere/vcvarsall, or clang/gcc; each test skips when there is none. The self-test `c_driver.discovers_real_msvc` always runs the real vswhere/vcvarsall discovery and skips only when Visual Studio's C++ tools are missing. |
 | `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow the contract in docs/exit-codes.md (#21). |
 | `prk_self_assertions_test` | Self-hosted (#55): every `prk.expect_*` assertion, run by `prk` on `tests/lua/self/assertions_test.lua`. |
 | `prk_self_suites_and_hooks_test` | Self-hosted: suites and hook order. |

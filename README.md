@@ -48,7 +48,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 
 ### Compiled-language drivers
 
-- [ ] C and C++ via gcc, clang, and MSVC `cl` ([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14)) — In progress (`prk.compile` with gcc, clang, and `cl` on PATH, parsed diagnostics; [docs/c-cpp-driver.md](docs/c-cpp-driver.md))
+- [ ] C and C++ via gcc, clang, and MSVC `cl` ([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14)) — Done (`prk.compile`: gcc, clang, and `cl` from PATH or vswhere/vcvarsall; executables, objects, static and shared libraries; parsed diagnostics; [docs/c-cpp-driver.md](docs/c-cpp-driver.md))
 - [ ] C# via `dotnet` ([#15](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/15)) — Planned
 - [ ] Java via `javac` and `java` (JDK discovery) ([#44](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/44)) — Planned
 - [ ] Rust via `rustc` and `cargo` ([#45](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/45)) — Planned
@@ -126,7 +126,7 @@ ProofRunKit is not an in-process compiler. For compiled languages it shells out 
 
 | Language | How it's tested | Toolchain | Status |
 | --- | --- | --- | --- |
-| C and C++ | Compile, then run the produced binary and check exit code, output, and timing | gcc, clang, MSVC `cl` | In progress ([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14), [docs/c-cpp-driver.md](docs/c-cpp-driver.md)) |
+| C and C++ | Compile, then run the produced binary and check exit code, output, and timing | gcc, clang, MSVC `cl` | Done ([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14), [docs/c-cpp-driver.md](docs/c-cpp-driver.md)) |
 | C# | Build, then run the produced program | `dotnet` | Planned ([#15](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/15)) |
 | Java | Compile with `javac`, then run with `java` or `java -jar` | JDK (`JAVA_HOME` / `PATH`) | Planned ([#44](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/44)) |
 | Rust | `cargo build` / `cargo test` or `rustc`, then run artifacts | `rustc`, `cargo`, rustup (MSVC target on Windows) | Planned ([#45](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/45)) |

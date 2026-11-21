@@ -12,7 +12,6 @@
  *   flood N       writes N bytes to stdout and N bytes to stderr
  */
 #if defined(_WIN32)
-#define _CRT_SECURE_NO_WARNINGS /* getenv: this test child only reads one variable. */
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -29,6 +28,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "proofrunkit/prk_process.h"
 
 static void sleep_for_milliseconds(long milliseconds) {
 #if defined(_WIN32)
@@ -88,8 +89,10 @@ int main(int argc, char** argv) {
         return atoi(argv[2]);
     }
     if (strcmp(mode, "env") == 0 && argc > 2) {
-        const char* const value = getenv(argv[2]);
-        (void)printf("%s\n", value != NULL ? value : "(unset)");
+        char* value = NULL;
+        const int is_set = prk_duplicate_environment_variable(argv[2], &value);
+        (void)printf("%s\n", is_set ? value : "(unset)");
+        free(value);
         return 0;
     }
     if (strcmp(mode, "cwd") == 0) {

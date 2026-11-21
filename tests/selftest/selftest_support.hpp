@@ -49,6 +49,10 @@ PrkStatus register_process_spawn_tests(PrkRegistry& registry);
 PrkStatus register_script_process_api_tests(PrkRegistry& registry);
 /** @brief Registers C/C++ compiler-driver tests (#14). @return PRK_STATUS_OK or the first registration error. */
 PrkStatus register_c_driver_tests(PrkRegistry& registry);
+/** @brief Registers C/C++ driver library and MSVC discovery tests (#14). @return PRK_STATUS_OK or the first error. */
+PrkStatus register_c_driver_toolchain_tests(PrkRegistry& registry);
+/** @brief Registers the MSVC discovery text tests (#14, #74). @return PRK_STATUS_OK or the first registration error. */
+PrkStatus register_msvc_discovery_text_tests(PrkRegistry& registry);
 /** @brief Registers test-script loading tests (#9). @return PRK_STATUS_OK or the first error. */
 PrkStatus register_script_loading_tests(PrkRegistry& registry);
 

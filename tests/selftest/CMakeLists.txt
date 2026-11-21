@@ -7,6 +7,7 @@ add_executable(proofrunkit_selftest
     test_js_engine.cpp
     test_lua_engine.cpp
     test_lua_test_api.cpp
+    test_process_spawn.cpp
     test_junit_reporting.cpp
     test_registry.cpp
     test_reporting.cpp
@@ -18,6 +19,12 @@ prk_add_windows_resources(proofrunkit_selftest)
 if(PRK_FORCE_C_FALLBACK)
     target_compile_definitions(proofrunkit_selftest PRIVATE PRK_EXPECT_C_FALLBACK)
 endif()
+
+# Child program for the process-spawn tests (#13). Same directory as the self-test (also per config
+# with Visual Studio generators), which finds it next to its own executable.
+add_executable(prk_spawn_child prk_spawn_child.c)
+prk_apply_project_warnings(prk_spawn_child)
+add_dependencies(proofrunkit_selftest prk_spawn_child)
 
 add_test(NAME proofrunkit_selftest COMMAND proofrunkit_selftest)
 

@@ -37,7 +37,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 - [x] Single compiled `proofrunkit` executable and CMake presets ([#7](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/7)) — Done
 - [x] Short `prk` command with `run`, `list`, `version`, and `help` subcommands, installed on PATH as the same binary ([#60](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/60)) — Done
 - [x] Assembly hot paths with a mandatory portable C fallback, for x64 and x86 ([#8](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/8), [#39](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/39)) — Done
-- [ ] Process-spawn and sandbox layer on Windows ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Planned
+- [x] Process-spawn and sandbox layer on Windows ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Done ([docs/process-spawn.md](docs/process-spawn.md))
 - [x] Windows build and `proofrunkit_selftest` via CTest ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Done
 
 ### Test authoring (Lua 5.4 and QuickJS-ng)
@@ -80,7 +80,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 ### Stability and security
 
 - [ ] Stable binary across test changes, with a fixed artifact directory for compiler and test outputs ([#22](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/22)) — In progress (reproducible builds, VERSIONINFO, and manifest done; see [stable-binary.md](docs/stable-binary.md))
-- [ ] Sandboxed process spawn for compilers, scripts, and produced binaries ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Planned
+- [x] Sandboxed process spawn for compilers, scripts, and produced binaries ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Done (timeouts kill the whole process tree; [docs/process-spawn.md](docs/process-spawn.md))
 - [ ] Code signing decision for installers and SmartScreen / antivirus reputation ([#41](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/41)) — In progress (installers ship unsigned for now)
 
 ### Distribution

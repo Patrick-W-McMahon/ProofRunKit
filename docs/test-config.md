@@ -87,6 +87,7 @@ folder.
 | Variable | Value |
 | --- | --- |
 | `${prk}` | Absolute path of the running prk. |
+| `${prk_dir}` | Folder of the running prk (for example `C:/Program Files/ProofRunKit`). |
 | `${config_dir}` | Folder of `prk.tests.json`. |
 | `${build_dir}` | `--build-dir DIR`, made absolute. Unset without it. |
 | `${work_dir}` | See `work_dir` above. |

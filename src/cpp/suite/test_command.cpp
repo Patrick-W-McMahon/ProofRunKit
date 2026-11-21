@@ -70,11 +70,12 @@ std::string find_parent_folder(const std::string& path) {
     return separator == std::string::npos ? std::string() : path.substr(0, separator);
 }
 
-/** @brief Built-in variables: prk, config_dir, build_dir, work_dir, exe, os. */
+/** @brief Built-in variables: prk, prk_dir, config_dir, build_dir, work_dir, exe, os. */
 TestVariables make_builtin_variables(const CommandLineOptions& options, const std::string& config_path,
                                      const TestSuiteServices& services) {
     TestVariables builtins;
     builtins["prk"] = services.find_own_executable ? services.find_own_executable() : std::string("prk");
+    builtins["prk_dir"] = find_parent_folder(builtins["prk"]);
     builtins["config_dir"] = find_parent_folder(config_path);
     builtins["exe"] = services.executable_suffix;
     builtins["os"] = services.os_name;

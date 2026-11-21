@@ -82,7 +82,9 @@ TestSuiteServices make_fake_services(FakeWorld& world) {
         world.files[path + "/"] = "";
         return path.starts_with("/ro") ? std::string("read-only") : std::string();
     };
-    services.path_exists = [&world](const std::string& path) { return world.files.count(path) > 0 || path == "/b"; };
+    services.path_exists = [&world](const std::string& path) {
+        return world.files.count(path) > 0 || path == "/b" || path == "/p/x";
+    };
     services.find_own_executable = [] { return std::string("/p/prk"); };
     services.make_absolute_path = [](const std::string& path) {
         return path.starts_with("/") ? path : "/repo/" + path;
@@ -271,11 +273,12 @@ void test_runs_test_command(PrkTestContext* context, void*) {
     std::string text;
     PRK_EXPECT(run_fake_test_command(world, {"test"}, text) == kExitUsageError);
     PRK_EXPECT(text.find("cannot read /repo/prk.tests.json") != std::string::npos);
-    world.files["/repo/prk.tests.json"] = R"({"schema_version": 1, "tests": [{"name": "x", "run": "a.lua"}],
-                                             "variables": {"out": "${work_dir}"}})";
+    world.files["/repo/prk.tests.json"] = R"({"schema_version": 1, "tests": [{"name": "x", "run": "${d}/a.lua"}],
+                                             "variables": {"out": "${work_dir}", "d": ["${prk_dir}/x"]}})";
     PRK_EXPECT(run_fake_test_command(world, {"test", "--list"}, text) == kExitAllPassed && text == "x\n");
     PRK_EXPECT(run_fake_test_command(world, {"test", "--build-dir", "/b"}, text) == kExitAllPassed);
     PRK_EXPECT(world.command_lines.back().back() == "/b/prk-test/results/x.json");
+    PRK_EXPECT(world.command_lines.back()[2] == "/p/x/a.lua");
     PRK_EXPECT(text.find("[ PASS ] x/a.one") != std::string::npos &&
                text.find("2 tests: 1 passed, 0 failed, 1 skipped") != std::string::npos);
     PRK_EXPECT(run_fake_test_command(world, {"test", "--var", "work_dir=/v", "--json"}, text) == kExitAllPassed);

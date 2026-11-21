@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
                                                   prk::make_cycle_counter_clock(),
                                                   &prk::read_script_file_from_disk,
                                                   prk::make_disk_script_host_services(),
+                                                  &prk::write_report_file_to_disk,
                                                   std::cout,
                                                   std::cerr};
     return prk::run_command_line(program_name, arguments, environment);

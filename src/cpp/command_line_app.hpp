@@ -4,8 +4,10 @@
  */
 #pragma once
 
+#include <functional>
 #include <ostream>
 #include <span>
+#include <string>
 #include <string_view>
 
 #include "proofrunkit/prk.h"
@@ -21,7 +23,20 @@ enum ExitCode : int {
     kExitUsageError = 2,      ///< The command line was invalid.
     kExitNotImplemented = 3,  ///< A requested feature (e.g. JavaScript scripts, #11) has not landed yet.
     kExitScriptError = 4,     ///< A test script could not be read, compiled, or loaded (#9).
+    kExitReportError = 5,     ///< A requested report file could not be written (#21).
 };
+
+/**
+ * @brief Writes a whole report file. Returns an empty string on success, otherwise the reason it failed.
+ *        Injected so tests can capture report files in memory.
+ */
+using ReportFileWriter = std::function<std::string(const std::string& path, const std::string& text)>;
+
+/**
+ * @brief Writes @p text to @p path in binary mode, replacing the file. The IO edge used by main().
+ * @return Empty on success, otherwise a message such as "cannot open file for writing".
+ */
+[[nodiscard]] std::string write_report_file_to_disk(const std::string& path, const std::string& text);
 
 /** @brief Injected dependencies of run_command_line(). */
 struct CommandLineEnvironment {
@@ -29,6 +44,7 @@ struct CommandLineEnvironment {
     PrkClock clock;                       ///< Clock used to time test bodies.
     ScriptFileReader read_script_file;    ///< Reads test scripts named on the command line.
     ScriptHostServices script_services;   ///< Clock and read-only files granted to test scripts (#12).
+    ReportFileWriter write_report_file;   ///< Writes --json-file / --junit-file reports (#21).
     std::ostream& output;                 ///< Results, listings, help, version, and console-mode print().
     std::ostream& errors;                 ///< Usage errors, script load errors, and JSON-mode print().
 };

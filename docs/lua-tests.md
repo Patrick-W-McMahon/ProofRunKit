@@ -173,15 +173,10 @@ the memory limit rather than the instruction budget or the timeout, because both
 
 `pairs` iteration order and `math.random` are not deterministic between runs; tests must not depend on them.
 
-## Exit codes
+## Exit codes and reports
 
-| Code | Meaning |
-| --- | --- |
-| 0 | Every selected test passed (skips do not fail a run). |
-| 1 | At least one test failed. |
-| 2 | Usage error, including an unsupported script extension. |
-| 3 | A requested feature is not implemented yet, for example JavaScript test scripts ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)). |
-| 4 | A test script could not be read, compiled, or loaded (missing file, syntax error, error in top-level code, duplicate test name, bad test options). Nothing is run. |
+See [exit-codes.md](exit-codes.md) for the exit-code contract and [report-formats.md](report-formats.md) for the
+console, JSON, and JUnit XML formats.
 
 ## C ABI
 

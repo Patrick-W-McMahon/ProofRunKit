@@ -75,7 +75,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 
 ### Reporting
 
-- [ ] Console, JSON, and JUnit XML reports, with a documented exit-code contract ([#21](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/21)) — In progress (console and JSON done)
+- [x] Console, JSON, and JUnit XML reports, with a documented exit-code contract ([#21](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/21)) — Done (see [docs/report-formats.md](docs/report-formats.md) and [docs/exit-codes.md](docs/exit-codes.md))
 
 ### Stability and security
 
@@ -167,6 +167,7 @@ Every build and both installers provide the short `prk` command alongside `proof
 ```powershell
 prk run tests\math_test.lua   # run a Lua test script (see docs/lua-tests.md)
 prk run --json          # run tests and report JSON
+prk run --junit-file out\results.xml tests\math_test.lua   # also write JUnit XML (docs/report-formats.md)
 prk list --filter kit.  # list test names
 prk help run            # help for one command
 prk --version

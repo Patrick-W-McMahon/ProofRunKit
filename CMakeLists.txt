@@ -55,6 +55,7 @@ add_library(prk_frontend STATIC
     src/cpp/builtin_checks.cpp
     src/cpp/command_line.cpp
     src/cpp/command_line_app.cpp
+    src/cpp/junit_reporter.cpp
     src/cpp/reporters.cpp
     src/cpp/script_host.cpp
     src/cpp/script_loading.cpp)

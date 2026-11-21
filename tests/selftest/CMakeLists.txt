@@ -6,6 +6,7 @@ add_executable(proofrunkit_selftest
     test_cycle_counter.cpp
     test_lua_engine.cpp
     test_lua_test_api.cpp
+    test_junit_reporting.cpp
     test_registry.cpp
     test_reporting.cpp
     test_runner.cpp
@@ -68,3 +69,7 @@ set_tests_properties(prk_lua_stops_infinite_loop PROPERTIES PASS_REGULAR_EXPRESS
 # Per-test wall-clock timeout from the command line (#12).
 add_test(NAME prk_lua_timeout_option COMMAND "${_prk_short_exe}" run --timeout 200 "${_prk_lua_tests}/samples/infinite_loop.lua")
 set_tests_properties(prk_lua_timeout_option PROPERTIES PASS_REGULAR_EXPRESSION "timeout of 200 ms exceeded" TIMEOUT 60)
+# Report files and the exit-code contract, end to end through prk (#21).
+add_test(NAME prk_reports_and_exit_codes
+    COMMAND ${CMAKE_COMMAND} "-DPRK_EXE=${_prk_short_exe}" "-DPRK_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+            "-DPRK_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/reports" -P "${PROJECT_SOURCE_DIR}/tests/cmake/CheckReportsAndExitCodes.cmake")

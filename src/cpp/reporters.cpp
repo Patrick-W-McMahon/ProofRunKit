@@ -82,7 +82,8 @@ std::string escape_json_string(std::string_view text) {
 }
 
 std::string format_json_report(const std::vector<RecordedTestResult>& results, const PrkRunSummary& summary) {
-    std::string json = "{\n  \"tool\": \"proofrunkit\",\n  \"version\": \"";
+    std::string json = "{\n  \"schema_version\": " + std::to_string(kJsonReportSchemaVersion) +
+                       ",\n  \"tool\": \"proofrunkit\",\n  \"version\": \"";
     json += escape_json_string(prk_get_version_string());
     json += "\",\n  \"summary\": {\"total\": " + std::to_string(summary.total) +
             ", \"passed\": " + std::to_string(summary.passed) + ", \"failed\": " + std::to_string(summary.failed) +

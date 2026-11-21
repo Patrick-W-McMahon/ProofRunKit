@@ -17,10 +17,11 @@ namespace {
 PrkStatus register_all_selftests(PrkRegistry& registry) {
     using RegisterSuite = PrkStatus (*)(PrkRegistry&);
     const RegisterSuite suites[] = {
-        &prk::selftest::register_registry_tests,       &prk::selftest::register_runner_tests,
-        &prk::selftest::register_reporting_tests,      &prk::selftest::register_command_line_tests,
-        &prk::selftest::register_cycle_counter_tests,  &prk::selftest::register_lua_engine_tests,
-        &prk::selftest::register_script_loading_tests, &prk::selftest::register_lua_test_api_tests,
+        &prk::selftest::register_registry_tests,        &prk::selftest::register_runner_tests,
+        &prk::selftest::register_reporting_tests,       &prk::selftest::register_command_line_tests,
+        &prk::selftest::register_cycle_counter_tests,   &prk::selftest::register_lua_engine_tests,
+        &prk::selftest::register_script_loading_tests,  &prk::selftest::register_lua_test_api_tests,
+        &prk::selftest::register_junit_reporting_tests,
     };
     for (const RegisterSuite register_suite : suites) {
         const PrkStatus status = register_suite(registry);
@@ -52,6 +53,7 @@ int main(int argc, char** argv) {
                                                   prk::make_cycle_counter_clock(),
                                                   &prk::read_script_file_from_disk,
                                                   prk::make_disk_script_host_services(),
+                                                  &prk::write_report_file_to_disk,
                                                   std::cout,
                                                   std::cerr};
     return prk::run_command_line("proofrunkit_selftest", arguments, environment);

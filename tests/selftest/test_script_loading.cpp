@@ -56,7 +56,8 @@ CapturedScriptRun run_scripts_through_command_line(std::vector<std::string_view>
     std::ostringstream output;
     std::ostringstream errors;
     const CommandLineEnvironment environment{
-        *builtins, PrkClock{nullptr, nullptr}, &read_sample_script, ScriptHostServices{}, output, errors};
+        *builtins, PrkClock{nullptr, nullptr}, &read_sample_script, ScriptHostServices{}, ReportFileWriter{}, output,
+        errors};
     const int exit_code = run_command_line("prk", arguments, environment);
     return CapturedScriptRun{exit_code, output.str(), errors.str()};
 }

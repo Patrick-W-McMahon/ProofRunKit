@@ -62,7 +62,8 @@ include, among others:
   ([#34](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/34),
   [#35](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/35)).
 - **Distribution:** per-machine WiX v4 MSI installers. x64 installs to `%ProgramFiles%\ProofRunKit`; x86 installs to
-  `%ProgramFiles(x86)%\ProofRunKit`. Installers are unsigned for now
+  `%ProgramFiles(x86)%\ProofRunKit`. Each ships one executable, `proofrunkit.exe`, plus a `prk.cmd` shim so the
+  `prk` command works in cmd and PowerShell ([#93](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/93)). Installers are unsigned for now
   ([#36](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/36)-[#41](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/41)).
 - **License:** Apache License 2.0 ([LICENSE](../LICENSE), [NOTICE](../NOTICE), [DISCLAIMER.md](../DISCLAIMER.md)).
 - **Migration is gated future work** (below).

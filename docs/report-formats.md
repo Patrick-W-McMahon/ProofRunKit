@@ -41,7 +41,7 @@ instead.
 {
   "schema_version": 1,
   "tool": "proofrunkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "summary": {"total": 3, "passed": 1, "failed": 1, "skipped": 1},
   "tests": [
     {"name": "math.adds", "outcome": "passed", "elapsed_ticks": 1520, "message": ""},
@@ -73,7 +73,7 @@ The layout is the common Jenkins/Ant JUnit format, which most CI systems and tes
 <testsuites name="proofrunkit" tests="3" failures="1" errors="0" skipped="1" time="0.004">
   <testsuite name="proofrunkit" tests="3" failures="1" errors="0" skipped="1" time="0.004">
     <properties>
-      <property name="proofrunkit.version" value="0.1.0"/>
+      <property name="proofrunkit.version" value="0.1.1"/>
     </properties>
     <testcase classname="math" name="adds" time="0.001"/>
     <testcase classname="math" name="divides" time="0.002">

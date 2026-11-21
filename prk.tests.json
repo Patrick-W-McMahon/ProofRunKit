@@ -5,7 +5,7 @@
     "bin_dir": ["${build_dir}/Debug", "${build_dir}/Release", "${build_dir}/RelWithDebInfo", "${build_dir}/MinSizeRel", "${build_dir}"],
     "selftest_dir": ["${build_dir}/tests/selftest/Debug", "${build_dir}/tests/selftest/Release", "${build_dir}/tests/selftest/RelWithDebInfo", "${build_dir}/tests/selftest/MinSizeRel", "${build_dir}/tests/selftest"],
     "tool_dir": ["${bin_dir}", "${prk_dir}"],
-    "prk_under_test": ["${tool_dir}/prk${exe}"],
+    "prk_under_test": ["${tool_dir}/proofrunkit${exe}"],
     "c_driver_samples": "${config_dir}/tests/drivers/c",
     "asm_driver_samples": "${config_dir}/tests/drivers/asm",
     "self_fixtures": "${config_dir}/tests/js/self/fixtures"
@@ -33,6 +33,10 @@
     { "name": "smoke.prk_help_test", "command": ["${prk_under_test}", "help", "test"], "expect_output": "Usage: prk test" },
     { "name": "smoke.prk_list", "command": ["${prk_under_test}", "list"], "expect_output": "kit\\." },
     { "name": "smoke.prk_run_builtin_checks_json", "command": ["${prk_under_test}", "run", "--json"], "expect_output": "\"failed\": 0" },
+    { "name": "smoke.prk_cmd_shim_version", "description": "Windows: the prk.cmd shim (#93) runs proofrunkit.exe.",
+      "command": ["${tool_dir}/prk.cmd", "-v", "-offline"], "skip_unless": "${tool_dir}/prk.cmd", "expect_output": "^ProofRunKit \\d+\\.\\d+\\.\\d+ " },
+    { "name": "smoke.prk_cmd_shim_exit_code", "description": "Windows: the prk.cmd shim returns proofrunkit's exit code.",
+      "command": ["${tool_dir}/prk.cmd", "--no-such-option"], "skip_unless": "${tool_dir}/prk.cmd", "expect_exit_code": 2, "expect_output": "prk: unknown option" },
     { "name": "smoke.prk_rejects_unknown_command", "command": ["${prk_under_test}", "help", "no-such-command"], "expect_exit_code": 2, "expect_output": "prk: unknown command" },
 
     { "name": "lua.api", "run": "tests/lua/prk_lua_api_test.lua", "expect_output": "8 tests: 7 passed, 0 failed, 1 skipped" },

@@ -10,19 +10,19 @@
 
 # Install ProofRunKit
 
-ProofRunKit ships as one installer per platform. The installer puts `proofrunkit` and the short `prk` command on your
-PATH. After that, `prk -update` keeps it current.
+ProofRunKit ships as one installer per platform. The installer puts one executable, `proofrunkit.exe`, on your PATH,
+with a small `prk.cmd` shim beside it so you can type `prk`. After that, `prk -update` keeps it current.
 
 ## Downloads
 
 | Platform | Architecture | Status | Download |
 | --- | --- | --- | --- |
-| **Windows** | x64 (64-bit) | ✅ Available — v0.1.0 | [**Latest release**](https://github.com/Patrick-W-McMahon/ProofRunKit/releases/latest) · [ProofRunKit-0.1.0-win-x64.msi](https://github.com/Patrick-W-McMahon/ProofRunKit/releases/download/v0.1.0/ProofRunKit-0.1.0-win-x64.msi) · [.sha256](https://github.com/Patrick-W-McMahon/ProofRunKit/releases/download/v0.1.0/ProofRunKit-0.1.0-win-x64.msi.sha256) |
+| **Windows** | x64 (64-bit) | ✅ Available — v0.1.1 | [**Latest release**](https://github.com/Patrick-W-McMahon/ProofRunKit/releases/latest) · [ProofRunKit-0.1.1-win-x64.msi](https://github.com/Patrick-W-McMahon/ProofRunKit/releases/download/v0.1.1/ProofRunKit-0.1.1-win-x64.msi) · [.sha256](https://github.com/Patrick-W-McMahon/ProofRunKit/releases/download/v0.1.1/ProofRunKit-0.1.1-win-x64.msi.sha256) |
 | **Windows** | x86 (32-bit) | ⏸️ On hold ([#74](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/74)) | Coming soon |
 | **macOS** | Apple Silicon / Intel | 🗓️ Planned ([#35](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/35)) | Coming soon |
 | **Linux** | x64 / x86 | 🗓️ Planned ([#34](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/34)) | Coming soon |
 
-**Latest release** always points to the newest version. The direct links are for v0.1.0.
+**Latest release** always points to the newest version. The direct links are for v0.1.1.
 
 ## Windows x64
 
@@ -33,8 +33,8 @@ then compare the checksums in PowerShell:
 
 ```powershell
 cd $HOME\Downloads
-$expected = (Get-Content .\ProofRunKit-0.1.0-win-x64.msi.sha256).Split(' ')[0]
-$actual   = (Get-FileHash .\ProofRunKit-0.1.0-win-x64.msi -Algorithm SHA256).Hash
+$expected = (Get-Content .\ProofRunKit-0.1.1-win-x64.msi.sha256).Split(' ')[0]
+$actual   = (Get-FileHash .\ProofRunKit-0.1.1-win-x64.msi -Algorithm SHA256).Hash
 if ($actual -eq $expected) { 'Checksum OK' } else { 'Checksum MISMATCH: do not install' }
 ```
 
@@ -45,13 +45,13 @@ if ($actual -eq $expected) { 'Checksum OK' } else { 'Checksum MISMATCH: do not i
 Double-click the MSI, or run it from a terminal:
 
 ```powershell
-msiexec /i ProofRunKit-0.1.0-win-x64.msi            # with the installer UI
-msiexec /i ProofRunKit-0.1.0-win-x64.msi /passive   # progress bar only
+msiexec /i ProofRunKit-0.1.1-win-x64.msi            # with the installer UI
+msiexec /i ProofRunKit-0.1.1-win-x64.msi /passive   # progress bar only
 ```
 
 | What | Where |
 | --- | --- |
-| Program files | `%ProgramFiles%\ProofRunKit` (usually `C:\Program Files\ProofRunKit`) |
+| Program files | `%ProgramFiles%\ProofRunKit` (usually `C:\Program Files\ProofRunKit`): `proofrunkit.exe`, the `prk.cmd` shim, `LICENSE.txt`, `NOTICE.txt` |
 | PATH | The install folder is added to the system PATH (the **AddToPath** feature, on by default) |
 | Start Menu | A **ProofRunKit** folder with Help and a link to this repository |
 | Scope | Per-machine (needs administrator approval) |
@@ -67,7 +67,14 @@ Open a **new** terminal so it picks up the updated PATH:
 ```powershell
 prk -v                  # version, engines, and whether a newer release exists
 prk help                # commands and options
+where.exe prk           # C:\Program Files\ProofRunKit\prk.cmd
 ```
+
+`prk` is `prk.cmd`, a two-line shim that runs `proofrunkit.exe` with every argument and returns its exit code, in cmd
+and PowerShell alike. You can also call `proofrunkit` directly; it takes the same commands. Two quirks of `.cmd` files
+in Windows: pressing Ctrl+C during a run ends the run, then cmd asks *Terminate batch job (Y/N)?*, where either answer
+returns to the prompt. And in PowerShell, quote an argument that contains `&`, `|`, `<`, `>`, or `^` twice
+(`'"a&b"'`), or call `proofrunkit` for it. See [#93](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/93).
 
 Then write a first test script. [docs/lua-tests.md](docs/lua-tests.md) and [docs/js-tests.md](docs/js-tests.md) show how.
 
@@ -79,13 +86,14 @@ prk -update             # download the latest x64 MSI, verify its SHA-256, and i
 ```
 
 `prk -update` downloads the MSI and its `.sha256` from the latest GitHub release, checks the hash, and runs
-`msiexec /passive`. The new version replaces the old one in place. Add `-yes` to skip the prompt or `-dry-run` to see
+`msiexec /passive`. The new version replaces the old one in place (upgrading from 0.1.0 also removes its old
+`prk.exe` copy). Add `-yes` to skip the prompt or `-dry-run` to see
 what it would do. See [docs/update.md](docs/update.md) for details.
 
 ### 5. Uninstall
 
 Open **Settings → Apps → Installed apps** (or **Apps & features**), find **ProofRunKit**, and choose **Uninstall**.
-This also removes the install folder from PATH. Or run `msiexec /x ProofRunKit-0.1.0-win-x64.msi`.
+This also removes the install folder from PATH. Or run `msiexec /x ProofRunKit-0.1.1-win-x64.msi`.
 
 ## Build from source
 

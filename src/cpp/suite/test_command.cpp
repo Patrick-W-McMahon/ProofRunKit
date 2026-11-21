@@ -74,7 +74,7 @@ std::string find_parent_folder(const std::string& path) {
 TestVariables make_builtin_variables(const CommandLineOptions& options, const std::string& config_path,
                                      const TestSuiteServices& services) {
     TestVariables builtins;
-    builtins["prk"] = services.find_own_executable ? services.find_own_executable() : std::string("prk");
+    builtins["prk"] = services.find_own_executable ? services.find_own_executable() : std::string("proofrunkit");
     builtins["prk_dir"] = find_parent_folder(builtins["prk"]);
     builtins["config_dir"] = find_parent_folder(config_path);
     builtins["exe"] = services.executable_suffix;

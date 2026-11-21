@@ -2,7 +2,7 @@
 
 ProofRunKit embeds Lua 5.4.9 ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9)). A Lua test script is
 an ordinary `.lua` file that registers tests when it loads. The executable reads the file at run time, so changing a
-test never requires rebuilding `prk.exe` / `proofrunkit.exe`
+test never requires rebuilding `proofrunkit.exe`
 ([#22](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/22)).
 
 ```lua
@@ -168,7 +168,7 @@ with `assembler` instead of `compiler`; link the object with `prk.compile`. See
 
 | Field | Value |
 | --- | --- |
-| `prk.version` | ProofRunKit version string, e.g. `"0.1.0"`. |
+| `prk.version` | ProofRunKit version string, e.g. `"0.1.1"`. |
 | `prk.lua_version` | Embedded Lua version, e.g. `"Lua 5.4.9"`. |
 
 `print(...)` writes to the console (stdout) for console reports, and to stderr for `--json` and `list`, so it never
@@ -265,7 +265,7 @@ on every build:
 | [`tests/lua/self/reports_test.lua`](../tests/lua/self/reports_test.lua) | `self.reports` (after the setup steps `reports_fixture` and `reports_builtin`) | The runner and reporters, end to end. The fixture runs write JSON and JUnit files with `--filter`, `--exclude-tag`, `--json-file`, and `--junit-file`. The script then checks totals, order, outcomes, name mapping, escaping, and the built-in cycle-counter checks. |
 | [`tests/lua/self/sandbox_test.lua`](../tests/lua/self/sandbox_test.lua) | `self.sandbox` | Ambient access hidden, text-only `load`, the memory limit as a catchable failure, `add_test` only while loading, versions. |
 | [`tests/lua/self/process_options_test.lua`](../tests/lua/self/process_options_test.lua) | `self.process_options` | `prk.run_process` options with the `prk_spawn_child` helper: `env`, `inherit_env = false`, `cwd`, exact `stdin`, the timeout kill, and `output_limit`. |
-| [`tests/js/self/cli_test.js.in`](../tests/js/self/cli_test.js.in) | `self.cli` | The command line and runner by running `./prk`: help, usage errors, exit codes, the version line, order and counts, filters, JSON escapes, script problems, report errors, the Lua memory limit. |
+| [`tests/js/self/cli_test.js.in`](../tests/js/self/cli_test.js.in) | `self.cli` | The command line and runner by running `./proofrunkit`: help, usage errors, exit codes, the version line, order and counts, filters, JSON escapes, script problems, report errors, the Lua memory limit. |
 | [`tests/js/self/process_options_test.js`](../tests/js/self/process_options_test.js) | `js.process_options` | JavaScript twin of the process options test, plus rejected `prk.runProcess` options. |
 | [`tests/js/self/reporting_cli_test.js.in`](../tests/js/self/reporting_cli_test.js.in) | `self.reporting_cli` | Console lines, JUnit on stdout, the original flag form, and `prk test` itself on the fixture configs in `tests/js/self/fixtures/suite` (combined summary, JSON, `--list`, setup failure, config errors). |
 | `proofrunkit_selftest` (C++) | `cpp.selftest` | The internal-only C/C++ cases, read from the harness's JSON report so each appears in the combined summary ([self-hosting.md](self-hosting.md)). |

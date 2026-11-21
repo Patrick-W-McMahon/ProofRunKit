@@ -4,8 +4,6 @@
  */
 #include "command_line.hpp"
 
-#include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include <optional>
 #include <utility>
@@ -236,14 +234,6 @@ CommandLineParseResult parse_test_command(CliCommand command, std::string_view c
     return parsed;
 }
 
-/** @brief Returns @p text lower-cased (ASCII only). */
-std::string make_ascii_lowercase(std::string_view text) {
-    std::string lowered(text);
-    std::transform(lowered.begin(), lowered.end(), lowered.begin(),
-                   [](unsigned char character) { return static_cast<char>(std::tolower(character)); });
-    return lowered;
-}
-
 }  // namespace
 
 CommandLineParseResult parse_command_line(std::span<const std::string_view> arguments) {
@@ -357,15 +347,6 @@ std::string format_command_help_text(std::string_view program_name, std::string_
         return format_suite_help_text(program_name);
     }
     return {};
-}
-
-std::string_view select_program_name(std::string_view invoked_path) {
-    const std::size_t separator = invoked_path.find_last_of("/\\");
-    std::string_view stem = separator == std::string_view::npos ? invoked_path : invoked_path.substr(separator + 1);
-    if (stem.size() >= 4 && make_ascii_lowercase(stem.substr(stem.size() - 4)) == ".exe") {
-        stem = stem.substr(0, stem.size() - 4);
-    }
-    return make_ascii_lowercase(stem) == "prk" ? std::string_view("prk") : std::string_view("proofrunkit");
 }
 
 }  // namespace prk

@@ -7,7 +7,7 @@ yet, so for now both commands report "no release has been published yet".
 
 ```text
 > prk -version
-ProofRunKit 0.1.0 (cycle counter: asm-masm-x64-windows, Lua 5.4.9, QuickJS-ng 0.18.0)
+ProofRunKit 0.1.1 (cycle counter: asm-masm-x64-windows, Lua 5.4.9, QuickJS-ng 0.18.0)
 Latest release: 0.2.0 - update available, run 'prk -update'
 ```
 
@@ -27,7 +27,7 @@ self-test binary contains no network code at all, so tests never touch the netwo
 
 ```text
 > prk -update
-Current version: 0.1.0
+Current version: 0.1.1
 Latest release:  0.2.0 (v0.2.0)
 Downloading ProofRunKit-0.2.0-win-x64.msi...
 SHA-256 verified: 5f1c...
@@ -81,7 +81,7 @@ platform yet".
 - `src/cpp/update/release_info.{hpp,cpp}` and `json_reader.{hpp,cpp}`: pure parsing and version logic.
 - `include/proofrunkit/prk_sha256.h`, `src/core/prk_sha256.c`: SHA-256 (FIPS 180-4).
 - `src/cpp/update/system_update_services.cpp`, `system_update_windows.cpp`: the real services (WinHTTP, `%TEMP%`,
-  `msiexec`), in the `prk_update_system` library linked only into `proofrunkit` / `prk`.
+  `msiexec`), in the `prk_update_system` library linked only into `proofrunkit.exe`.
 - Self-tests `update.*` cover SHA-256 vectors, JSON, versions, assets, checksum files, and every command path with a
   fake HTTP layer.
 

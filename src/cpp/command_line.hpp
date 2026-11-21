@@ -77,7 +77,7 @@ struct CommandLineParseResult {
 
 /**
  * @brief Builds the general help text. Pure function.
- * @param program_name Name shown in the usage lines (`prk` or `proofrunkit`).
+ * @param program_name Name shown in the usage lines (`prk`, see kCommandName).
  * @return Multi-line usage text ending in a newline.
  */
 [[nodiscard]] std::string format_usage_text(std::string_view program_name);
@@ -91,14 +91,11 @@ struct CommandLineParseResult {
 [[nodiscard]] std::string format_command_help_text(std::string_view program_name, std::string_view command_name);
 
 /**
- * @brief Chooses the program name shown in help and errors from argv[0]. Pure function.
+ * @brief The command name shown in help and error messages: always `prk` (#93).
  *
- * The same binary is installed as `proofrunkit.exe` and `prk.exe` (#60); this keeps messages
- * consistent with the name the user typed.
- *
- * @param invoked_path argv[0], e.g. `C:\Program Files\ProofRunKit\prk.exe`; may be empty.
- * @return "prk" when the file stem is `prk` (any case), otherwise "proofrunkit".
+ * ProofRunKit ships one executable, `proofrunkit.exe`; on Windows the `prk.cmd` shim runs it as `prk`.
+ * Messages name `prk` however the executable was started, so usage text matches what users type.
  */
-[[nodiscard]] std::string_view select_program_name(std::string_view invoked_path);
+inline constexpr std::string_view kCommandName = "prk";
 
 }  // namespace prk

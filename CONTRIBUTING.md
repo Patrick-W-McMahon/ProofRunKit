@@ -67,12 +67,12 @@ Studio 2026:
 # 64-bit
 cmake --preset windows-msvc-x64-debug
 cmake --build --preset windows-msvc-x64-debug
-build\windows-msvc-x64-debug\Debug\prk.exe test --build-dir build\windows-msvc-x64-debug
+build\windows-msvc-x64-debug\Debug\proofrunkit.exe test --build-dir build\windows-msvc-x64-debug
 
 # 32-bit (from an x86 developer shell: Launch-VsDevShell.ps1 -Arch x86 -HostArch amd64)
 cmake --preset windows-msvc-x86-debug
 cmake --build --preset windows-msvc-x86-debug
-build\windows-msvc-x86-debug\Debug\prk.exe test --build-dir build\windows-msvc-x86-debug
+build\windows-msvc-x86-debug\Debug\proofrunkit.exe test --build-dir build\windows-msvc-x86-debug
 ```
 
 `prk test` is the way to test ProofRunKit: it runs every entry of [`prk.tests.json`](prk.tests.json) (smoke tests,

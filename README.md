@@ -36,7 +36,7 @@ A single high-performance test executable, compiled once. Tests change; the bina
   <img src="docs/assets/logos/css.svg" alt="CSS (planned)" height="72">
 </p>
 
-**[⬇ Install ProofRunKit](INSTALL.md)**: Windows x64 MSI (v0.1.0). Other platforms are coming soon.
+**[⬇ Install ProofRunKit](INSTALL.md)**: Windows x64 MSI (v0.1.1). Other platforms are coming soon.
 
 **Status: pre-alpha.** The core executable, Assembly hot paths, Windows x64 and x86 builds with a self-test, both Windows MSI installers, the `prk` command, and sandboxed Lua 5.4 and JavaScript (QuickJS-ng) test scripts are in the tree. Language drivers are next. Features below are marked Done, In progress, or Planned; see the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
 
@@ -68,7 +68,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 ### Core executable
 
 - [x] Single compiled `proofrunkit` executable and CMake presets ([#7](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/7)) — Done
-- [x] Short `prk` command with `run`, `list`, `version`, and `help` subcommands, installed on PATH as the same binary ([#60](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/60)) — Done
+- [x] Short `prk` command with `run`, `list`, `version`, and `help` subcommands ([#60](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/60)); one executable ships, and `prk` runs it through a `prk.cmd` shim on PATH ([#93](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/93)) — Done
 - [x] Assembly hot paths with a mandatory portable C fallback, for x64 and x86 ([#8](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/8), [#39](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/39)) — Done
 - [x] Process-spawn and sandbox layer on Windows ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Done ([docs/process-spawn.md](docs/process-spawn.md))
 - [x] `prk test`: a checked-in `prk.tests.json` runs a whole project's tests with one combined summary and report ([#82](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/82)) — Done ([docs/test-config.md](docs/test-config.md))
@@ -199,7 +199,7 @@ cmake --build --preset windows-msvc-x64-debug
 ctest --preset windows-msvc-x64-debug --output-on-failure
 ```
 
-Every build and both installers provide the short `prk` command alongside `proofrunkit`:
+ProofRunKit builds and ships one executable, `proofrunkit.exe`. Every Windows build and installer puts a small `prk.cmd` shim next to it, so you type `prk` in cmd or PowerShell:
 
 ```powershell
 prk run tests\math_test.lua   # run a Lua test script (see docs/lua-tests.md)

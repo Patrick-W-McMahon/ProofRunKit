@@ -35,10 +35,17 @@ target_link_libraries(prk_spawn_child PRIVATE prk_process)
 prk_apply_project_warnings(prk_spawn_child)
 add_dependencies(proofrunkit_selftest prk_spawn_child)
 
-# The short `prk` command (#60): the same binary under a second name, with subcommands.
-set(_prk_short_exe "$<TARGET_FILE_DIR:proofrunkit>/${PRK_SHORT_EXECUTABLE_NAME}")
-add_test(NAME prk_is_identical_copy
-    COMMAND ${CMAKE_COMMAND} -E compare_files "$<TARGET_FILE:proofrunkit>" "${_prk_short_exe}")
+# The `prk` command (#93): one executable, proofrunkit, which every entry below runs directly. On Windows,
+# prk_cmd_shim runs the prk.cmd shim the build copies next to proofrunkit (arguments with spaces, exit codes,
+# help naming `prk`, and PowerShell's $LASTEXITCODE).
+set(_prk_exe "$<TARGET_FILE:proofrunkit>")
+if(WIN32)
+    find_program(PRK_POWERSHELL NAMES powershell pwsh)
+    add_test(NAME prk_cmd_shim
+        COMMAND ${CMAKE_COMMAND} "-DPRK_SHIM=$<TARGET_FILE_DIR:proofrunkit>/prk.cmd" "-DPRK_VERSION=${PROJECT_VERSION}"
+                "-DPRK_SOURCE_DIR=${PROJECT_SOURCE_DIR}" "-DPRK_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/cmd-shim"
+                "-DPRK_POWERSHELL=${PRK_POWERSHELL}" -P "${PROJECT_SOURCE_DIR}/tests/cmake/CheckPrkCmdShim.cmake")
+endif()
 
 # The installer license dialog RTF is generated from the repo-root LICENSE (#58).
 add_test(NAME proofrunkit_license_rtf_generation
@@ -47,14 +54,14 @@ add_test(NAME proofrunkit_license_rtf_generation
 
 # Report files and the exit-code contract, end to end through prk (#21).
 add_test(NAME prk_reports_and_exit_codes
-    COMMAND ${CMAKE_COMMAND} "-DPRK_EXE=${_prk_short_exe}" "-DPRK_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+    COMMAND ${CMAKE_COMMAND} "-DPRK_EXE=${_prk_exe}" "-DPRK_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
             "-DPRK_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/reports" -P "${PROJECT_SOURCE_DIR}/tests/cmake/CheckReportsAndExitCodes.cmake")
 
 # Every script, smoke, and sample test lives in prk.tests.json at the repo root and runs through prk itself
 # (#83): `prk test` from the repo root runs the same suite outside CTest, also with the installed prk. CTest only
 # points it at this build; the folders are passed explicitly so any generator (Ninja, Visual Studio) works.
 add_test(NAME prk_test_suite
-    COMMAND "${_prk_short_exe}" test --config "${PROJECT_SOURCE_DIR}/prk.tests.json" --build-dir "${PROJECT_BINARY_DIR}"
+    COMMAND "${_prk_exe}" test --config "${PROJECT_SOURCE_DIR}/prk.tests.json" --build-dir "${PROJECT_BINARY_DIR}"
             --var "bin_dir=$<TARGET_FILE_DIR:proofrunkit>" --var "selftest_dir=$<TARGET_FILE_DIR:prk_spawn_child>"
             --var "work_dir=${CMAKE_CURRENT_BINARY_DIR}/prk-test")
 set_tests_properties(prk_test_suite PROPERTIES TIMEOUT 1800)

@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <memory>
 #include <set>
 #include <string>
@@ -328,13 +329,14 @@ void test_js_compile_binding(PrkTestContext* context, void*) {
 
 void test_compiles_real_program(PrkTestContext* context, void*) {
     const std::string source_path = "prk_c_driver_selftest.c";
-    std::FILE* const file = std::fopen(source_path.c_str(), "wb");
-    if (file == nullptr) {
-        prk_fail_test(context, "cannot write the sample source file");
-        return;
+    {
+        std::ofstream file(source_path, std::ios::binary); /* Portable and free of MSVC's C4996 on fopen. */
+        file << "int main(void) { int unused_value = 0; return 0; }\n";
+        if (!file) {
+            prk_fail_test(context, "cannot write the sample source file");
+            return;
+        }
     }
-    (void)std::fputs("int main(void) { int unused_value = 0; return 0; }\n", file);
-    (void)std::fclose(file);
     const char* const sources[] = {source_path.c_str()};
     PrkCompileRequest request = make_hello_request(sources);
     request.output_path = "prk_c_driver_selftest_program";

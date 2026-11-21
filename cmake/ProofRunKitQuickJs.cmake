@@ -32,7 +32,9 @@ if(MSVC)
     include(CheckCCompilerFlag)
     check_c_compiler_flag(/experimental:c11atomics PRK_MSVC_HAS_C11_ATOMICS_FLAG)
     target_compile_definitions(prk_quickjs PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE)
-    target_compile_options(prk_quickjs PRIVATE /W1 $<$<BOOL:${PRK_MSVC_HAS_C11_ATOMICS_FLAG}>:/experimental:c11atomics>
+    # /wd4098 (#70): quickjs.c returns a void expression from void functions (JS_FreeCString*), which C allows as
+    # an extension; the warning is suppressed for this target only and recorded in PROOFRUNKIT.md.
+    target_compile_options(prk_quickjs PRIVATE /W1 /wd4098 $<$<BOOL:${PRK_MSVC_HAS_C11_ATOMICS_FLAG}>:/experimental:c11atomics>
                                                $<$<BOOL:${PRK_REPRODUCIBLE_BUILD}>:/Brepro>)
 else()
     # Upstream compiles with -funsigned-char on GCC and Clang.

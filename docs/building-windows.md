@@ -61,9 +61,32 @@ resets, or discards changes.
 | `proofrunkit_version` | `proofrunkit --version` prints the version and `asm-masm-x64`. |
 | `proofrunkit_builtin_checks` | `proofrunkit` with no scripts runs its built-in environment checks. |
 | `proofrunkit_rejects_unknown_option` | Bad options produce a usage error. |
+| `prk_is_identical_copy` | `prk.exe` is byte-identical to `proofrunkit.exe` (#60). |
+| `prk_version`, `prk_version_subcommand` | `prk --version` and `prk version` print the version. |
+| `prk_help_run`, `prk_list`, `prk_run_builtin_checks_json` | `prk help run`, `prk list`, and `prk run --json` work. |
+| `prk_rejects_unknown_command` | `prk help no-such-command` is a usage error. |
+| `proofrunkit_license_rtf_generation` | The installer license RTF is generated correctly from `LICENSE` (#58). |
 
 Run the self-test directly for per-test output: `build\windows-msvc-x64-debug\tests\selftest\Debug\proofrunkit_selftest.exe`
 (it accepts `--list`, `--filter TEXT`, and `--format json`).
+
+## The `prk` command (#60)
+
+Every build places `prk.exe` next to `proofrunkit.exe`. It is a byte-identical copy of the same
+build output, not a second compiled program, so both names share one file hash and one antivirus
+reputation (#22). The MSIs install both names into the install folder, which the default
+`AddToPath` feature puts on the system PATH. Help and error messages use the name you typed.
+
+| Command | What it does |
+| --- | --- |
+| `prk run [scripts...] [--filter TEXT] [--json \| --reporter console\|json]` | Run tests (the built-in checks when no scripts are given). |
+| `prk list [scripts...] [--filter TEXT]` | List the selected test names without running them. |
+| `prk version` or `prk --version` | Print the version and the cycle-counter implementation. |
+| `prk help [command]` | General help, or help for `run`, `list`, `version`, or `help`. |
+
+The original flag form still works unchanged with either name, for example
+`proofrunkit --list --filter kit. --format json`. Because `run`, `list`, `version`, and `help` are
+command words, a script with one of those names must be passed as a path (`.\run`).
 
 ## Options
 

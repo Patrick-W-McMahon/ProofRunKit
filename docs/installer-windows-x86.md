@@ -43,6 +43,7 @@ downgrade.
 | Item | Location |
 | --- | --- |
 | `proofrunkit.exe` (32-bit) | `%ProgramFiles(x86)%\ProofRunKit` on 64-bit Windows; `%ProgramFiles%\ProofRunKit` on 32-bit Windows |
+| `prk.exe` | Same folder. The short `prk` command: a byte-identical copy of `proofrunkit.exe` from the same build output (#60). |
 | `LICENSE.txt` | Same folder. The repo-root [`LICENSE`](../LICENSE) (verbatim Apache License 2.0), packaged unchanged (#58). |
 | `NOTICE.txt` | Same folder. The repo-root [`NOTICE`](../NOTICE), per Apache-2.0 section 4(d) (#58). |
 | Start Menu shortcuts | `ProofRunKit Help (32-bit)` and `ProofRunKit on GitHub.url` under "ProofRunKit (32-bit)" |
@@ -136,6 +137,6 @@ and checks that:
 - `INSTALLFOLDER` is `ProgramFilesFolder\ProofRunKit`
 - the product name is `ProofRunKit (32-bit)` and the UpgradeCode is the x86 value above
 
-An administrative extraction (`msiexec /a`) then confirms `proofrunkit.exe`,
+An administrative extraction (`msiexec /a`) then confirms `proofrunkit.exe`, `prk.exe` (same SHA-256),
 `LICENSE.txt` and `NOTICE.txt` are present (and match the repo-root files). The administrative `TARGETDIR` is only a temporary
 unpack folder.

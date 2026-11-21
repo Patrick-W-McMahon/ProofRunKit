@@ -219,7 +219,7 @@ if ($dirMap.ContainsKey('INSTALLFOLDER')) {
     Assert-Equal 'INSTALLFOLDER name' $leaf 'ProofRunKit'
 }
 
-# Payload: proofrunkit.exe, LICENSE.txt and NOTICE.txt (#58), and no self-test or packer leftovers.
+# Payload: proofrunkit.exe, prk.exe (#60), LICENSE.txt and NOTICE.txt (#58), and no self-test or packer leftovers.
 $files = Get-MsiTableRows $database 'SELECT `File`, `Component_`, `FileName` FROM `File`' 3
 $fileNames = New-Object 'System.Collections.Generic.List[string]'
 foreach ($row in $files) {
@@ -230,6 +230,7 @@ foreach ($row in $files) {
     Write-Host "   File: $name  (component $($row[1]))"
 }
 Assert-True 'proofrunkit.exe is packaged' ($fileNames.Contains('proofrunkit.exe')) "files=$($fileNames -join ', ')"
+Assert-True 'prk.exe is packaged (#60)' ($fileNames.Contains('prk.exe')) "files=$($fileNames -join ', ')"
 Assert-True 'LICENSE.txt is packaged' ($fileNames.Contains('LICENSE.txt')) "files=$($fileNames -join ', ')"
 Assert-True 'NOTICE.txt is packaged' ($fileNames.Contains('NOTICE.txt')) "files=$($fileNames -join ', ')"
 $unexpected = @($fileNames | Where-Object { $_ -match 'selftest|\.pdb$|\.lib$' })
@@ -294,6 +295,16 @@ try {
         if ($null -ne $extractedExe) { $exeDetail = $extractedExe.FullName }
         if ($null -ne $extractedLic) { $licDetail = $extractedLic.FullName }
         Assert-True 'Extracted proofrunkit.exe' ($null -ne $extractedExe) $exeDetail
+        $extractedShort = Get-ChildItem -LiteralPath $extractRoot -Recurse -Filter 'prk.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+        $shortDetail = "not found under $extractRoot"
+        if ($null -ne $extractedShort) { $shortDetail = $extractedShort.FullName }
+        Assert-True 'Extracted prk.exe' ($null -ne $extractedShort) $shortDetail
+        if ($null -ne $extractedExe -and $null -ne $extractedShort) {
+            # prk.exe must be the same binary as proofrunkit.exe, not a separately built program (#60, #22).
+            $exeHash = (Get-FileHash -LiteralPath $extractedExe.FullName -Algorithm SHA256).Hash
+            $shortHash = (Get-FileHash -LiteralPath $extractedShort.FullName -Algorithm SHA256).Hash
+            Assert-Equal 'prk.exe SHA256 equals proofrunkit.exe' $shortHash $exeHash
+        }
         Assert-True 'Extracted LICENSE.txt' ($null -ne $extractedLic) $licDetail
         $extractedNotice = Get-ChildItem -LiteralPath $extractRoot -Recurse -Filter 'NOTICE.txt' -ErrorAction SilentlyContinue | Select-Object -First 1
         $noticeDetail = "not found under $extractRoot"

@@ -35,6 +35,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 ### Core executable
 
 - [x] Single compiled `proofrunkit` executable and CMake presets ([#7](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/7)) — Done
+- [x] Short `prk` command with `run`, `list`, `version`, and `help` subcommands, installed on PATH as the same binary ([#60](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/60)) — Done
 - [x] Assembly hot paths with a mandatory portable C fallback, for x64 and x86 ([#8](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/8), [#39](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/39)) — Done
 - [ ] Process-spawn and sandbox layer on Windows ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Planned
 - [x] Windows build and `proofrunkit_selftest` via CTest ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Done
@@ -159,6 +160,15 @@ Build and test from a Developer PowerShell for Visual Studio 2026:
 cmake --preset windows-msvc-x64-debug
 cmake --build --preset windows-msvc-x64-debug
 ctest --preset windows-msvc-x64-debug --output-on-failure
+```
+
+Every build and both installers provide the short `prk` command alongside `proofrunkit`:
+
+```powershell
+prk run --json          # run tests and report JSON
+prk list --filter kit.  # list test names
+prk help run            # help for one command
+prk --version
 ```
 
 See [docs/building-windows.md](docs/building-windows.md) for prerequisites, the 32-bit presets, and options, and [docs/installer-windows-x64.md](docs/installer-windows-x64.md) and [docs/installer-windows-x86.md](docs/installer-windows-x86.md) for building the MSI installers. The design is described in [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

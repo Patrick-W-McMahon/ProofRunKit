@@ -102,6 +102,21 @@ void test_flag_form_accepts_json_and_reporter(PrkTestContext* context, void*) {
     PRK_EXPECT(script_named_run.options.script_paths == std::vector<std::string>({"./run"}));
 }
 
+void test_parses_tags_and_timeout(PrkTestContext* context, void*) {
+    const CommandLineParseResult parsed = parse_arguments(
+        {"run", "--tag", "fast", "--tag", "smoke", "--exclude-tag", "flaky", "--timeout", "2500", "a.lua"});
+    PRK_EXPECT(parsed.error_message.empty());
+    PRK_EXPECT(parsed.options.include_tags == std::vector<std::string>({"fast", "smoke"}));
+    PRK_EXPECT(parsed.options.exclude_tags == std::vector<std::string>({"flaky"}));
+    PRK_EXPECT(parsed.options.default_timeout_ms == 2500);
+    PRK_EXPECT(parse_arguments({"--timeout", "86400000"}).options.default_timeout_ms == 86400000);
+    PRK_EXPECT(parse_arguments({"run", "--tag"}).error_message == "--tag needs a value");
+    PRK_EXPECT(parse_arguments({"run", "--tag", ""}).error_message == "--tag needs a non-empty tag");
+    for (const std::string_view bad : {"0", "-5", "1.5", "abc", "", "86400001", "999999999"}) {
+        PRK_EXPECT(parse_arguments({"run", "--timeout", bad}).error_message.find("invalid --timeout") == 0);
+    }
+}
+
 void test_command_help_text(PrkTestContext* context, void*) {
     const std::string run_help = format_command_help_text("prk", "run");
     PRK_EXPECT(run_help.find("Usage: prk run [options] [test scripts...]") == 0);
@@ -149,7 +164,8 @@ CapturedRun run_with_sample_registry(std::vector<std::string_view> arguments) {
     std::ostringstream output;
     std::ostringstream errors;
     const auto read_no_files = [](const std::string&) { return ScriptFileContent{false, {}, "cannot open file"}; };
-    const CommandLineEnvironment environment{*registry, PrkClock{nullptr, nullptr}, read_no_files, output, errors};
+    const CommandLineEnvironment environment{
+        *registry, PrkClock{nullptr, nullptr}, read_no_files, ScriptHostServices{}, output, errors};
     const int exit_code = run_command_line("prk", arguments, environment);
     return CapturedRun{exit_code, output.str(), errors.str()};
 }
@@ -160,6 +176,9 @@ void test_app_exit_codes(PrkTestContext* context, void*) {
     PRK_EXPECT(run_with_sample_registry({"--nope"}).exit_code == kExitUsageError);
     PRK_EXPECT(run_with_sample_registry({"suite.lua"}).exit_code == kExitScriptError);
     PRK_EXPECT(run_with_sample_registry({"suite.js"}).exit_code == kExitNotImplemented);
+    const CapturedRun tag_without_scripts = run_with_sample_registry({"run", "--tag", "fast"});
+    PRK_EXPECT(tag_without_scripts.exit_code == kExitUsageError);
+    PRK_EXPECT(tag_without_scripts.errors == "prk: --tag, --exclude-tag, and --timeout apply only to test scripts\n");
 }
 
 void test_app_help_version_and_list(PrkTestContext* context, void*) {
@@ -217,6 +236,7 @@ PrkStatus register_command_line_tests(PrkRegistry& registry) {
         {"cli.parse.list_version_and_help_subcommands", &test_parses_list_version_and_help_subcommands, nullptr},
         {"cli.parse.reports_subcommand_usage_errors", &test_reports_subcommand_usage_errors, nullptr},
         {"cli.parse.flag_form_accepts_json_and_reporter", &test_flag_form_accepts_json_and_reporter, nullptr},
+        {"cli.parse.tags_and_timeout", &test_parses_tags_and_timeout, nullptr},
         {"cli.help.command_help_text", &test_command_help_text, nullptr},
         {"cli.name.selects_program_name_from_invoked_path", &test_selects_program_name_from_invoked_path, nullptr},
         {"cli.app.exit_codes", &test_app_exit_codes, nullptr},

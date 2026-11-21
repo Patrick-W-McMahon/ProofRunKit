@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "command_line.hpp"
 #include "reporters.hpp"
@@ -17,11 +18,6 @@ namespace {
 /** @brief Adapts prk_read_cycle_counter() to the PrkClock callback signature. */
 std::uint64_t read_cycle_counter_ticks(void* /*clock_state*/) {
     return prk_read_cycle_counter();
-}
-
-/** @brief PrkLuaOutput callback that writes script print() text to a std::ostream. */
-void write_script_text_to_stream(void* output_state, const char* text, std::size_t length) {
-    static_cast<std::ostream*>(output_state)->write(text, static_cast<std::streamsize>(length));
 }
 
 /** @brief Writes the selected test names, one per line. */
@@ -92,9 +88,20 @@ int list_or_run_script_tests(std::string_view program_name, const CommandLineOpt
     // print() must not corrupt a JSON report or a test-name listing on the output stream.
     const bool is_output_machine_read = options.report_format == ReportFormat::Json || options.list_tests;
     std::ostream& print_stream = is_output_machine_read ? environment.errors : environment.output;
-    const PrkLuaOutput print_output{&write_script_text_to_stream, &print_stream};
+    ScriptHost host(environment.script_services, print_stream);
+    const PrkScriptHost c_host = host.make_c_host();
+    std::vector<const char*> include_tags;
+    std::vector<const char*> exclude_tags;
+    for (const std::string& tag : options.include_tags) {
+        include_tags.push_back(tag.c_str());
+    }
+    for (const std::string& tag : options.exclude_tags) {
+        exclude_tags.push_back(tag.c_str());
+    }
+    const PrkScriptRunSettings settings{options.name_filter.c_str(), include_tags.data(), include_tags.size(),
+                                        exclude_tags.data(),         exclude_tags.size(), options.default_timeout_ms};
     const LoadedTestScripts loaded =
-        load_test_scripts(options.script_paths, environment.read_script_file, print_output, nullptr);
+        load_test_scripts(options.script_paths, environment.read_script_file, c_host, &settings, nullptr);
     const int problem_exit_code = report_script_problems(program_name, loaded, environment.errors);
     if (problem_exit_code >= 0) {
         return problem_exit_code;
@@ -125,6 +132,10 @@ int run_command_line(std::string_view program_name, std::span<const std::string_
     }
     if (!options.script_paths.empty()) {
         return list_or_run_script_tests(program_name, options, environment);
+    }
+    if (!options.include_tags.empty() || !options.exclude_tags.empty() || options.default_timeout_ms != 0) {
+        environment.errors << program_name << ": --tag, --exclude-tag, and --timeout apply only to test scripts\n";
+        return kExitUsageError;
     }
     return list_or_run_tests(options, environment.builtin_registry, environment);
 }

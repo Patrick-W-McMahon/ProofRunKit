@@ -29,14 +29,14 @@ std::string find_lowercase_extension(std::string_view path) {
 }
 
 /** @brief Loads one Lua script into @p loaded; records a "path: message" error on failure. */
-void load_lua_test_script(const std::string& path, const ScriptFileReader& read_script_file,
-                          const PrkLuaOutput& print_output, const PrkLuaLimits* limits, LoadedTestScripts& loaded) {
+void load_lua_test_script(const std::string& path, const ScriptFileReader& read_script_file, const PrkScriptHost& host,
+                          const PrkScriptRunSettings* settings, const PrkLuaLimits* limits, LoadedTestScripts& loaded) {
     const ScriptFileContent content = read_script_file(path);
     if (!content.was_read) {
         loaded.load_errors.push_back(path + ": " + content.error_message);
         return;
     }
-    std::unique_ptr<PrkLuaScript, LuaScriptDeleter> script(prk_create_lua_script(limits, &print_output));
+    std::unique_ptr<PrkLuaScript, LuaScriptDeleter> script(prk_create_lua_script(limits, &host, settings));
     if (!script) {
         loaded.load_errors.push_back(path + ": out of memory creating the Lua state");
         return;
@@ -81,8 +81,8 @@ ScriptFileContent read_script_file_from_disk(const std::string& path) {
 }
 
 LoadedTestScripts load_test_scripts(const std::vector<std::string>& script_paths,
-                                    const ScriptFileReader& read_script_file, const PrkLuaOutput& print_output,
-                                    const PrkLuaLimits* limits) {
+                                    const ScriptFileReader& read_script_file, const PrkScriptHost& host,
+                                    const PrkScriptRunSettings* settings, const PrkLuaLimits* limits) {
     LoadedTestScripts loaded;
     loaded.registry.reset(prk_create_registry());
     if (!loaded.registry) {
@@ -91,7 +91,7 @@ LoadedTestScripts load_test_scripts(const std::vector<std::string>& script_paths
     for (const std::string& path : script_paths) {
         switch (detect_script_language(path)) {
             case ScriptLanguage::Lua:
-                load_lua_test_script(path, read_script_file, print_output, limits, loaded);
+                load_lua_test_script(path, read_script_file, host, settings, limits, loaded);
                 break;
             case ScriptLanguage::JavaScript:
                 loaded.unsupported_scripts.push_back(path);

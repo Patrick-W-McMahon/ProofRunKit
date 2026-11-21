@@ -1,6 +1,6 @@
 /**
  * @file script_loading.hpp
- * @brief Loads test scripts named on the command line into a registry (#9).
+ * @brief Loads test scripts named on the command line into a registry (#9, #12).
  *
  * File reading is injected (ScriptFileReader) so the loader can be tested without a disk; the
  * only real file IO is read_script_file_from_disk(), used by main().
@@ -70,13 +70,14 @@ struct LoadedTestScripts {
  * @brief Loads every script into one new registry. Scripts are isolated: each gets its own Lua state.
  * @param script_paths Paths in command-line order.
  * @param read_script_file Reader for script contents.
- * @param print_output Destination for script print() output.
+ * @param host Services granted to every script (print, clock, read-only files).
+ * @param settings Test selection by name and tags plus the default timeout; NULL selects all tests.
  * @param limits Lua sandbox limits; NULL selects the defaults.
  * @return The loaded tests and any per-script problems. registry is NULL only when memory runs out.
  * Side effects: runs each script's top-level code in the sandbox.
  */
 [[nodiscard]] LoadedTestScripts load_test_scripts(const std::vector<std::string>& script_paths,
-                                                  const ScriptFileReader& read_script_file,
-                                                  const PrkLuaOutput& print_output, const PrkLuaLimits* limits);
+                                                  const ScriptFileReader& read_script_file, const PrkScriptHost& host,
+                                                  const PrkScriptRunSettings* settings, const PrkLuaLimits* limits);
 
 }  // namespace prk

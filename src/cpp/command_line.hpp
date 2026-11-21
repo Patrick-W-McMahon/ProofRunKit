@@ -9,6 +9,7 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <span>
 #include <string>
 #include <string_view>
@@ -38,6 +39,9 @@ struct CommandLineOptions {
     ReportFormat report_format = ReportFormat::Console;  ///< --format / --reporter console|json, or --json
     std::string name_filter;                             ///< --filter TEXT: run tests whose name contains TEXT
     std::vector<std::string> script_paths;               ///< Positional test scripts (Lua/JS engines: #9, #11)
+    std::vector<std::string> include_tags;               ///< --tag TAG (repeatable): script tests with any of these
+    std::vector<std::string> exclude_tags;               ///< --exclude-tag TAG (repeatable): never these tags
+    std::uint64_t default_timeout_ms = 0;                ///< --timeout MS: per-test default for scripts; 0 = none
 };
 
 /** @brief Result of parsing: either options or a usage error message. */

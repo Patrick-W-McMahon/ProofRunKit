@@ -20,7 +20,7 @@ PrkStatus register_all_selftests(PrkRegistry& registry) {
         &prk::selftest::register_registry_tests,       &prk::selftest::register_runner_tests,
         &prk::selftest::register_reporting_tests,      &prk::selftest::register_command_line_tests,
         &prk::selftest::register_cycle_counter_tests,  &prk::selftest::register_lua_engine_tests,
-        &prk::selftest::register_script_loading_tests,
+        &prk::selftest::register_script_loading_tests, &prk::selftest::register_lua_test_api_tests,
     };
     for (const RegisterSuite register_suite : suites) {
         const PrkStatus status = register_suite(registry);
@@ -48,7 +48,11 @@ int main(int argc, char** argv) {
     std::cout << "ProofRunKit " << prk_get_version_string()
               << " self-test (cycle counter: " << prk_get_cycle_counter_implementation_name() << ")\n";
     const std::vector<std::string_view> arguments(argv + (argc > 0 ? 1 : 0), argv + argc);
-    const prk::CommandLineEnvironment environment{*registry, prk::make_cycle_counter_clock(),
-                                                  &prk::read_script_file_from_disk, std::cout, std::cerr};
+    const prk::CommandLineEnvironment environment{*registry,
+                                                  prk::make_cycle_counter_clock(),
+                                                  &prk::read_script_file_from_disk,
+                                                  prk::make_disk_script_host_services(),
+                                                  std::cout,
+                                                  std::cerr};
     return prk::run_command_line("proofrunkit_selftest", arguments, environment);
 }

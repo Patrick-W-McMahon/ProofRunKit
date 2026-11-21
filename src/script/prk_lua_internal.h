@@ -1,6 +1,6 @@
 /**
  * @file prk_lua_internal.h
- * @brief Private layout of PrkLuaScript and the sandbox helpers shared by the Lua engine sources (#9).
+ * @brief Private layout of PrkLuaScript and the sandbox helpers shared by the Lua engine sources (#9, #12).
  *
  * Must not be included outside src/script/. Nothing here is global: every piece of state lives in
  * the PrkLuaScript, which Lua hands back through the allocator's user-data pointer.
@@ -9,30 +9,31 @@
 #define PROOFRUNKIT_PRK_LUA_INTERNAL_H
 
 #include "lua.h"
+#include "prk_test_plan.h"
 #include "proofrunkit/prk_lua.h"
 
-/** @brief VM instructions between two instruction-budget checks. */
+/** @brief VM instructions between two instruction-budget and timeout checks. */
 #define PRK_LUA_HOOK_INTERVAL 1000
 
-/** @brief One test registered by prk.add_test(); the address is the PrkTestCase user_state. */
-typedef struct PrkLuaTest {
-    PrkLuaScript* script; /**< Owning script. */
-    int function_ref;     /**< Registry reference to the Lua test body. */
-} PrkLuaTest;
+/** @brief Registry name of the metatable for assertion failures raised by prk.expect_* and prk.fail_test. */
+#define PRK_LUA_ASSERTION_ERROR_TYPE "prk.AssertionError"
+/** @brief Registry name of the metatable for the error object raised by prk.skip_test. */
+#define PRK_LUA_SKIP_TYPE "prk.Skip"
 
 struct PrkLuaScript {
     lua_State* state;              /**< The script's own Lua state. */
     size_t memory_in_use;          /**< Bytes currently allocated by @p state. */
     size_t memory_limit;           /**< Allocation requests beyond this fail. */
-    uint64_t instruction_limit;    /**< Budget for the load and for each test body. */
+    uint64_t instruction_limit;    /**< Budget for the load and for each test. */
     uint64_t instructions_used;    /**< Instructions counted since the budget was last reset. */
-    PrkLuaOutput output;           /**< Destination for print(). */
+    uint64_t deadline_ms;          /**< Host-clock time the running test must finish by; 0 = none. */
+    uint64_t timeout_ms;           /**< Timeout that produced @p deadline_ms (for the message). */
+    int is_past_deadline;          /**< Set once the running test has timed out. */
+    PrkScriptHost host;            /**< print, clock, and file services. */
+    PrkTestPlan* plan;             /**< Suites, hooks, and tests of this script. */
     PrkRegistry* loading_registry; /**< Non-NULL only while the top-level chunk runs. */
     PrkStatus registration_status; /**< Registry error raised from prk.add_test() during the load. */
-    PrkTestContext* running_test;  /**< Non-NULL only while a test body runs. */
-    PrkLuaTest** tests;            /**< Tests registered by this script (each separately allocated). */
-    size_t test_count;             /**< Number of entries in @p tests. */
-    size_t test_capacity;          /**< Allocated entries in @p tests. */
+    int is_running_test;           /**< Set while a test, hook, or body runs. */
     int is_loaded;                 /**< Set after the first prk_load_lua_test_script() call. */
 };
 
@@ -56,25 +57,32 @@ void* prk_allocate_lua_memory(void* script_state, void* block, size_t old_size, 
 void prk_reset_lua_instruction_budget(PrkLuaScript* script);
 
 /**
+ * @brief Starts the wall-clock deadline for one test. Needs host.read_monotonic_milliseconds.
+ * @param script Script about to run a test.
+ * @param timeout_ms Timeout in milliseconds; 0 (or no host clock) means no deadline.
+ */
+void prk_start_lua_deadline(PrkLuaScript* script, uint64_t timeout_ms);
+
+/**
  * @brief lua_CFunction that opens the safe standard libraries and removes ambient access.
  *
  * Opens base, coroutine, table, string, math, and utf8; removes dofile, loadfile, and
- * string.dump; replaces print (output callback) and load (text chunks only). Run it with lua_pcall.
+ * string.dump; replaces print (host output) and load (text chunks only). Run it with lua_pcall.
  * @return 0 (no results).
  */
 int prk_open_lua_sandbox_libraries(lua_State* state);
 
 /**
- * @brief lua_pcall message handler: adds a traceback to errors, keeps the stop marker unchanged.
+ * @brief lua_pcall message handler: adds a traceback to errors; keeps prk assertion and skip objects unchanged.
  * @return 1 (the handled error value).
  */
 int prk_add_lua_error_traceback(lua_State* state);
 
 /**
- * @brief Returns the marker raised by expectations and skips to stop a test body without a second report.
- * @return A light-userdata key unique to this module.
+ * @brief Reports whether the value at @p index is a table with the metatable registered as @p type_name.
+ * @return 1 or 0. Does not raise.
  */
-void* prk_get_lua_stop_marker(void);
+int prk_is_lua_error_object(lua_State* state, int index, const char* type_name);
 
 /**
  * @brief Copies the error at the top of the stack (or a limit message) into @p out_text.
@@ -86,16 +94,9 @@ void* prk_get_lua_stop_marker(void);
 void prk_describe_lua_error(const PrkLuaScript* script, int pcall_status, char* out_text, size_t capacity);
 
 /**
- * @brief lua_CFunction that creates the script-facing `prk` table (add_test, expect_true, ...).
+ * @brief lua_CFunction that creates the script-facing `prk` table and the assertion prelude.
  * @return 0 (no results); the table is stored as the global `prk`.
  */
 int prk_open_lua_test_api(lua_State* state);
-
-/**
- * @brief PrkTestBody that runs one Lua test registered by prk.add_test().
- * @param context Core test context.
- * @param test_state The PrkLuaTest.
- */
-void prk_run_lua_test_body(PrkTestContext* context, void* test_state);
 
 #endif /* PROOFRUNKIT_PRK_LUA_INTERNAL_H */

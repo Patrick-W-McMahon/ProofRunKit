@@ -43,6 +43,8 @@ prk_apply_project_warnings(prk_core)
 include(ProofRunKitLua)
 add_library(prk_script STATIC
     src/script/prk_lua_api.c
+    src/script/prk_script.c
+    src/script/prk_test_plan.c
     src/script/prk_lua_sandbox.c
     src/script/prk_lua_script.c)
 target_link_libraries(prk_script PUBLIC prk_core PRIVATE prk_lua)
@@ -54,6 +56,7 @@ add_library(prk_frontend STATIC
     src/cpp/command_line.cpp
     src/cpp/command_line_app.cpp
     src/cpp/reporters.cpp
+    src/cpp/script_host.cpp
     src/cpp/script_loading.cpp)
 target_include_directories(prk_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(prk_frontend PUBLIC prk_core prk_script)

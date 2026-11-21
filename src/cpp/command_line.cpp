@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <optional>
 #include <utility>
 
@@ -53,7 +54,53 @@ std::optional<CliCommand> find_command(std::string_view word) {
 
 /** @brief Returns true when @p argument is an option that takes a value. */
 bool is_option_with_value(std::string_view argument) {
-    return argument == "--filter" || argument == "--format" || argument == "--reporter";
+    return argument == "--filter" || argument == "--format" || argument == "--reporter" || argument == "--tag" ||
+           argument == "--exclude-tag" || argument == "--timeout";
+}
+
+/** @brief Parses a --timeout value: a positive whole number of milliseconds up to 24 hours. */
+std::optional<std::uint64_t> parse_timeout_milliseconds(std::string_view value) {
+    constexpr std::uint64_t kMaximumTimeoutMs = 24ULL * 60 * 60 * 1000;
+    if (value.empty() || value.size() > 8) {
+        return std::nullopt;
+    }
+    std::uint64_t milliseconds = 0;
+    for (const char character : value) {
+        if (character < '0' || character > '9') {
+            return std::nullopt;
+        }
+        milliseconds = milliseconds * 10 + static_cast<std::uint64_t>(character - '0');
+    }
+    if (milliseconds == 0 || milliseconds > kMaximumTimeoutMs) {
+        return std::nullopt;
+    }
+    return milliseconds;
+}
+
+/**
+ * @brief Applies one option that takes a value to @p options.
+ * @return An empty string, or the usage error.
+ */
+std::string apply_option_value(std::string_view option, std::string_view value, CommandLineOptions& options) {
+    if (option == "--filter") {
+        options.name_filter = std::string(value);
+    } else if (option == "--tag" || option == "--exclude-tag") {
+        if (value.empty()) {
+            return std::string(option) + " needs a non-empty tag";
+        }
+        (option == "--tag" ? options.include_tags : options.exclude_tags).emplace_back(value);
+    } else if (option == "--timeout") {
+        const std::optional<std::uint64_t> timeout = parse_timeout_milliseconds(value);
+        if (!timeout) {
+            return "invalid --timeout '" + std::string(value) + "' (use milliseconds, 1 to 86400000)";
+        }
+        options.default_timeout_ms = *timeout;
+    } else if (const std::optional<ReportFormat> format = parse_report_format(value)) {
+        options.report_format = *format;
+    } else {
+        return "unknown " + std::string(option) + " '" + std::string(value) + "' (use console or json)";
+    }
+    return {};
 }
 
 /**
@@ -80,14 +127,9 @@ CommandLineParseResult parse_option_arguments(std::span<const std::string_view> 
             if (index + 1 >= arguments.size()) {
                 return make_parse_error(std::string(argument) + " needs a value");
             }
-            const std::string_view value = arguments[++index];
-            if (argument == "--filter") {
-                options.name_filter = std::string(value);
-            } else if (const std::optional<ReportFormat> format = parse_report_format(value)) {
-                options.report_format = *format;
-            } else {
-                return make_parse_error("unknown " + std::string(argument) + " '" + std::string(value) +
-                                        "' (use console or json)");
+            std::string problem = apply_option_value(argument, arguments[++index], options);
+            if (!problem.empty()) {
+                return make_parse_error(std::move(problem));
             }
         } else if (argument.starts_with("-")) {
             return make_parse_error("unknown option '" + std::string(argument) + "'");
@@ -192,6 +234,9 @@ std::string format_usage_text(std::string_view program_name) {
            "      --format FORMAT    Result format: console (default) or json.\n"
            "      --reporter FORMAT  Same as --format.\n"
            "      --json             Same as --format json.\n"
+           "      --tag TAG          Script tests: select tests carrying TAG (repeatable).\n"
+           "      --exclude-tag TAG  Script tests: leave out tests carrying TAG (repeatable).\n"
+           "      --timeout MS       Script tests: default per-test timeout in milliseconds.\n"
            "\n"
            "Exit codes: 0 all selected tests passed, 1 a test failed, 2 usage error,\n"
            "            3 requested feature not implemented yet (e.g. JavaScript test scripts),\n"
@@ -206,6 +251,9 @@ std::string format_command_help_text(std::string_view program_name, std::string_
         "      --filter TEXT      Select only tests whose name contains TEXT.\n"
         "      --reporter FORMAT  Result format: console (default) or json. --format is an alias.\n"
         "      --json             Same as --reporter json.\n"
+        "      --tag TAG          Select only script tests carrying TAG (repeatable; any tag matches).\n"
+        "      --exclude-tag TAG  Leave out script tests carrying TAG (repeatable; wins over --tag).\n"
+        "      --timeout MS       Default per-test timeout for script tests, in milliseconds.\n"
         "  -h, --help             Show this help.\n";
     if (command_name == "run") {
         return "Usage: " + name + " run [options] [test scripts...]\n\n" +

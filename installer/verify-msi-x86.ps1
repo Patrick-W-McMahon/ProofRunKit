@@ -220,7 +220,7 @@ if ($dirMap.ContainsKey('INSTALLFOLDER')) {
     Assert-Equal 'INSTALLFOLDER name' $leaf 'ProofRunKit'
 }
 
-# Payload: proofrunkit.exe and LICENSE.txt, and no self-test or packer leftovers.
+# Payload: proofrunkit.exe, LICENSE.txt and NOTICE.txt (#58), and no self-test or packer leftovers.
 $files = Get-MsiTableRows $database 'SELECT `File`, `Component_`, `FileName` FROM `File`' 3
 $fileNames = New-Object 'System.Collections.Generic.List[string]'
 foreach ($row in $files) {
@@ -232,6 +232,7 @@ foreach ($row in $files) {
 }
 Assert-True 'proofrunkit.exe is packaged' ($fileNames.Contains('proofrunkit.exe')) "files=$($fileNames -join ', ')"
 Assert-True 'LICENSE.txt is packaged' ($fileNames.Contains('LICENSE.txt')) "files=$($fileNames -join ', ')"
+Assert-True 'NOTICE.txt is packaged' ($fileNames.Contains('NOTICE.txt')) "files=$($fileNames -join ', ')"
 $unexpected = @($fileNames | Where-Object { $_ -match 'selftest|\.pdb$|\.lib$' })
 Assert-True 'Self-test / PDB / .lib not packaged' ($unexpected.Count -eq 0) "unexpected=$($unexpected -join ', ')"
 
@@ -295,6 +296,22 @@ try {
         if ($null -ne $extractedLic) { $licDetail = $extractedLic.FullName }
         Assert-True 'Extracted proofrunkit.exe' ($null -ne $extractedExe) $exeDetail
         Assert-True 'Extracted LICENSE.txt' ($null -ne $extractedLic) $licDetail
+        $extractedNotice = Get-ChildItem -LiteralPath $extractRoot -Recurse -Filter 'NOTICE.txt' -ErrorAction SilentlyContinue | Select-Object -First 1
+        $noticeDetail = "not found under $extractRoot"
+        if ($null -ne $extractedNotice) { $noticeDetail = $extractedNotice.FullName }
+        Assert-True 'Extracted NOTICE.txt' ($null -ne $extractedNotice) $noticeDetail
+        # The packaged license and notice must be the repo-root files (#58). Compare with CR removed
+        # so a CRLF checkout of the repo still matches.
+        if ($RepoRoot) {
+            foreach ($pair in @(@($extractedLic, 'LICENSE'), @($extractedNotice, 'NOTICE'))) {
+                $packaged = $pair[0]
+                $repoFile = Join-Path $RepoRoot $pair[1]
+                if ($null -eq $packaged -or -not (Test-Path -LiteralPath $repoFile)) { continue }
+                $packagedText = ([System.IO.File]::ReadAllText($packaged.FullName)) -replace "`r", ''
+                $repoText = ([System.IO.File]::ReadAllText($repoFile)) -replace "`r", ''
+                Assert-True "Packaged $($packaged.Name) matches repo $($pair[1])" ($packagedText -ceq $repoText) "$($packaged.FullName) vs $repoFile"
+            }
+        }
         Write-Host '   (Administrative TARGETDIR is a temporary folder; the real install destination is ProgramFilesFolder\ProofRunKit (%ProgramFiles(x86)%\ProofRunKit on 64-bit Windows), verified from the Directory table above.)'
     }
 } finally {

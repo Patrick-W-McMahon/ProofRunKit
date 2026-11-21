@@ -1,6 +1,6 @@
 # Invoked by the package-msi target (cmake -P). Builds the x64 or x86 MSI with WiX v4.
 # Expected -D variables: PRK_EXE, PRK_VERSION, PRK_WXS, PRK_LICENSE_RTF,
-# PRK_LICENSE_TXT, PRK_URL_SHORTCUT, PRK_MSI_OUTPUT, PRK_INTERMEDIATE_DIR,
+# PRK_LICENSE_TXT, PRK_NOTICE_TXT, PRK_URL_SHORTCUT, PRK_MSI_OUTPUT, PRK_INTERMEDIATE_DIR,
 # optionally PRK_MSI_ARCH (x64 or x86, default x64), and optionally PRK_WIX_EXECUTABLE.
 
 if(NOT PRK_MSI_ARCH)
@@ -14,13 +14,13 @@ if(NOT PRK_EXE OR NOT EXISTS "${PRK_EXE}")
     message(FATAL_ERROR "package-msi: proofrunkit executable not found (PRK_EXE='${PRK_EXE}'). Build the matching windows-msvc-${PRK_MSI_ARCH}-release preset first.")
 endif()
 
-foreach(_prk_required IN ITEMS PRK_VERSION PRK_WXS PRK_LICENSE_RTF PRK_LICENSE_TXT PRK_URL_SHORTCUT PRK_MSI_OUTPUT PRK_INTERMEDIATE_DIR)
+foreach(_prk_required IN ITEMS PRK_VERSION PRK_WXS PRK_LICENSE_RTF PRK_LICENSE_TXT PRK_NOTICE_TXT PRK_URL_SHORTCUT PRK_MSI_OUTPUT PRK_INTERMEDIATE_DIR)
     if(NOT ${_prk_required})
         message(FATAL_ERROR "package-msi: ${_prk_required} is not set")
     endif()
 endforeach()
 
-foreach(_prk_input IN ITEMS PRK_WXS PRK_LICENSE_RTF PRK_LICENSE_TXT PRK_URL_SHORTCUT)
+foreach(_prk_input IN ITEMS PRK_WXS PRK_LICENSE_RTF PRK_LICENSE_TXT PRK_NOTICE_TXT PRK_URL_SHORTCUT)
     if(NOT EXISTS "${${_prk_input}}")
         message(FATAL_ERROR "package-msi: missing input ${${_prk_input}}")
     endif()
@@ -82,6 +82,7 @@ endif()
 file(TO_CMAKE_PATH "${PRK_EXE}" _prk_exe)
 file(TO_CMAKE_PATH "${PRK_LICENSE_RTF}" _prk_license_rtf)
 file(TO_CMAKE_PATH "${PRK_LICENSE_TXT}" _prk_license_txt)
+file(TO_CMAKE_PATH "${PRK_NOTICE_TXT}" _prk_notice_txt)
 file(TO_CMAKE_PATH "${PRK_URL_SHORTCUT}" _prk_url_shortcut)
 get_filename_component(_prk_msi_dir "${PRK_MSI_OUTPUT}" DIRECTORY)
 file(MAKE_DIRECTORY "${_prk_msi_dir}")
@@ -99,6 +100,7 @@ execute_process(
         -d "PrkExePath=${_prk_exe}"
         -d "PrkLicenseRtf=${_prk_license_rtf}"
         -d "PrkLicenseTxt=${_prk_license_txt}"
+        -d "PrkNoticeTxt=${_prk_notice_txt}"
         -d "PrkUrlShortcut=${_prk_url_shortcut}"
         -intermediateFolder "${PRK_INTERMEDIATE_DIR}"
         -o "${PRK_MSI_OUTPUT}"

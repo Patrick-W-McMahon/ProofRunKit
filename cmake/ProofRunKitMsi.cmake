@@ -1,4 +1,4 @@
-# Defines the package-msi target for the Windows WiX v4 installer (#37, #38, #40).
+# Defines the package-msi target for the Windows WiX v4 installer (#37, #38, #40, #58).
 #
 # Direct `wix build` is used instead of CPack's WIX generator so the UpgradeCode,
 # Program Files destination, optional PATH feature, Start Menu entries, and ARP
@@ -9,11 +9,18 @@
 # ProofRunKit-<version>-win-x86.msi.
 
 set(_prk_installer_dir "${CMAKE_CURRENT_LIST_DIR}/../installer/windows")
-set(_prk_license_rtf "${_prk_installer_dir}/License.rtf")
-set(_prk_license_txt "${_prk_installer_dir}/LICENSE.txt")
-set(_prk_url_shortcut "${_prk_installer_dir}/ProofRunKit.url")
 set(_prk_msi_dir "${CMAKE_BINARY_DIR}/installer")
 set(_prk_msi_intermediate "${_prk_msi_dir}/wixobj")
+# Single license source (#58): the MSI packages the repo-root LICENSE (as LICENSE.txt) and NOTICE
+# (as NOTICE.txt, Apache-2.0 section 4(d)), and the license dialog RTF is generated from LICENSE.
+set(_prk_license_txt "${PROJECT_SOURCE_DIR}/LICENSE")
+set(_prk_notice_txt "${PROJECT_SOURCE_DIR}/NOTICE")
+set(_prk_license_rtf "${_prk_msi_dir}/License.rtf")
+set(_prk_url_shortcut "${_prk_installer_dir}/ProofRunKit.url")
+include(ProofRunKitLicenseRtf)
+file(MAKE_DIRECTORY "${_prk_msi_dir}")
+prk_write_license_rtf("${_prk_license_txt}" "${_prk_license_rtf}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_prk_license_txt}")
 
 if(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32" OR CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(_prk_msi_arch "x86")
@@ -59,6 +66,7 @@ function(prk_add_package_msi_target)
             "-DPRK_MSI_ARCH=${_prk_msi_arch}"
             "-DPRK_LICENSE_RTF=${_prk_license_rtf}"
             "-DPRK_LICENSE_TXT=${_prk_license_txt}"
+            "-DPRK_NOTICE_TXT=${_prk_notice_txt}"
             "-DPRK_URL_SHORTCUT=${_prk_url_shortcut}"
             "-DPRK_MSI_OUTPUT=${_prk_msi_output}"
             "-DPRK_INTERMEDIATE_DIR=${_prk_msi_intermediate}"
@@ -68,6 +76,7 @@ function(prk_add_package_msi_target)
             "${_prk_wxs}"
             "${_prk_license_rtf}"
             "${_prk_license_txt}"
+            "${_prk_notice_txt}"
             "${_prk_url_shortcut}"
             "${_prk_build_msi_script}"
         COMMENT "${_prk_msi_comment}"

@@ -111,6 +111,15 @@ PrkProcessRunner prk_get_system_process_runner(void);
 PrkStatus prk_spawn_system_process(void* runner_state, const PrkProcessRequest* request, PrkProcessResult* out_result);
 
 /**
+ * @brief Copies the value of this process's environment variable @p name into @p out_value
+ *        (_dupenv_s on MSVC, getenv elsewhere).
+ * @param name Variable name. @param out_value Receives the value, or "" when it is unset or does not fit.
+ * @param capacity Bytes in @p out_value.
+ * @return 1 when the variable is set and fits, else 0. Side effects: none (reads the environment).
+ */
+int prk_read_environment_variable(const char* name, char* out_value, size_t capacity);
+
+/**
  * @brief Validates a request: executable present and non-empty, arrays non-NULL when their counts are
  *        non-zero, no NULL entries, "NAME=VALUE" environment entries with a non-empty name, and a timeout
  *        no larger than PRK_PROCESS_MAX_TIMEOUT_MS.

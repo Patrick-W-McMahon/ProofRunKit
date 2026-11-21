@@ -215,9 +215,11 @@ const char* prk_get_status_name(PrkStatus status);
 /**
  * @brief Reads the CPU cycle counter (a hot path, implemented in Assembly where available).
  *
- * x86-64: RDTSC. arm64: CNTVCT_EL0. When Assembly is unavailable or PRK_FORCE_C_FALLBACK is set,
- * this forwards to prk_read_cycle_counter_fallback(). The value is a pure read of a free-running
- * counter: non-zero and non-decreasing on one thread, with a platform-defined tick rate.
+ * x86-64: RDTSC (result in RAX). 32-bit x86 (MSVC cdecl): RDTSC (result in EDX:EAX).
+ * arm64: CNTVCT_EL0. When Assembly is unavailable or PRK_FORCE_C_FALLBACK is set, this forwards
+ * to prk_read_cycle_counter_fallback(). The self-test in tests/selftest/test_cycle_counter.cpp
+ * compares the two. The value is a pure read of a free-running counter: non-zero and
+ * non-decreasing on one thread, with a platform-defined tick rate.
  *
  * @return Current counter value.
  */
@@ -234,7 +236,8 @@ uint64_t prk_read_cycle_counter_fallback(void);
 
 /**
  * @brief Names the cycle-counter implementation selected at build time.
- * @return A static string such as "asm-masm-x64", "asm-gas-x86_64-sysv", "asm-gas-arm64", or "c-fallback".
+ * @return A static string such as "asm-masm-x64", "asm-masm-x86", "asm-gas-x86_64-sysv",
+ *         "asm-gas-arm64", or "c-fallback".
  */
 const char* prk_get_cycle_counter_implementation_name(void);
 

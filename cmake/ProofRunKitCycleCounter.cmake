@@ -1,4 +1,4 @@
-# Selects the prk_read_cycle_counter implementation (#8).
+# Selects the prk_read_cycle_counter implementation (#8, #39).
 #
 # Sets in the caller's scope:
 #   PRK_CYCLE_COUNTER_SOURCES        sources that define prk_read_cycle_counter
@@ -22,6 +22,13 @@ elseif(MSVC AND _prk_processor MATCHES "^(x64|amd64|x86_64)$")
     enable_language(ASM_MASM)
     set(PRK_CYCLE_COUNTER_SOURCES "${_prk_asm_dir}/x86_64_windows.asm")
     set(PRK_CYCLE_COUNTER_IMPLEMENTATION "asm-masm-x64")
+elseif(MSVC AND (CMAKE_GENERATOR_PLATFORM STREQUAL "Win32" OR (CMAKE_SIZEOF_VOID_P EQUAL 4 AND _prk_processor MATCHES "^(x86|i386|i686)$")))
+    # 32-bit MSVC (Win32): ml.exe, cdecl. /safeseh is required so the object can be
+    # linked into an image that uses /SAFESEH (MSVC's default for 32-bit).
+    enable_language(ASM_MASM)
+    set(PRK_CYCLE_COUNTER_SOURCES "${_prk_asm_dir}/x86_windows.asm")
+    set(PRK_CYCLE_COUNTER_IMPLEMENTATION "asm-masm-x86")
+    set_source_files_properties("${_prk_asm_dir}/x86_windows.asm" PROPERTIES COMPILE_FLAGS "/safeseh")
 elseif(NOT WIN32 AND _prk_processor MATCHES "^(x86_64|amd64)$" AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     enable_language(ASM)
     set(PRK_CYCLE_COUNTER_SOURCES "${_prk_asm_dir}/x86_64_sysv.S")
@@ -31,7 +38,7 @@ elseif(NOT WIN32 AND _prk_processor MATCHES "^(aarch64|arm64)$")
     set(PRK_CYCLE_COUNTER_SOURCES "${_prk_asm_dir}/arm64.S")
     set(PRK_CYCLE_COUNTER_IMPLEMENTATION "asm-gas-arm64")
 else()
-    # No Assembly for this target yet (e.g. MinGW, 32-bit x86 until #39): use the C fallback.
+    # No Assembly for this target yet (e.g. MinGW): use the C fallback.
     set(PRK_CYCLE_COUNTER_SOURCES "${_prk_c_only}")
     set(PRK_CYCLE_COUNTER_IMPLEMENTATION "c-fallback")
 endif()

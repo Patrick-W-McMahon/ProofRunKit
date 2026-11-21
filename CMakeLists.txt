@@ -62,4 +62,11 @@ if(PRK_BUILD_SELFTEST)
     add_subdirectory(tests/selftest)
 endif()
 
+# ---------------------------------------------------------------------- x64 MSI (#37, #40)
+# Windows only. The target is not part of ALL; build it with --target package-msi.
+# x86 packaging is #38 and is intentionally omitted here.
+if(WIN32)
+    include(ProofRunKitMsi)
+endif()
+
 message(STATUS "ProofRunKit ${PROJECT_VERSION}: cycle counter = ${PRK_CYCLE_COUNTER_IMPLEMENTATION}")

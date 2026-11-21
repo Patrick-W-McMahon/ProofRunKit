@@ -6,7 +6,6 @@
  * comparison checks shared contracts: non-zero, non-decreasing, and both advance over the same interval.
  */
 #include <cstdint>
-#include <cstring>
 
 #include "selftest_support.hpp"
 
@@ -57,20 +56,6 @@ void test_assembly_and_fallback_advance_together(PrkTestContext* context, void*)
     PRK_EXPECT(primary_end > primary_start);
 }
 
-void test_implementation_name_matches_selection(PrkTestContext* context, void*) {
-    const char* const name = prk_get_cycle_counter_implementation_name();
-    PRK_EXPECT(name != nullptr && name[0] != '\0');
-    const bool named_as_assembly = std::strncmp(name, "asm-", 4) == 0;
-    PRK_EXPECT(named_as_assembly == (prk_is_cycle_counter_assembly() == 1));
-    PRK_EXPECT(named_as_assembly || std::strcmp(name, "c-fallback") == 0);
-#if defined(_MSC_VER) && defined(_M_X64) && !defined(PRK_EXPECT_C_FALLBACK)
-    PRK_EXPECT(std::strcmp(name, "asm-masm-x64") == 0);
-#endif
-#if defined(_MSC_VER) && defined(_M_IX86) && !defined(PRK_EXPECT_C_FALLBACK)
-    PRK_EXPECT(std::strcmp(name, "asm-masm-x86") == 0);
-#endif
-}
-
 void test_assembly_is_in_use(PrkTestContext* context, void*) {
     if (!prk_is_cycle_counter_assembly()) {
         prk_skip_test(context, "Assembly not built for this target; C fallback in use");
@@ -84,8 +69,6 @@ PrkStatus register_cycle_counter_tests(PrkRegistry& registry) {
         {"hotpath.cycle_counter.reads_are_nonzero", &test_reads_are_nonzero, nullptr},
         {"hotpath.cycle_counter.reads_are_monotonic", &test_reads_are_monotonic, nullptr},
         {"hotpath.cycle_counter.assembly_and_fallback_advance_together", &test_assembly_and_fallback_advance_together,
-         nullptr},
-        {"hotpath.cycle_counter.implementation_name_matches_selection", &test_implementation_name_matches_selection,
          nullptr},
         {"hotpath.cycle_counter.assembly_is_in_use", &test_assembly_is_in_use, nullptr},
     };

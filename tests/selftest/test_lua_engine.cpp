@@ -3,34 +3,12 @@
  * @brief Tests for the sandboxed Lua 5.4 engine C ABI (include/proofrunkit/prk_lua.h, #9).
  *        The test-authoring API (#12) is covered in test_lua_test_api.cpp.
  */
-#include <array>
-#include <cstring>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <vector>
 
 #include "lua_script_fixture.hpp"
 
 namespace prk::selftest {
 
 namespace {
-
-void test_registers_and_runs_tests(PrkTestContext* context, void*) {
-    const auto run = load_and_run_lua_script(
-        "prk.add_test('lua.passes', function() prk.expect_equal(2 + 2, 4) prk.expect_true(true) end)\n"
-        "prk.add_test('lua.fails', function() prk.expect_equal(2 + 2, 5, 'sum') end)\n"
-        "prk.add_test('lua.skips', function() prk.skip_test('later') end)\n"
-        "prk.add_test('lua.fail_test', function() prk.fail_test('explicit') end)\n");
-    PRK_EXPECT(run->load_status == PRK_STATUS_OK);
-    PRK_EXPECT(prk_count_lua_script_tests(run->script.get()) == 4);
-    PRK_EXPECT(run->results.size() == 4);
-    PRK_EXPECT(run->results[0].name == "lua.passes" && run->results[0].outcome == PRK_OUTCOME_PASSED);
-    PRK_EXPECT(run->results[1].outcome == PRK_OUTCOME_FAILED);
-    PRK_EXPECT(run->results[1].message == "sample.lua:2: sum: expected 5, got 4");
-    PRK_EXPECT(run->results[2].outcome == PRK_OUTCOME_SKIPPED && run->results[2].message == "later");
-    PRK_EXPECT(run->results[3].outcome == PRK_OUTCOME_FAILED && run->results[3].message == "sample.lua:4: explicit");
-}
 
 void test_lua_errors_fail_with_traceback(PrkTestContext* context, void*) {
     const auto run = load_and_run_lua_script(
@@ -43,49 +21,6 @@ void test_lua_errors_fail_with_traceback(PrkTestContext* context, void*) {
     PRK_EXPECT(contains_text(run->results[0].message, "stack traceback"));
     PRK_EXPECT(run->results[1].message.find("sample.lua:2: nope") == 0);
     PRK_EXPECT(run->results[2].message.find("(error object is a table value)") == 0);
-}
-
-void test_reports_syntax_and_load_errors(PrkTestContext* context, void*) {
-    const auto syntax = load_and_run_lua_script("prk.add_test('x', function() end\n");
-    PRK_EXPECT(syntax->load_status == PRK_STATUS_SCRIPT_ERROR);
-    PRK_EXPECT(syntax->load_error.find("sample.lua:2:") == 0);
-    const auto runtime = load_and_run_lua_script("local x = nil\nx.field = 1\n");
-    PRK_EXPECT(runtime->load_status == PRK_STATUS_SCRIPT_ERROR);
-    PRK_EXPECT(runtime->load_error.find("sample.lua:2: attempt to index") == 0);
-    const auto outside = load_and_run_lua_script("prk.fail_test('too early')\n");
-    PRK_EXPECT(contains_text(outside->load_error, "prk.fail_test can only be called inside a test or hook"));
-    const auto failed_at_load = load_and_run_lua_script("prk.expect_true(false)\n");
-    PRK_EXPECT(failed_at_load->load_error == "sample.lua:1: expected a true value, got false");
-    const auto duplicate =
-        load_and_run_lua_script("prk.add_test('same', function() end)\nprk.add_test('same', function() end)\n");
-    PRK_EXPECT(duplicate->load_status == PRK_STATUS_DUPLICATE_NAME);
-    PRK_EXPECT(contains_text(duplicate->load_error, "could not register test 'same': duplicate name"));
-}
-
-void test_rejects_precompiled_bytecode(PrkTestContext* context, void*) {
-    const std::string bytecode = std::string("\x1bLua") + std::string(32, '\0');
-    const auto run = load_and_run_lua_script(bytecode);
-    PRK_EXPECT(run->load_status == PRK_STATUS_SCRIPT_ERROR);
-    PRK_EXPECT(contains_text(run->load_error, "binary chunk"));
-}
-
-void test_sandbox_hides_ambient_access(PrkTestContext* context, void*) {
-    const auto run = load_and_run_lua_script(
-        "prk.add_test('sandbox', function()\n"
-        "  for _, name in ipairs({'io', 'os', 'package', 'debug', 'require', 'dofile', 'loadfile'}) do\n"
-        "    prk.expect_equal(_G[name], nil, name)\n"
-        "  end\n"
-        "  prk.expect_equal(string.dump, nil, 'string.dump')\n"
-        "  prk.expect_equal(load('return 40 + 2')(), 42)\n"
-        "  local chunk, message = load('\\27Lua', 'bytes', 'b')\n"
-        "  prk.expect_true(chunk == nil and message:find('binary chunk') ~= nil, message)\n"
-        "  prk.expect_equal(type(string.format), 'function')\n"
-        "  prk.expect_equal(type(table.concat), 'function')\n"
-        "  prk.expect_equal(type(coroutine.wrap), 'function')\n"
-        "end)\n");
-    PRK_EXPECT(run->load_status == PRK_STATUS_OK);
-    PRK_EXPECT(run->results.size() == 1);
-    PRK_EXPECT(run->results[0].outcome == PRK_OUTCOME_PASSED);
 }
 
 void test_enforces_instruction_limit(PrkTestContext* context, void*) {
@@ -107,39 +42,6 @@ void test_enforces_instruction_limit(PrkTestContext* context, void*) {
     PRK_EXPECT(contains_text(loading->load_error, "instruction limit"));
 }
 
-void test_enforces_memory_limit(PrkTestContext* context, void*) {
-    const PrkLuaLimits limits{1024 * 1024, 0};
-    const auto run = load_and_run_lua_script(
-        "prk.add_test('grow', function() local parts = {} for i = 1, 1e7 do parts[i] = ('x'):rep(64) .. i end end)\n"
-        "prk.add_test('huge_string', function() local s = ('x'):rep(1 << 30) end)\n"
-        "prk.add_test('recovers', function() prk.expect_equal(#('x'):rep(100), 100) end)\n",
-        &limits);
-    PRK_EXPECT(run->results.size() == 3);
-    PRK_EXPECT(run->results[0].outcome == PRK_OUTCOME_FAILED);
-    PRK_EXPECT(run->results[0].message == "memory limit of 1048576 bytes exceeded");
-    PRK_EXPECT(run->results[1].message == "memory limit of 1048576 bytes exceeded");
-    PRK_EXPECT(run->results[2].outcome == PRK_OUTCOME_PASSED);
-    PRK_EXPECT(prk_get_lua_script_memory_in_use(run->script.get()) <= limits.memory_limit_bytes);
-}
-
-void test_print_goes_to_output_callback(PrkTestContext* context, void*) {
-    const auto run = load_and_run_lua_script(
-        "print('loading', 1, nil, true)\n"
-        "prk.add_test('prints', function() print('in test') end)\n");
-    PRK_EXPECT(run->printed == "loading\t1\tnil\ttrue\nin test\n");
-}
-
-void test_add_test_only_while_loading(PrkTestContext* context, void*) {
-    const auto run = load_and_run_lua_script(
-        "prk.add_test('nested', function() prk.add_test('late', function() end) end)\n"
-        "prk.add_test('bad_args', function() end)\n");
-    PRK_EXPECT(run->results.size() == 2);
-    PRK_EXPECT(contains_text(run->results[0].message, "prk.add_test can only be called while the script loads"));
-    const auto bad = load_and_run_lua_script("prk.add_test(42)\n");
-    PRK_EXPECT(bad->load_status == PRK_STATUS_SCRIPT_ERROR);
-    PRK_EXPECT(contains_text(bad->load_error, "bad argument #2 to 'add_test'"));
-}
-
 void test_rejects_invalid_arguments(PrkTestContext* context, void*) {
     const RegistryPointer registry(prk_create_registry(), &prk_destroy_registry);
     const LuaScriptPointer script(prk_create_lua_script(nullptr, nullptr, nullptr), &prk_destroy_lua_script);
@@ -154,31 +56,13 @@ void test_rejects_invalid_arguments(PrkTestContext* context, void*) {
     prk_destroy_lua_script(nullptr);
 }
 
-void test_reports_versions(PrkTestContext* context, void*) {
-    PRK_EXPECT(std::strcmp(prk_get_lua_version_string(), "Lua 5.4.9") == 0);
-    const auto run = load_and_run_lua_script(
-        "prk.add_test('versions', function()\n"
-        "  prk.expect_equal(prk.lua_version, 'Lua 5.4.9')\n"
-        "  prk.expect_equal(type(prk.version), 'string')\n"
-        "end)\n");
-    PRK_EXPECT(run->results.size() == 1 && run->results[0].outcome == PRK_OUTCOME_PASSED);
-}
-
 }  // namespace
 
 PrkStatus register_lua_engine_tests(PrkRegistry& registry) {
     const PrkTestCase test_cases[] = {
-        {"lua.engine.registers_and_runs_tests", &test_registers_and_runs_tests, nullptr},
         {"lua.engine.lua_errors_fail_with_traceback", &test_lua_errors_fail_with_traceback, nullptr},
-        {"lua.engine.reports_syntax_and_load_errors", &test_reports_syntax_and_load_errors, nullptr},
-        {"lua.sandbox.rejects_precompiled_bytecode", &test_rejects_precompiled_bytecode, nullptr},
-        {"lua.sandbox.hides_ambient_access", &test_sandbox_hides_ambient_access, nullptr},
         {"lua.sandbox.enforces_instruction_limit", &test_enforces_instruction_limit, nullptr},
-        {"lua.sandbox.enforces_memory_limit", &test_enforces_memory_limit, nullptr},
-        {"lua.sandbox.print_goes_to_output_callback", &test_print_goes_to_output_callback, nullptr},
-        {"lua.api.add_test_only_while_loading", &test_add_test_only_while_loading, nullptr},
         {"lua.engine.rejects_invalid_arguments", &test_rejects_invalid_arguments, nullptr},
-        {"lua.engine.reports_versions", &test_reports_versions, nullptr},
     };
     return register_test_cases(registry, test_cases);
 }

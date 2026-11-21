@@ -273,8 +273,7 @@ on every build:
 Samples under `tests/lua/samples/` show that failures, syntax errors, missing files, endless loops (instruction budget
 and `--timeout`) are reported correctly.
 
-The C++ harness `proofrunkit_selftest` stays in place as the fallback (#27). [`self-hosting.md`](self-hosting.md)
-maps every C++ case to its prk equivalent or says why it is internal only. Some of its cases cover the C ABI
-directly (registry growth and duplicate names, invalid arguments, the memory limit, parser edge cases). Scripts can
-now reach command-line behavior through `prk.run_process` (#13), but not the C ABI itself. The harness can only be retired once the
-self-hosted suite covers every case, is green on Windows x64 and x86, and Patrick approves.
+The C++ harness `proofrunkit_selftest` now holds only cases that scripts cannot reach (#96): the C ABI directly
+(registry growth, invalid arguments, the memory limit, parser edge cases), fake runners, and injected services. It runs
+only through `prk test`, as `cpp.selftest`. [`self-hosting.md`](self-hosting.md) maps every former and current C++ case to
+its prk equivalent or says why it stays internal.

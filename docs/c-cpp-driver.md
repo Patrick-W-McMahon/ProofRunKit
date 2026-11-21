@@ -148,10 +148,9 @@ parse correctly because the location is read backward from the severity token.
 
 ## Tests
 
-- `proofrunkit_selftest`: `c_driver.*` (parsers for gcc, clang, and MSVC lines; command lines for every kind and the
-  library options; output paths; vswhere and vcvarsall parsers; discovery, the PATH-to-discovery fallback, and the cache
-  through a fake runner; `prk.compile` in Lua and JavaScript; one real compile that skips without a compiler; and
-  `c_driver.discovers_real_msvc`, which on Windows runs the real vswhere/vcvarsall and compiles with the discovered
+- `proofrunkit_selftest` (run by `prk test` as `cpp.selftest`): `c_driver.*` (parsers for gcc, clang, and MSVC
+  lines; command lines for every kind; output paths; vswhere and vcvarsall parsers; discovery, the PATH-to-discovery
+  fallback, and the cache through a fake runner; and `c_driver.discovers_real_msvc`, which on Windows runs the real vswhere/vcvarsall and compiles with the discovered
   `cl`, skipping when Visual Studio's C++ tools are not installed).
 - The `prk.tests.json` entries `self.compile` and `js.compile`: compile the samples in
   [`tests/drivers/c`](../tests/drivers/c), run the programs, and check warnings, `werror`, parsed errors, separate

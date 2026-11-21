@@ -120,35 +120,6 @@ void test_joins_suite_paths(PrkTestContext* context, void*) {
     PRK_EXPECT(join_suite_path("", "rel", '/') == "rel");
 }
 
-std::vector<std::string_view> make_arguments(const std::vector<std::string_view>& list) {
-    return list;
-}
-
-void test_parses_test_command(PrkTestContext* context, void*) {
-    const auto arguments = make_arguments({"test", "--config", "c.json", "--build-dir", "build", "--var", "a=b=c",
-                                           "--filter", "self.", "--json", "--junit-file", "r.xml"});
-    const CommandLineParseResult parsed = parse_command_line(arguments);
-    PRK_EXPECT(parsed.error_message.empty() && parsed.options.command == CliCommand::Test);
-    PRK_EXPECT(parsed.options.suite_config_path == "c.json" && parsed.options.suite_build_dir == "build");
-    PRK_EXPECT(parsed.options.suite_variables == std::vector<std::string>{"a=b=c"});
-    PRK_EXPECT(parsed.options.name_filter == "self." && parsed.options.report_format == ReportFormat::Json);
-    PRK_EXPECT(parsed.options.junit_file == "r.xml");
-    PRK_EXPECT(parse_suite_command(make_arguments({"--list"})).options.list_tests);
-    PRK_EXPECT(parse_suite_command(make_arguments({"--var", "=x"})).error_message.starts_with("--var needs"));
-    PRK_EXPECT(parse_suite_command(make_arguments({"--build-dir"})).error_message == "--build-dir needs a value");
-    PRK_EXPECT(parse_suite_command(make_arguments({"x.lua"})).error_message.starts_with("unknown test option"));
-    PRK_EXPECT(!parse_suite_command(make_arguments({"--list", "--json-file", "a"})).error_message.empty());
-    PRK_EXPECT(parse_suite_command(make_arguments({"--reporter", "junit"})).options.report_format ==
-               ReportFormat::Junit);
-    const CommandLineParseResult help = parse_command_line(make_arguments({"help", "test"}));
-    PRK_EXPECT(help.options.show_help && help.options.help_topic == "test");
-    PRK_EXPECT(parse_suite_command(make_arguments({"-h"})).options.help_topic == "test");
-    const std::string text = format_suite_help_text("prk");
-    PRK_EXPECT(text.starts_with("Usage: prk test [options]") && text.find("--build-dir DIR") != std::string::npos);
-    PRK_EXPECT(format_command_help_text("prk", "test") == text);
-    PRK_EXPECT(format_usage_text("prk").find("  test ") != std::string::npos);
-}
-
 }  // namespace
 
 PrkStatus register_suite_config_tests(PrkRegistry& registry) {
@@ -158,7 +129,6 @@ PrkStatus register_suite_config_tests(PrkRegistry& registry) {
         {"suite.expands_variables", &test_expands_variables, nullptr},
         {"suite.resolves_variables", &test_resolves_variables, nullptr},
         {"suite.joins_paths", &test_joins_suite_paths, nullptr},
-        {"suite.parses_test_command", &test_parses_test_command, nullptr},
     };
     return register_test_cases(registry, test_cases);
 }

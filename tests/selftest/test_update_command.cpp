@@ -1,8 +1,9 @@
 /**
  * @file test_update_command.cpp
- * @brief Tests for `prk -update` and the `prk -version` release line (#75) with fake UpdateServices: parsing,
- *        up to date, check only, dry run, install, declined, checksum missing / mismatched, no release, network
- *        errors, and unsupported platforms. Nothing here touches the network.
+ * @brief Tests for `prk -update` and the `prk -version` release line (#75) with fake UpdateServices: up to date,
+ *        check only, dry run, install, declined, checksum missing / mismatched, no release, network errors, and
+ *        unsupported platforms. Nothing here touches the network.
+ *        Cases that prk scripts cover are in prk.tests.json (docs/self-hosting.md, #96).
  */
 #include <array>
 #include <cstring>
@@ -91,29 +92,6 @@ UpdateRun run_update(FakeUpdate& fake, const UpdateOptions& options) {
 
 bool contains(const std::string& text, std::string_view part) {
     return text.find(part) != std::string::npos;
-}
-
-void test_parses_update_and_version(PrkTestContext* context, void*) {
-    for (const std::string_view spelling : {"-update", "--update", "update"}) {
-        const std::vector<std::string_view> arguments = {spelling, "-check", "--yes", "-dry-run"};
-        const CommandLineParseResult parsed = parse_command_line(arguments);
-        PRK_EXPECT(parsed.error_message.empty() && parsed.options.command == CliCommand::Update);
-        PRK_EXPECT(parsed.options.is_update_check_only && parsed.options.is_update_assumed_yes &&
-                   parsed.options.is_update_dry_run);
-    }
-    const std::vector<std::string_view> bad = {"-update", "-force"};
-    PRK_EXPECT(parse_command_line(bad).error_message.find("unknown update option '-force'") == 0);
-    for (const std::string_view spelling : {"-version", "-v", "version"}) {
-        const std::vector<std::string_view> arguments = {spelling, "-offline"};
-        const CommandLineParseResult parsed = parse_command_line(arguments);
-        PRK_EXPECT(parsed.error_message.empty() && parsed.options.show_version && parsed.options.is_offline);
-    }
-    const std::vector<std::string_view> flag_form = {"--version", "--offline"};
-    PRK_EXPECT(parse_command_line(flag_form).options.is_offline);
-    const std::vector<std::string_view> help = {"help", "-update"};
-    PRK_EXPECT(parse_command_line(help).options.help_topic == "update");
-    PRK_EXPECT(format_command_help_text("prk", "update").find("Usage: prk -update") == 0);
-    PRK_EXPECT(contains(format_usage_text("prk"), "-update"));
 }
 
 void test_reports_and_checks(PrkTestContext* context, void*) {
@@ -236,7 +214,6 @@ void test_version_reports_release(PrkTestContext* context, void*) {
 
 PrkStatus register_update_command_tests(PrkRegistry& registry) {
     const PrkTestCase test_cases[] = {
-        {"update.parses_update_and_version", &test_parses_update_and_version, nullptr},
         {"update.reports_and_checks", &test_reports_and_checks, nullptr},
         {"update.installs_verified_update", &test_installs_verified_update, nullptr},
         {"update.refuses_unverified_update", &test_refuses_unverified_update, nullptr},

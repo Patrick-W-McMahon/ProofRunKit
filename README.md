@@ -73,6 +73,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 - [x] Process-spawn and sandbox layer on Windows ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Done ([docs/process-spawn.md](docs/process-spawn.md))
 - [x] `prk test`: a checked-in `prk.tests.json` runs a whole project's tests with one combined summary and report ([#82](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/82)) — Done ([docs/test-config.md](docs/test-config.md))
 - [x] Windows build and `proofrunkit_selftest` via CTest ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Done
+- [x] ProofRunKit tests itself with `prk test`; the C++ self-test keeps only internal cases and runs inside it ([#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55), [#96](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/96)) — Done ([docs/self-hosting.md](docs/self-hosting.md))
 
 ### Test authoring (Lua 5.4 and QuickJS-ng)
 

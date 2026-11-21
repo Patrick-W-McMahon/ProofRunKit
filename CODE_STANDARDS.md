@@ -27,7 +27,8 @@ A change is not done if it breaks either of the two **core rules** below, even w
 - **Side effects live at the edges.** Filesystem, process spawn, environment, clock, and console IO sit in thin
   adapters. Core logic receives what it needs as arguments (for example a reporter callback, a clock function, or an
   output stream) so it can be tested without real IO.
-- **Every public function has a unit test** in `tests/selftest/`, landed in the same change as the function.
+- **Every public function has a test**, landed in the same change as the function: a prk script in `prk.tests.json`
+  when scripts or the command line can reach it, otherwise a C++ case in `tests/selftest/` (see Testing requirements).
 - **Functions stay small.** A function over 50 lines or a file over 400 lines needs review; over 100 lines or 1,000
   lines it must be split unless the file explains why (vendored code under `third_party/`, generated code, or a data
   table). Nesting is limited to 4 levels and parameters to about 5; past that, pass a struct.
@@ -115,16 +116,18 @@ Assembly is used only for measured hot paths. Each routine follows these rules:
 
 ## Testing requirements
 
-- **Every public function has a unit test** in `tests/selftest/`, named after the behavior it proves
-  (`registry.rejects_duplicate_names`).
+- **Every public function has a test**, named after the behavior it proves (`registry.rejects_duplicate_names`).
+  Prefer a prk script listed in `prk.tests.json`; use a C++ case in `tests/selftest/` only for internals that scripts
+  cannot reach (C ABI argument checks, injected clocks, fake runners). [docs/self-hosting.md](docs/self-hosting.md)
+  keeps the map.
 - Tests are deterministic: no dependence on wall-clock time, test order, network, or the user's environment. Inject
   clocks, file systems, and process runners.
 - Bug fixes include a test that fails before the fix and passes after it.
 - Every Assembly routine has a test comparing it with its C fallback (see above).
-- `ctest` must pass on every architecture a change affects (x64 and, when relevant, x86) before review, and with
+- `prk test --build-dir <build>` (or `ctest`, which runs it) must pass on every architecture a change affects (x64 and, when relevant, x86) before review, and with
   `-DPRK_FORCE_C_FALLBACK=ON` when Assembly or its selection logic changes.
 - Tests are never compiled into the shipped `proofrunkit` executable; the self-test is a separate executable
-  (`proofrunkit_selftest`) that is not installed.
+  (`proofrunkit_selftest`) that is not installed and runs through `prk test` as the `cpp.selftest` entry.
 
 ## Commits and reviews
 

@@ -1,15 +1,12 @@
 /**
  * @file test_c_driver.cpp
- * @brief Tests for the C/C++ compiler driver (#14): GCC/Clang and MSVC diagnostics parsing, command lines,
- *        output paths, compiles through a fake runner (including AUTO fallback), prk.compile in Lua and
- *        JavaScript, and one real compile when a compiler is on PATH (skipped otherwise).
+ * @brief Internal tests for the C/C++ compiler driver (#14): GCC/Clang and MSVC diagnostics parsing, command
+ *        lines, output paths, and compiles through a fake runner (including AUTO fallback).
+ *        Cases that prk scripts cover are in prk.tests.json (docs/self-hosting.md, #96).
  */
 #include <array>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
-#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -264,104 +261,6 @@ void test_rejects_invalid_compile_requests(PrkTestContext* context, void*) {
     PRK_EXPECT(fake.programs.empty());
 }
 
-void test_lua_compile_binding(PrkTestContext* context, void*) {
-    FakeCompilerRunner fake;
-    fake.exit_code = 1;
-    fake.standard_error = "a.c:4:2: error: boom\n";
-    LuaScriptRunSetup setup;
-    setup.process_runner = fake.make_runner();
-    const auto run = load_and_run_lua_script(
-        "prk.add_test('compile', function()\n"
-        "  local r = prk.compile{sources = 'a.c', output = 'a.out', compiler = 'clang', program = 'clang-18',\n"
-        "    std = 'c17', defines = {'X=1'}, werror = true}\n"
-        "  prk.expect_false(r.ok) prk.expect_equal(r.exit_code, 1) prk.expect_equal(r.compiler, 'clang')\n"
-        "  prk.expect_equal(r.program, 'clang-18') prk.expect_equal(r.errors, 1) prk.expect_equal(r.warnings, 0)\n"
-        "  prk.expect_equal(#r.diagnostics, 1) prk.expect_equal(r.diagnostics[1].severity, 'error')\n"
-        "  prk.expect_equal(r.diagnostics[1].line, 4) prk.expect_equal(r.diagnostics[1].message, 'boom')\n"
-        "  prk.expect_equal(r.output, 'a.out') prk.expect_match(r.command, '^clang%-18 ')\n"
-        "end)\n"
-        "prk.add_test('bad', function() prk.compile{sources = 'a.c', output = 'a', compilr = 'gcc'} end)\n"
-        "prk.add_test('auto_program', function() prk.compile{sources = 'a.c', output = 'a', program = 'x'} end)\n",
-        std::move(setup));
-    PRK_EXPECT(run->results.size() == 3 && run->results[0].outcome == PRK_OUTCOME_PASSED);
-    PRK_EXPECT(run->results.size() == 3 && contains_text(run->results[1].message, "unknown option 'compilr'"));
-    PRK_EXPECT(run->results.size() == 3 && contains_text(run->results[2].message, "need compiler"));
-    PRK_EXPECT(fake.arguments == std::vector<std::string>({"-fdiagnostics-color=never", "-Wall", "-Wextra", "-Werror",
-                                                           "-std=c17", "-DX=1", "a.c", "-o", "a.out"}));
-}
-
-/** @brief Results of a JavaScript script run with a fake host. */
-struct JsCompileRun : FakeScriptHostState {
-    RegistryPointer registry{prk_create_registry(), &prk_destroy_registry};
-    std::unique_ptr<PrkJsScript, decltype(&prk_destroy_js_script)> script{nullptr, &prk_destroy_js_script};
-    std::vector<RecordedTestResult> results;
-};
-
-std::unique_ptr<JsCompileRun> load_and_run_js(std::string_view source, const PrkProcessRunner& runner) {
-    auto run = std::make_unique<JsCompileRun>();
-    run->process_runner = runner;
-    const PrkScriptHost host = fixture_detail::make_fake_host(*run);
-    run->script.reset(prk_create_js_script(nullptr, &host, nullptr));
-    std::array<char, PRK_SCRIPT_ERROR_CAPACITY> error{};
-    if (prk_load_js_test_script(run->script.get(), run->registry.get(), "compile.js", source.data(), source.size(),
-                                error.data(), error.size()) == PRK_STATUS_OK) {
-        const PrkReporter reporter{nullptr, &fixture_detail::record_test_finished, nullptr, &run->results};
-        (void)prk_run_test_cases(run->registry.get(), nullptr, &reporter, nullptr);
-    }
-    return run;
-}
-
-void test_js_compile_binding(PrkTestContext* context, void*) {
-    FakeCompilerRunner fake;
-    fake.standard_error = "w.cpp(7,3): warning C4189: 'v': local variable is initialized but not referenced\n";
-    const auto run = load_and_run_js(
-        "prk.addTest('compile', () => {\n"
-        "  const r = prk.compile({sources: ['w.cpp'], output: 'w.exe', language: 'c++', compiler: 'msvc',\n"
-        "    includes: 'inc', flags: ['/O2'], timeoutMs: 5000});\n"
-        "  prk.expectExitCode(r, 0); prk.expectTrue(r.ok); prk.expectEqual(r.warnings, 1);\n"
-        "  prk.expectEqual(r.diagnostics[0].code, 'C4189'); prk.expectEqual(r.diagnostics[0].column, 3);\n"
-        "  prk.expectEqual(r.compiler, 'msvc'); prk.expectEqual(r.program, 'cl');\n"
-        "});\n"
-        "prk.addTest('bad', () => { prk.compile({sources: [], output: 'a'}); });\n"
-        "prk.addTest('lang', () => { prk.compile({sources: 'a.c', output: 'a', language: 'cobol'}); });\n",
-        fake.make_runner());
-    PRK_EXPECT(run->results.size() == 3 && run->results[0].message.empty());
-    PRK_EXPECT(run->results.size() == 3 && contains_text(run->results[1].message, "at least one source"));
-    PRK_EXPECT(run->results.size() == 3 && contains_text(run->results[2].message, "unknown language 'cobol'"));
-    PRK_EXPECT(fake.arguments ==
-               std::vector<std::string>({"/nologo", "/W4", "/EHsc", "/Iinc", "w.cpp", "/Few.exe", "/O2"}));
-}
-
-void test_compiles_real_program(PrkTestContext* context, void*) {
-    const std::string source_path = "prk_c_driver_selftest.c";
-    {
-        std::ofstream file(source_path, std::ios::binary); /* Portable and free of MSVC's C4996 on fopen. */
-        file << "int main(void) { int unused_value = 0; return 0; }\n";
-        if (!file) {
-            prk_fail_test(context, "cannot write the sample source file");
-            return;
-        }
-    }
-    const char* const sources[] = {source_path.c_str()};
-    PrkCompileRequest request = make_hello_request(sources);
-    request.output_path = "prk_c_driver_selftest_program";
-    PrkCompileResult result{};
-    const PrkProcessRunner runner = prk_get_system_process_runner();
-    PRK_EXPECT(prk_compile_program(&runner, &request, &result) == PRK_STATUS_OK);
-    const bool is_compiler_missing = result.process.outcome == PRK_PROCESS_FAILED_TO_START;
-    if (!is_compiler_missing) {
-        PRK_EXPECT(result.process.outcome == PRK_PROCESS_EXITED && result.process.exit_code == 0);
-        PRK_EXPECT(result.warning_count == 1 && result.error_count == 0);
-        (void)std::remove(result.output_path);
-    }
-    prk_release_compile_result(&result);
-    (void)std::remove(source_path.c_str());
-    (void)std::remove("prk_c_driver_selftest.obj"); /* MSVC leaves the object file in the working directory. */
-    if (is_compiler_missing) {
-        prk_skip_test(context, "no C compiler on PATH");
-    }
-}
-
 }  // namespace
 
 PrkStatus register_c_driver_tests(PrkRegistry& registry) {
@@ -374,9 +273,6 @@ PrkStatus register_c_driver_tests(PrkRegistry& registry) {
         {"c_driver.compiles_through_runner", &test_compiles_through_runner, nullptr},
         {"c_driver.auto_falls_back_when_compiler_missing", &test_auto_falls_back_when_compiler_missing, nullptr},
         {"c_driver.rejects_invalid_requests", &test_rejects_invalid_compile_requests, nullptr},
-        {"c_driver.lua_compile_binding", &test_lua_compile_binding, nullptr},
-        {"c_driver.js_compile_binding", &test_js_compile_binding, nullptr},
-        {"c_driver.compiles_real_program", &test_compiles_real_program, nullptr},
     };
     return register_test_cases(registry, test_cases);
 }

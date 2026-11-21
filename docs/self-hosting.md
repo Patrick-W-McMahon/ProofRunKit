@@ -1,9 +1,11 @@
 # Self-hosted testing: coverage map
 
-Status: in progress ([#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55),
-[#84](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/84)). ProofRunKit tests itself with its own Lua and
+Status: done for the script-reachable cases ([#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55),
+[#84](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/84),
+[#96](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/96)). ProofRunKit tests itself with its own Lua and
 JavaScript test scripts, listed in [`prk.tests.json`](../prk.tests.json) and run by `prk test`
-([test-config.md](test-config.md)). **The C++ self-test stays**: retiring it needs Patrick's explicit OK (#55, #27).
+([test-config.md](test-config.md)). The C++ self-test `proofrunkit_selftest` keeps only the cases that scripts cannot
+fully check, and it runs only through `prk test`.
 
 ## Running everything through prk
 
@@ -12,7 +14,8 @@ prk test --build-dir build\windows-msvc-x64-debug   # from the repository root: 
 prk test                                           # no build: tests the installed prk, skips build-only entries
 ```
 
-CTest runs the same thing once (`prk_test_suite`), next to the C++ harness `proofrunkit_selftest`.
+CTest runs the same thing once (`prk_test_suite`). Since #96, `proofrunkit_selftest` has no CTest entry of its own;
+it runs once, as the `cpp.selftest` entry of `prk.tests.json`.
 
 ## Internal-only cases: approach (#84)
 
@@ -28,28 +31,30 @@ internal case appears one by one in prk's combined summary, and `prk test` is th
 - Option (a) would ship test-only code and fake services in the release binary. That goes against the stable,
   minimal binary (#22, antivirus reputation), adds attack surface, and makes a debug flag part of the public
   interface.
-- With (b), the C++ binary can shrink to only the internal cases once the script coverage is accepted.
+- With (b), the C++ binary holds only the internal cases (#96).
 
-## What is left before the C++ self-test could be retired
+## What is left
 
-1. A green Windows x64 run of `prk test --build-dir ...` (CTest `prk_test_suite`) on Patrick's machine, including
-   the compile and assemble entries with MSVC.
-2. Decide on the 20 **Partly** cases below: accept the script part as enough, or add scripts. Most of the C++
+1. The 20 **Partly** cases stay in `proofrunkit_selftest` until scripts check their C++-only part too. Most of the
    remainder needs fakes (timeouts, failed starts, custom memory/instruction limits).
-3. Shrink `proofrunkit_selftest` to the **Internal only** cases (keep it as the `cpp.selftest` unit binary run by
-   `prk test`). Remove the duplicated script-reachable cases only after Patrick's explicit OK.
-4. Patrick's explicit OK to remove the old harness entry from CTest (step 4 of the migration protocol). Not done here.
+2. The 52 **Internal only** cases stay in `proofrunkit_selftest` for good; they need the C ABI or injected services.
+3. A new public function gets a prk script in `prk.tests.json` when scripts or the command line can reach it, and a
+   C++ case only for the internals (CODE_STANDARDS.md).
 
 ## Summary
 
-| Status | C++ cases | Meaning |
+| Status | Cases | Where it runs now |
 | --- | ---: | --- |
-| Self-hosted | 89 | A prk script, or a `prk.tests.json` entry, checks the same behaviour. |
-| Partly | 20 | The observable behaviour is checked through prk; part of the case (limits, fakes, exact internals) is C++ only. |
-| Internal only | 52 | Pure internals, NULL checks, fakes, or injected services. They run through `prk test` as the `cpp.selftest` entry. |
-| **Total** | **161** | Every case in `proofrunkit_selftest --list`. |
+| Self-hosted | 89 | A prk script, or a `prk.tests.json` entry, checks the same behaviour. The C++ case was removed from `proofrunkit_selftest` (#96); the row below records what replaced it. |
+| Partly | 20 | Still a C++ case in `proofrunkit_selftest`. The observable behaviour is also checked through prk; part of the case (limits, fakes, exact internals) is C++ only. |
+| Internal only | 52 | Still a C++ case in `proofrunkit_selftest`: pure internals, NULL checks, fakes, or injected services. |
+| **In `proofrunkit_selftest` now** | **72** | Partly + Internal only: every case in `proofrunkit_selftest --list`, run by `prk test` as `cpp.selftest`. |
+| **Mapped in total** | **161** | Every case the C++ self-test had before #96. |
 
 ## Case by case
+
+Rows marked **Self-hosted** are former C++ cases, removed in #96; the reason column names the script that checks
+the behaviour now.
 
 | C++ self-test case | Status | Self-hosted equivalent or reason |
 | --- | --- | --- |

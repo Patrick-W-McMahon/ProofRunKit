@@ -164,7 +164,7 @@ $installer = New-Object -ComObject WindowsInstaller.Installer
 $database = Invoke-MsiComMethod -Object $installer -Name 'OpenDatabase' -ArgumentList @($MsiPath, 0)
 
 # Summary information: template (PID_TEMPLATE = 7) carries the platform.
-$summary = Invoke-MsiComMethod -Object $installer -Name 'SummaryInformation' -ArgumentList @($MsiPath, 0)
+$summary = Get-MsiComProperty -Object $installer -Name 'SummaryInformation' -ArgumentList @($MsiPath, 0)
 $template = [string](Get-MsiComProperty -Object $summary -Name 'Property' -ArgumentList @(7))
 $author = [string](Get-MsiComProperty -Object $summary -Name 'Property' -ArgumentList @(4))
 $title = [string](Get-MsiComProperty -Object $summary -Name 'Property' -ArgumentList @(2))

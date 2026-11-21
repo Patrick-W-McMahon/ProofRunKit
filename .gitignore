@@ -1,0 +1,94 @@
+# CMake and local build trees
+/build/
+/cmake-build-*/
+/out/
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+cmake_install.cmake
+compile_commands.json
+*.ninja
+.ninja_deps
+.ninja_log
+Testing/
+CTestTestfile.cmake
+DartConfiguration.tcl
+
+# Objects, libraries, and debug artifacts
+*.o
+*.obj
+*.a
+*.lib
+*.lo
+*.la
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exp
+*.pdb
+*.ilk
+*.idb
+*.gch
+*.pch
+*.slo
+*.su
+
+# Executables produced by local builds (not source)
+*.exe
+*.out
+*.app
+
+# Visual Studio / MSVC / Visual Studio Code
+.vs/
+*.user
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+*.ipch
+[Dd]ebug/
+[Rr]elease/
+[Rr]elWithDebInfo/
+[Mm]inSizeRel/
+x64/
+Win32/
+*.vcxproj.user
+
+# IDEs and language servers
+.idea/
+.vscode/
+.cache/
+.clangd/
+.cache/clangd/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Coverage and test leftovers
+Coverage/
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+
+# Installer and packaging artifacts (future work)
+*.msi
+*.msix
+*.wixpdb
+*.wixobj
+*.cab
+*.exe.manifest
+
+# Local env and accidentals
+.env
+.env.*
+__pycache__/
+.venv/
+*.log

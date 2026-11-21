@@ -13,6 +13,29 @@
 
 A single high-performance test executable, compiled once. Tests change; the binary does not.
 
+<p align="center"><strong>Supported languages</strong></p>
+<p align="center">
+  Write tests in Lua or JavaScript. Compile and run C, C++, and Assembly with real toolchains.
+</p>
+<p align="center">
+  <img src="docs/assets/logos/lua.svg" alt="Lua" height="88">
+  <img src="docs/assets/logos/javascript.svg" alt="JavaScript" height="88">
+  <img src="docs/assets/logos/c.svg" alt="C" height="88">
+  <img src="docs/assets/logos/cplusplus.svg" alt="C++" height="88">
+  <img src="docs/assets/logos/assembly.svg" alt="Assembly" height="88">
+</p>
+<p align="center"><sub>Planned</sub></p>
+<p align="center">
+  <img src="docs/assets/logos/csharp.svg" alt="C# (planned)" height="72">
+  <img src="docs/assets/logos/java.svg" alt="Java (planned)" height="72">
+  <img src="docs/assets/logos/python.svg" alt="Python (planned)" height="72">
+  <img src="docs/assets/logos/typescript.svg" alt="TypeScript (planned)" height="72">
+  <img src="docs/assets/logos/go.svg" alt="Go (planned)" height="72">
+  <img src="docs/assets/logos/rust.svg" alt="Rust (planned)" height="72">
+  <img src="docs/assets/logos/html5.svg" alt="HTML (planned)" height="72">
+  <img src="docs/assets/logos/css.svg" alt="CSS (planned)" height="72">
+</p>
+
 **[⬇ Install ProofRunKit](INSTALL.md)**: Windows x64 MSI (v0.1.0). Other platforms are coming soon.
 
 **Status: pre-alpha.** The core executable, Assembly hot paths, Windows x64 and x86 builds with a self-test, both Windows MSI installers, the `prk` command, and sandboxed Lua 5.4 and JavaScript (QuickJS-ng) test scripts are in the tree. Language drivers are next. Features below are marked Done, In progress, or Planned; see the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).

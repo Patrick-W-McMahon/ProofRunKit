@@ -3,16 +3,19 @@
  * @brief Tests for prk::detect_script_language, prk::load_test_scripts, and running scripts through
  *        prk::run_command_line with an in-memory script reader (#9).
  */
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "cpp/command_line_app.hpp"
+#include "cpp/script_host.hpp"
 #include "cpp/script_loading.hpp"
 #include "selftest_support.hpp"
 
@@ -25,6 +28,9 @@ const std::map<std::string, std::string>& get_sample_scripts() {
         {"pass.lua", "print('loaded pass.lua')\nprk.add_test('script.pass', function() prk.expect_true(1 < 2) end)\n"},
         {"fail.lua", "prk.add_test('script.fail', function() prk.expect_equal('a', 'b') end)\n"},
         {"broken.lua", "prk.add_test(\n"},
+        {"tagged.lua",
+         "prk.add_test('t.fast', function() end, {tags = {'fast'}})\n"
+         "prk.add_test('t.slow', function() while true do end end, {tags = {'slow'}})\n"},
     };
     return scripts;
 }
@@ -49,8 +55,8 @@ CapturedScriptRun run_scripts_through_command_line(std::vector<std::string_view>
                                                                                  &prk_destroy_registry);
     std::ostringstream output;
     std::ostringstream errors;
-    const CommandLineEnvironment environment{*builtins, PrkClock{nullptr, nullptr}, &read_sample_script, output,
-                                             errors};
+    const CommandLineEnvironment environment{
+        *builtins, PrkClock{nullptr, nullptr}, &read_sample_script, ScriptHostServices{}, output, errors};
     const int exit_code = run_command_line("prk", arguments, environment);
     return CapturedScriptRun{exit_code, output.str(), errors.str()};
 }
@@ -66,9 +72,10 @@ void test_detects_script_language(PrkTestContext* context, void*) {
 }
 
 void test_loads_scripts_into_one_registry(PrkTestContext* context, void*) {
-    const PrkLuaOutput discard{nullptr, nullptr};
-    const LoadedTestScripts loaded = load_test_scripts(
-        {"pass.lua", "fail.lua", "x.js", "y.txt", "missing.lua", "broken.lua"}, &read_sample_script, discard, nullptr);
+    const PrkScriptHost no_host{nullptr, nullptr, nullptr, nullptr, nullptr};
+    const LoadedTestScripts loaded =
+        load_test_scripts({"pass.lua", "fail.lua", "x.js", "y.txt", "missing.lua", "broken.lua"}, &read_sample_script,
+                          no_host, nullptr, nullptr);
     PRK_EXPECT(loaded.registry != nullptr);
     PRK_EXPECT(prk_count_test_cases(loaded.registry.get()) == 2);
     PRK_EXPECT(loaded.unsupported_scripts == std::vector<std::string>({"x.js"}));
@@ -84,7 +91,7 @@ void test_runs_lua_scripts_from_command_line(PrkTestContext* context, void*) {
     PRK_EXPECT(passing.output.find("loaded pass.lua\n[ PASS ] script.pass") == 0);
     const CapturedScriptRun failing = run_scripts_through_command_line({"pass.lua", "fail.lua"});
     PRK_EXPECT(failing.exit_code == kExitTestFailed);
-    PRK_EXPECT(failing.output.find("fail.lua:1: values differ: expected b, got a") != std::string::npos);
+    PRK_EXPECT(failing.output.find("fail.lua:1: values differ: expected \"b\", got \"a\"") != std::string::npos);
     const CapturedScriptRun filtered = run_scripts_through_command_line({"run", "--filter", "pass", "fail.lua"});
     PRK_EXPECT(filtered.exit_code == kExitAllPassed);
 }
@@ -122,6 +129,81 @@ void test_reads_script_files_from_disk(PrkTestContext* context, void*) {
     PRK_EXPECT(!missing.was_read && missing.error_message == "cannot open file");
 }
 
+void test_tags_and_timeout_from_command_line(PrkTestContext* context, void*) {
+    const CapturedScriptRun fast = run_scripts_through_command_line({"list", "--tag", "fast", "tagged.lua"});
+    PRK_EXPECT(fast.exit_code == kExitAllPassed && fast.output == "t.fast\n");
+    const CapturedScriptRun not_slow = run_scripts_through_command_line({"run", "--exclude-tag", "slow", "tagged.lua"});
+    PRK_EXPECT(not_slow.exit_code == kExitAllPassed);
+    PRK_EXPECT(not_slow.output.find("1 test: 1 passed") != std::string::npos);
+}
+
+void test_script_data_path_policy(PrkTestContext* context, void*) {
+    for (const std::string_view allowed : {"a.txt", "out/report.xml", "out\\report.xml", "./a", "a..b", "..a/b"}) {
+        PRK_EXPECT(is_script_data_path_allowed(allowed));
+    }
+    for (const std::string_view denied : {"", "/etc/passwd", "\\\\server\\share", "C:\\x", "C:x", "..", "../a",
+                                          "a/../../b", "a\\..\\b", "file.txt:stream"}) {
+        PRK_EXPECT(!is_script_data_path_allowed(denied));
+    }
+    PRK_EXPECT(!is_script_data_path_allowed(std::string_view("a\0b", 3)));
+}
+
+void receive_into_string(void* sink, const char* bytes, std::size_t length) {
+    static_cast<std::string*>(sink)->append(bytes, length);
+}
+
+void test_script_host_applies_policy_and_contains_exceptions(PrkTestContext* context, void*) {
+    std::ostringstream printed;
+    ScriptHostServices services;
+    services.read_monotonic_milliseconds = [] { return std::uint64_t{42}; };
+    services.find_file = [](const std::string& path) {
+        if (path == "throws") {
+            throw std::runtime_error("disk on fire");
+        }
+        return path == "a.txt" ? PRK_FILE_ACCESS_OK : PRK_FILE_ACCESS_NOT_FOUND;
+    };
+    services.read_file = [](const std::string&, std::string& out_bytes) {
+        out_bytes = "bytes";
+        return PRK_FILE_ACCESS_OK;
+    };
+    ScriptHost host(services, printed);
+    const PrkScriptHost c_host = host.make_c_host();
+    c_host.write_text(c_host.host_state, "hi", 2);
+    PRK_EXPECT(printed.str() == "hi");
+    PRK_EXPECT(c_host.read_monotonic_milliseconds(c_host.host_state) == 42);
+    PRK_EXPECT(c_host.find_file(c_host.host_state, "a.txt") == PRK_FILE_ACCESS_OK);
+    PRK_EXPECT(c_host.find_file(c_host.host_state, "b.txt") == PRK_FILE_ACCESS_NOT_FOUND);
+    PRK_EXPECT(c_host.find_file(c_host.host_state, "../a.txt") == PRK_FILE_ACCESS_DENIED);
+    PRK_EXPECT(c_host.find_file(c_host.host_state, "throws") == PRK_FILE_ACCESS_READ_ERROR);
+    std::string bytes;
+    PRK_EXPECT(c_host.read_file(c_host.host_state, "a.txt", &receive_into_string, &bytes) == PRK_FILE_ACCESS_OK);
+    PRK_EXPECT(bytes == "bytes");
+    PRK_EXPECT(c_host.read_file(c_host.host_state, "/abs", &receive_into_string, &bytes) == PRK_FILE_ACCESS_DENIED);
+    ScriptHost bare(ScriptHostServices{}, printed);
+    const PrkScriptHost bare_host = bare.make_c_host();
+    PRK_EXPECT(bare_host.write_text != nullptr && bare_host.read_monotonic_milliseconds == nullptr);
+    PRK_EXPECT(bare_host.find_file == nullptr && bare_host.read_file == nullptr);
+}
+
+void test_disk_script_host_services(PrkTestContext* context, void*) {
+    const std::string path = "prk_selftest_host_file.txt";
+    {
+        std::ofstream file(path, std::ios::binary);
+        file << "line 1\r\nline 2\n";
+    }
+    const ScriptHostServices services = make_disk_script_host_services();
+    std::string bytes;
+    const PrkFileAccessStatus found = services.find_file(path);
+    const PrkFileAccessStatus read = services.read_file(path, bytes);
+    (void)std::remove(path.c_str());
+    PRK_EXPECT(found == PRK_FILE_ACCESS_OK && read == PRK_FILE_ACCESS_OK && bytes == "line 1\r\nline 2\n");
+    PRK_EXPECT(services.find_file("prk_no_such_file.txt") == PRK_FILE_ACCESS_NOT_FOUND);
+    PRK_EXPECT(services.read_file("prk_no_such_file.txt", bytes) == PRK_FILE_ACCESS_NOT_FOUND);
+    PRK_EXPECT(services.find_file(".") == PRK_FILE_ACCESS_NOT_FOUND);  // directories are not files
+    const std::uint64_t first = services.read_monotonic_milliseconds();
+    PRK_EXPECT(services.read_monotonic_milliseconds() >= first);
+}
+
 }  // namespace
 
 PrkStatus register_script_loading_tests(PrkRegistry& registry) {
@@ -132,6 +214,11 @@ PrkStatus register_script_loading_tests(PrkRegistry& registry) {
         {"scripts.json_and_list_keep_print_off_output", &test_json_and_list_keep_print_off_output, nullptr},
         {"scripts.reports_script_problems_with_exit_codes", &test_reports_script_problems_with_exit_codes, nullptr},
         {"scripts.reads_script_files_from_disk", &test_reads_script_files_from_disk, nullptr},
+        {"scripts.tags_and_timeout_from_command_line", &test_tags_and_timeout_from_command_line, nullptr},
+        {"scripts.host.data_path_policy", &test_script_data_path_policy, nullptr},
+        {"scripts.host.applies_policy_and_contains_exceptions",
+         &test_script_host_applies_policy_and_contains_exceptions, nullptr},
+        {"scripts.host.disk_services", &test_disk_script_host_services, nullptr},
     };
     return register_test_cases(registry, test_cases);
 }

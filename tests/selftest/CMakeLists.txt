@@ -5,6 +5,7 @@ add_executable(proofrunkit_selftest
     test_command_line.cpp
     test_cycle_counter.cpp
     test_lua_engine.cpp
+    test_lua_test_api.cpp
     test_registry.cpp
     test_reporting.cpp
     test_runner.cpp
@@ -64,3 +65,6 @@ add_test(NAME prk_lua_reports_missing_file COMMAND "${_prk_short_exe}" run "${_p
 set_tests_properties(prk_lua_reports_missing_file PROPERTIES PASS_REGULAR_EXPRESSION "no_such_file\\.lua: cannot open file")
 add_test(NAME prk_lua_stops_infinite_loop COMMAND "${_prk_short_exe}" run "${_prk_lua_tests}/samples/infinite_loop.lua")
 set_tests_properties(prk_lua_stops_infinite_loop PROPERTIES PASS_REGULAR_EXPRESSION "instruction limit of [0-9]+ instructions exceeded" TIMEOUT 60)
+# Per-test wall-clock timeout from the command line (#12).
+add_test(NAME prk_lua_timeout_option COMMAND "${_prk_short_exe}" run --timeout 200 "${_prk_lua_tests}/samples/infinite_loop.lua")
+set_tests_properties(prk_lua_timeout_option PROPERTIES PASS_REGULAR_EXPRESSION "timeout of 200 ms exceeded" TIMEOUT 60)

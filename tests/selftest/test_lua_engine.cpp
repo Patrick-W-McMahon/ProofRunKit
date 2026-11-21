@@ -1,6 +1,7 @@
 /**
  * @file test_lua_engine.cpp
  * @brief Tests for the sandboxed Lua 5.4 engine C ABI (include/proofrunkit/prk_lua.h, #9).
+ *        The test-authoring API (#12) is covered in test_lua_test_api.cpp.
  */
 #include <array>
 #include <cstring>
@@ -9,55 +10,11 @@
 #include <string_view>
 #include <vector>
 
-#include "cpp/reporters.hpp"
-#include "proofrunkit/prk_lua.h"
-#include "selftest_support.hpp"
+#include "lua_script_fixture.hpp"
 
 namespace prk::selftest {
 
 namespace {
-
-using RegistryPointer = std::unique_ptr<PrkRegistry, decltype(&prk_destroy_registry)>;
-using LuaScriptPointer = std::unique_ptr<PrkLuaScript, decltype(&prk_destroy_lua_script)>;
-
-/** @brief Output callback that appends printed text to a std::string. */
-void append_printed_text(void* output_state, const char* text, std::size_t length) {
-    static_cast<std::string*>(output_state)->append(text, length);
-}
-
-void record_test_finished(void* state, const PrkTestResult* result) {
-    static_cast<std::vector<RecordedTestResult>*>(state)->push_back(record_test_result(*result));
-}
-
-/** @brief A loaded script, its registry, and what loading and running it produced. */
-struct LuaScriptRun {
-    RegistryPointer registry{prk_create_registry(), &prk_destroy_registry};
-    std::string printed;
-    LuaScriptPointer script{nullptr, &prk_destroy_lua_script};
-    PrkStatus load_status = PRK_STATUS_OK;
-    std::string load_error;
-    std::vector<RecordedTestResult> results;
-};
-
-/** @brief Loads @p source with @p limits and, when it loads, runs every test it registered. */
-std::unique_ptr<LuaScriptRun> load_and_run_lua_script(std::string_view source, const PrkLuaLimits* limits = nullptr) {
-    auto run = std::make_unique<LuaScriptRun>();
-    const PrkLuaOutput output{&append_printed_text, &run->printed};
-    run->script.reset(prk_create_lua_script(limits, &output));
-    std::array<char, PRK_LUA_ERROR_CAPACITY> error{};
-    run->load_status = prk_load_lua_test_script(run->script.get(), run->registry.get(), "sample.lua", source.data(),
-                                                source.size(), error.data(), error.size());
-    run->load_error = error.data();
-    if (run->load_status == PRK_STATUS_OK) {
-        const PrkReporter reporter{nullptr, &record_test_finished, nullptr, &run->results};
-        (void)prk_run_test_cases(run->registry.get(), nullptr, &reporter, nullptr);
-    }
-    return run;
-}
-
-bool contains_text(const std::string& text, std::string_view expected) {
-    return text.find(expected) != std::string::npos;
-}
 
 void test_registers_and_runs_tests(PrkTestContext* context, void*) {
     const auto run = load_and_run_lua_script(
@@ -95,8 +52,10 @@ void test_reports_syntax_and_load_errors(PrkTestContext* context, void*) {
     const auto runtime = load_and_run_lua_script("local x = nil\nx.field = 1\n");
     PRK_EXPECT(runtime->load_status == PRK_STATUS_SCRIPT_ERROR);
     PRK_EXPECT(runtime->load_error.find("sample.lua:2: attempt to index") == 0);
-    const auto outside = load_and_run_lua_script("prk.expect_true(false)\n");
-    PRK_EXPECT(contains_text(outside->load_error, "prk.expect_true can only be called inside a test body"));
+    const auto outside = load_and_run_lua_script("prk.fail_test('too early')\n");
+    PRK_EXPECT(contains_text(outside->load_error, "prk.fail_test can only be called inside a test or hook"));
+    const auto failed_at_load = load_and_run_lua_script("prk.expect_true(false)\n");
+    PRK_EXPECT(failed_at_load->load_error == "sample.lua:1: expected a true value, got false");
     const auto duplicate =
         load_and_run_lua_script("prk.add_test('same', function() end)\nprk.add_test('same', function() end)\n");
     PRK_EXPECT(duplicate->load_status == PRK_STATUS_DUPLICATE_NAME);
@@ -183,7 +142,7 @@ void test_add_test_only_while_loading(PrkTestContext* context, void*) {
 
 void test_rejects_invalid_arguments(PrkTestContext* context, void*) {
     const RegistryPointer registry(prk_create_registry(), &prk_destroy_registry);
-    const LuaScriptPointer script(prk_create_lua_script(nullptr, nullptr), &prk_destroy_lua_script);
+    const LuaScriptPointer script(prk_create_lua_script(nullptr, nullptr, nullptr), &prk_destroy_lua_script);
     PRK_EXPECT(script != nullptr);
     PRK_EXPECT(prk_load_lua_test_script(nullptr, registry.get(), "a", "", 0, nullptr, 0) ==
                PRK_STATUS_INVALID_ARGUMENT);

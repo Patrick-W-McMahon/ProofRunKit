@@ -9,6 +9,7 @@
 #include <string_view>
 
 #include "proofrunkit/prk.h"
+#include "script_host.hpp"
 #include "script_loading.hpp"
 
 namespace prk {
@@ -27,6 +28,7 @@ struct CommandLineEnvironment {
     const PrkRegistry& builtin_registry;  ///< Tests run when no scripts are given (built-in checks).
     PrkClock clock;                       ///< Clock used to time test bodies.
     ScriptFileReader read_script_file;    ///< Reads test scripts named on the command line.
+    ScriptHostServices script_services;   ///< Clock and read-only files granted to test scripts (#12).
     std::ostream& output;                 ///< Results, listings, help, version, and console-mode print().
     std::ostream& errors;                 ///< Usage errors, script load errors, and JSON-mode print().
 };

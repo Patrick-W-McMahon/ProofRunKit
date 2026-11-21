@@ -44,7 +44,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 
 - [x] Embedded, sandboxed Lua 5.4 for kit-authored tests loaded at runtime ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9), [guide](docs/lua-tests.md)) — Done
 - [ ] Embedded QuickJS-ng for kit-authored JavaScript tests ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)) — Planned
-- [ ] Test-authoring API in Lua and JavaScript (assertions, process spawn, file checks, timing, fixtures) ([#12](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/12)) — In progress (Lua registration, assertions, and skips done)
+- [ ] Test-authoring API in Lua and JavaScript (assertions, process spawn, file checks, timing, fixtures) ([#12](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/12)) — In progress (Lua: assertions, suites, hooks, tags, timeouts, timing, and file checks done; process spawn waits for #13; JavaScript waits for #11)
 
 ### Compiled-language drivers
 

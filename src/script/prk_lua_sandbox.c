@@ -1,7 +1,7 @@
 /**
  * @file prk_lua_sandbox.c
- * @brief Sandbox for the embedded Lua 5.4 engine (#9): memory-limited allocator, instruction budget,
- *        safe library set, print redirection, text-only load, and error formatting.
+ * @brief Sandbox for the embedded Lua 5.4 engine (#9, #12): memory-limited allocator, instruction budget,
+ *        per-test timeout, safe library set, print redirection, text-only load, and error formatting.
  *
  * Must not open io, os, package, or debug, and must not expose dofile, loadfile, or string.dump:
  * those give a test script ambient file, process, or native-code access, or let it remove the
@@ -14,13 +14,6 @@
 #include "lauxlib.h"
 #include "lualib.h"
 #include "prk_lua_internal.h"
-
-/* Address-only marker; never written, so it is not mutable state. */
-static const char prk_lua_stop_marker_key = 0;
-
-void* prk_get_lua_stop_marker(void) {
-    return (void*)&prk_lua_stop_marker_key;
-}
 
 PrkLuaScript* prk_find_lua_script(lua_State* state) {
     void* script_state = NULL;
@@ -47,23 +40,42 @@ void* prk_allocate_lua_memory(void* script_state, void* block, size_t old_size, 
     return resized;
 }
 
-/** @brief Count hook: charges the instructions since the last call and stops the script past its budget. */
+/** @brief Count hook: charges the instructions since the last call and stops the script past its
+ *         instruction budget or its wall-clock deadline. */
 static void prk_charge_lua_instructions(lua_State* state, lua_Debug* debug_record) {
     (void)debug_record;
     PrkLuaScript* const script = prk_find_lua_script(state);
     script->instructions_used += (uint64_t)lua_gethookcount(state);
-    if (script->instructions_used <= script->instruction_limit) {
+    const int is_over_budget = script->instructions_used > script->instruction_limit;
+    if (!is_over_budget && !script->is_past_deadline && script->deadline_ms != 0 &&
+        script->host.read_monotonic_milliseconds(script->host.host_state) >= script->deadline_ms) {
+        script->is_past_deadline = 1;
+    }
+    if (!is_over_budget && !script->is_past_deadline) {
         return;
     }
     /* Fire on every instruction from now on, so a script that catches this error with pcall is
        stopped again at its very next instruction instead of 1000 instructions later. */
     lua_sethook(state, &prk_charge_lua_instructions, LUA_MASKCOUNT, 1);
-    luaL_error(state, "instruction limit of %I instructions exceeded", (lua_Integer)script->instruction_limit);
+    if (is_over_budget) {
+        luaL_error(state, "instruction limit of %I instructions exceeded", (lua_Integer)script->instruction_limit);
+    }
+    luaL_error(state, "timeout of %I ms exceeded", (lua_Integer)script->timeout_ms);
 }
 
 void prk_reset_lua_instruction_budget(PrkLuaScript* script) {
     script->instructions_used = 0;
     lua_sethook(script->state, &prk_charge_lua_instructions, LUA_MASKCOUNT, PRK_LUA_HOOK_INTERVAL);
+}
+
+void prk_start_lua_deadline(PrkLuaScript* script, uint64_t timeout_ms) {
+    script->is_past_deadline = 0;
+    script->timeout_ms = timeout_ms;
+    script->deadline_ms = 0;
+    if (timeout_ms != 0 && script->host.read_monotonic_milliseconds != NULL) {
+        const uint64_t now = script->host.read_monotonic_milliseconds(script->host.host_state);
+        script->deadline_ms = now + timeout_ms < now ? UINT64_MAX : now + timeout_ms;
+    }
 }
 
 /** @brief print(...) replacement: writes tab-separated values and a newline to the output callback. */
@@ -73,16 +85,16 @@ static int prk_print_to_lua_output(lua_State* state) {
     for (int index = 1; index <= argument_count; ++index) {
         size_t length = 0;
         const char* const text = luaL_tolstring(state, index, &length);
-        if (script->output.write_text != NULL) {
+        if (script->host.write_text != NULL) {
             if (index > 1) {
-                script->output.write_text(script->output.output_state, "\t", 1);
+                script->host.write_text(script->host.host_state, "\t", 1);
             }
-            script->output.write_text(script->output.output_state, text, length);
+            script->host.write_text(script->host.host_state, text, length);
         }
         lua_pop(state, 1);
     }
-    if (script->output.write_text != NULL) {
-        script->output.write_text(script->output.output_state, "\n", 1);
+    if (script->host.write_text != NULL) {
+        script->host.write_text(script->host.host_state, "\n", 1);
     }
     return 0;
 }
@@ -132,9 +144,20 @@ int prk_open_lua_sandbox_libraries(lua_State* state) {
     return 0;
 }
 
+int prk_is_lua_error_object(lua_State* state, int index, const char* type_name) {
+    if (!lua_istable(state, index) || !lua_getmetatable(state, index)) {
+        return 0;
+    }
+    luaL_getmetatable(state, type_name);
+    const int is_match = lua_rawequal(state, -1, -2);
+    lua_pop(state, 2);
+    return is_match;
+}
+
 int prk_add_lua_error_traceback(lua_State* state) {
-    if (lua_touserdata(state, 1) == prk_get_lua_stop_marker()) {
-        return 1;
+    if (prk_is_lua_error_object(state, 1, PRK_LUA_ASSERTION_ERROR_TYPE) ||
+        prk_is_lua_error_object(state, 1, PRK_LUA_SKIP_TYPE)) {
+        return 1; /* The message already names the failing line; a traceback would only add noise. */
     }
     const char* message = lua_tostring(state, 1);
     if (message == NULL) {
@@ -165,6 +188,16 @@ void prk_describe_lua_error(const PrkLuaScript* script, int pcall_status, char* 
         prk_copy_lua_text(text, out_text, capacity);
         return;
     }
-    const char* const message = lua_tostring(script->state, -1);
+    lua_State* const state = script->state;
+    if (prk_is_lua_error_object(state, -1, PRK_LUA_ASSERTION_ERROR_TYPE) ||
+        prk_is_lua_error_object(state, -1, PRK_LUA_SKIP_TYPE)) {
+        lua_pushliteral(state, "message");
+        lua_rawget(state, -2);
+        const char* const object_message = lua_tostring(state, -1);
+        prk_copy_lua_text(object_message != NULL ? object_message : "unknown Lua error", out_text, capacity);
+        lua_pop(state, 1);
+        return;
+    }
+    const char* const message = lua_tostring(state, -1);
     prk_copy_lua_text(message != NULL ? message : "unknown Lua error", out_text, capacity);
 }

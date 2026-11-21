@@ -54,8 +54,11 @@ process, or module-loading access. Capabilities such as process spawn and file c
 test-authoring API.
 
 Lua 5.4.9 is in place: `src/script/` implements the sandbox and the `prk` table over the C ABI in
-`include/proofrunkit/prk_lua.h`, and `src/cpp/script_loading.cpp` reads script files (the only file IO) and loads
-each into its own Lua state. See [lua-tests.md](lua-tests.md).
+`include/proofrunkit/prk_lua.h`, and `src/cpp/script_loading.cpp` reads script files and loads each into its own Lua
+state. The test-authoring API (#12) is split so JavaScript can reuse it: `src/script/prk_test_plan.c` owns suites,
+hooks, tag and name selection, and the per-test execution order behind an engine callback table, and
+`include/proofrunkit/prk_script.h` defines the host callbacks (print, monotonic clock, read-only relative file access)
+that `src/cpp/script_host.cpp` implements. See [lua-tests.md](lua-tests.md).
 
 ### Drivers - Planned
 

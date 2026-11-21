@@ -59,3 +59,40 @@ prk.add_test("self.compile.errors_are_parsed", function()
     prk.expect_equal(first.line, 2)
     prk.expect_contains(first.message, "undeclared_name")
 end)
+
+-- Separate compile and link steps, a static library, and a shared library. A probe compile picks the compiler
+-- (and so the file names: .obj/.lib for MSVC, .o/lib*.a elsewhere) that every later step uses.
+local function probe_compiler()
+    return compile_or_skip{sources = samples .. "/hello.c", output = "./prk_lua_probe"}.compiler
+end
+
+prk.add_test("self.compile.static_library_links_into_program", function()
+    local compiler = probe_compiler()
+    local is_msvc = compiler == "msvc"
+    local object_name = is_msvc and "./prk_lua_mathlib.obj" or "./prk_lua_mathlib.o"
+    local object = prk.compile{sources = samples .. "/mathlib.c", output = object_name, kind = "object",
+                               compiler = compiler, werror = true}
+    prk.expect_exit_code(object, 0)
+    prk.expect_equal(object.kind, "object")
+    local library_name = is_msvc and "./prk_lua_mathlib.lib" or "./libprk_lua_mathlib.a"
+    local archive = prk.compile{sources = {object_name}, output = library_name, kind = "static_library",
+                                compiler = compiler}
+    prk.expect_exit_code(archive, 0)
+    local program = prk.compile{sources = {samples .. "/uses_mathlib.c"}, output = "./prk_lua_uses_mathlib",
+                                compiler = compiler, includes = {samples}, library_dirs = {"."},
+                                libraries = {"prk_lua_mathlib"}, werror = true}
+    prk.expect_exit_code(program, 0)
+    local run = prk.run_process{program = program.output}
+    prk.expect_exit_code(run, 0)
+    prk.expect_contains(run.stdout, "2 + 3 = 5")
+end)
+
+prk.add_test("self.compile.shared_library_builds", function()
+    local compiler = probe_compiler()
+    local name = compiler == "msvc" and "./prk_lua_mathlib_shared.dll" or "./libprk_lua_mathlib_shared.so"
+    local shared = prk.compile{sources = samples .. "/mathlib.c", output = name, kind = "shared_library",
+                               compiler = compiler}
+    prk.expect_exit_code(shared, 0)
+    prk.expect_equal(shared.kind, "shared_library")
+    prk.expect_equal(shared.output, name)
+end)

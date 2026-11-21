@@ -65,13 +65,18 @@ ScriptHostServices make_disk_script_host_services() {
 ScriptHost::ScriptHost(ScriptHostServices services, std::ostream& print_output)
     : services_(std::move(services)), print_output_(print_output) {}
 
+ScriptHost::~ScriptHost() {
+    prk_release_msvc_toolchain(&msvc_toolchain_);
+}
+
 PrkScriptHost ScriptHost::make_c_host() {
     return PrkScriptHost{&ScriptHost::write_text,
                          services_.read_monotonic_milliseconds ? &ScriptHost::read_monotonic_milliseconds : nullptr,
                          services_.find_file ? &ScriptHost::find_file : nullptr,
                          services_.read_file ? &ScriptHost::read_file : nullptr,
                          this,
-                         services_.process_runner};
+                         services_.process_runner,
+                         &msvc_toolchain_};
 }
 
 void ScriptHost::write_text(void* host_state, const char* text, std::size_t length) {

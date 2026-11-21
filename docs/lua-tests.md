@@ -149,9 +149,11 @@ code [, message])` turns any unexpected result into a failure such as
 
 ### Compiling C and C++
 
-`prk.compile{sources = {...}, output = ..., language = "c" | "c++", compiler = "auto" | "gcc" | "clang" | "msvc",
-std = ..., includes = {...}, defines = {...}, flags = {...}, werror = true}` compiles with a real toolchain and
-returns the `prk.run_process` fields plus `diagnostics`, `errors`, `warnings`, `output`, and `command`; see
+`prk.compile{sources = {...}, output = ..., kind = "executable" | "object" | "static_library" | "shared_library",
+language = "c" | "c++", compiler = "auto" | "gcc" | "clang" | "msvc", std = ..., includes = {...}, defines = {...},
+libraries = {...}, library_dirs = {...}, flags = {...}, werror = true}` compiles with a real toolchain (MSVC is found
+with vswhere when `cl` is not on PATH) and returns the `prk.run_process` fields plus `diagnostics`, `errors`,
+`warnings`, `output`, `kind`, `msvc_discovered`, and `command`; see
 [c-cpp-driver.md](c-cpp-driver.md) ([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14)).
 
 ### Other fields
@@ -197,7 +199,8 @@ The JavaScript engine ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/is
 | `prk.run_process{program=, args=, cwd=, env=, inherit_env=, stdin=, timeout_ms=, output_limit=}` | `prk.runProcess({program, args, cwd, env, inheritEnv, stdin, timeoutMs, outputLimit})` |
 | result `exit_code`, `elapsed_ms`, `stdout_truncated` | result `exitCode`, `elapsedMs`, `stdoutTruncated` |
 | `prk.expect_exit_code(result, code)` | `prk.expectExitCode(result, code)` |
-| `prk.compile{..., timeout_ms=}` | `prk.compile({..., timeoutMs})` |
+| `prk.compile{..., library_dirs=, msvc_arch=, timeout_ms=}` | `prk.compile({..., libraryDirs, msvcArch, timeoutMs})` |
+| compile result `msvc_discovered` | compile result `msvcDiscovered` |
 
 ## Sandbox
 

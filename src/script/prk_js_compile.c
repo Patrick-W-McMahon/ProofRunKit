@@ -3,11 +3,12 @@
  * @brief prk.compile for JavaScript test scripts (#14); the camelCase twin of prk_lua_compile.c.
  *
  *   const result = prk.compile({sources: ['hello.c'], output: 'build/hello', language: 'c', compiler: 'auto',
- *                               program: undefined, std: 'c17', includes: ['include'], defines: ['NDEBUG'],
- *                               flags: ['-O2'], werror: true, cwd: undefined, timeoutMs: 120000});
+ *                               kind: 'executable', program: undefined, archiver: undefined, msvcArch: 'x64',
+ *                               std: 'c17', includes: ['include'], defines: ['NDEBUG'], flags: ['-O2'],
+ *                               libraries: ['m'], libraryDirs: ['lib'], werror: true, timeoutMs: 120000});
  *
  * The result has every prk.runProcess field (ok, outcome, exitCode, stdout, stderr, elapsedMs, error) plus
- * compiler, program, command, output, errors, warnings, and diagnostics (an array of
+ * compiler, program, command, output, kind, msvcDiscovered, errors, warnings, and diagnostics (an array of
  * {severity, file, line, column, code, message}). A missing compiler is a result, not an exception.
  */
 #include <stdlib.h>
@@ -24,18 +25,20 @@ typedef struct PrkJsStringList {
 
 /** @brief Every C string borrowed for one compile request; released together. */
 typedef struct PrkJsCompileStrings {
-    const char* texts[6];     /**< output, language, compiler, program, std, cwd. */
-    PrkJsStringList lists[4]; /**< sources, includes, defines, flags. */
+    const char* texts[9];     /**< output, language, compiler, program, std, cwd, kind, archiver, msvcArch. */
+    PrkJsStringList lists[6]; /**< sources, includes, defines, flags, libraries, libraryDirs. */
 } PrkJsCompileStrings;
 
-static const char* const prk_js_compile_text_keys[6] = {"output", "language", "compiler", "program", "std", "cwd"};
-static const char* const prk_js_compile_list_keys[4] = {"sources", "includes", "defines", "flags"};
+static const char* const prk_js_compile_text_keys[9] = {"output", "language", "compiler", "program", "std",
+                                                        "cwd",    "kind",     "archiver", "msvcArch"};
+static const char* const prk_js_compile_list_keys[6] = {"sources", "includes",  "defines",
+                                                        "flags",   "libraries", "libraryDirs"};
 
 static void prk_release_js_compile_strings(JSContext* context, PrkJsCompileStrings* strings) {
-    for (size_t index = 0; index < 6; ++index) {
+    for (size_t index = 0; index < 9; ++index) {
         JS_FreeCString(context, strings->texts[index]);
     }
-    for (size_t list = 0; list < 4; ++list) {
+    for (size_t list = 0; list < 6; ++list) {
         for (size_t index = 0; index < strings->lists[list].count; ++index) {
             JS_FreeCString(context, strings->lists[list].items[index]);
         }
@@ -46,8 +49,9 @@ static void prk_release_js_compile_strings(JSContext* context, PrkJsCompileStrin
 
 /** @brief Rejects unknown option keys. @return 0, or -1 with an exception pending. */
 static int prk_check_js_compile_option_keys(JSContext* context, JSValueConst options) {
-    static const char* const known[] = {"sources", "output", "language", "compiler",  "program", "std", "includes",
-                                        "defines", "flags",  "werror",   "timeoutMs", "cwd",     NULL};
+    static const char* const known[] = {"sources",   "output",      "language", "compiler", "program",   "std",
+                                        "includes",  "defines",     "flags",    "werror",   "cwd",       "kind",
+                                        "libraries", "libraryDirs", "archiver", "msvcArch", "timeoutMs", NULL};
     JSPropertyEnum* properties = NULL;
     uint32_t count = 0;
     if (JS_GetOwnPropertyNames(context, &properties, &count, options, JS_GPN_STRING_MASK | JS_GPN_ENUM_ONLY) != 0) {
@@ -157,29 +161,14 @@ static int prk_read_js_compile_flags(JSContext* context, const PrkJsScript* scri
     return status;
 }
 
-/** @brief Reads every option. @return 0, or -1 with an exception pending. */
-static int prk_read_js_compile_request(JSContext* context, const PrkJsScript* script, JSValueConst options,
-                                       PrkJsCompileStrings* strings, PrkCompileRequest* out_request) {
-    static const char* const families[] = {"auto", "gcc", "clang", "msvc", NULL};
-    static const char* const languages[] = {"c", "c++", NULL};
-    int status = prk_check_js_compile_option_keys(context, options);
-    for (size_t index = 0; status == 0 && index < 6; ++index) {
-        status = prk_read_js_compile_text(context, options, prk_js_compile_text_keys[index], &strings->texts[index]);
-    }
-    for (size_t index = 0; status == 0 && index < 4; ++index) {
-        status = prk_read_js_compile_list(context, options, prk_js_compile_list_keys[index], &strings->lists[index]);
-    }
-    const int language = status == 0 ? prk_find_js_choice(context, "language", strings->texts[1], languages) : -1;
-    const int family = language >= 0 ? prk_find_js_choice(context, "compiler", strings->texts[2], families) : -1;
-    if (family < 0 || prk_read_js_compile_flags(context, script, options, out_request) != 0) {
-        return -1;
-    }
-    out_request->family = (PrkCompilerFamily)family;
-    out_request->language = (PrkSourceLanguage)language;
+/** @brief Points @p out_request at the borrowed strings. */
+static void prk_fill_js_compile_request(const PrkJsCompileStrings* strings, PrkCompileRequest* out_request) {
     out_request->output_path = strings->texts[0];
     out_request->compiler_program = strings->texts[3];
     out_request->standard = strings->texts[4];
     out_request->working_directory = strings->texts[5];
+    out_request->archiver_program = strings->texts[7];
+    out_request->msvc_architecture = strings->texts[8];
     out_request->sources = strings->lists[0].items;
     out_request->source_count = strings->lists[0].count;
     out_request->include_directories = strings->lists[1].items;
@@ -188,15 +177,57 @@ static int prk_read_js_compile_request(JSContext* context, const PrkJsScript* sc
     out_request->define_count = strings->lists[2].count;
     out_request->extra_flags = strings->lists[3].items;
     out_request->extra_flag_count = strings->lists[3].count;
-    if (out_request->output_path == NULL || out_request->output_path[0] == '\0' || out_request->source_count == 0) {
-        JS_ThrowTypeError(context, "prk.compile: needs output and at least one source");
-        return -1;
+    out_request->libraries = strings->lists[4].items;
+    out_request->library_count = strings->lists[4].count;
+    out_request->library_directories = strings->lists[5].items;
+    out_request->library_directory_count = strings->lists[5].count;
+}
+
+/** @brief Checks option combinations. @return 0, or -1 with an exception pending. */
+static int prk_check_js_compile_request(JSContext* context, const PrkCompileRequest* request) {
+    const char* problem = NULL;
+    if (request->output_path == NULL || request->output_path[0] == '\0' || request->source_count == 0) {
+        problem = "prk.compile: needs output and at least one source";
+    } else if (request->kind == PRK_OUTPUT_OBJECT && request->source_count != 1) {
+        problem = "prk.compile: kind 'object' compiles exactly one source";
+    } else if ((request->compiler_program != NULL || request->archiver_program != NULL) &&
+               request->family == PRK_COMPILER_AUTO) {
+        problem = "prk.compile: program and archiver need compiler 'gcc', 'clang', or 'msvc'";
+    } else if (request->msvc_architecture != NULL && !prk_is_msvc_architecture_allowed(request->msvc_architecture)) {
+        problem = "prk.compile: msvcArch must be a vcvarsall architecture such as 'x64' or 'x86'";
     }
-    if (out_request->compiler_program != NULL && out_request->family == PRK_COMPILER_AUTO) {
-        JS_ThrowTypeError(context, "prk.compile: program needs compiler 'gcc', 'clang', or 'msvc'");
+    if (problem != NULL) {
+        JS_ThrowTypeError(context, "%s", problem);
         return -1;
     }
     return 0;
+}
+
+/** @brief Reads every option. @return 0, or -1 with an exception pending. */
+static int prk_read_js_compile_request(JSContext* context, const PrkJsScript* script, JSValueConst options,
+                                       PrkJsCompileStrings* strings, PrkCompileRequest* out_request) {
+    static const char* const families[] = {"auto", "gcc", "clang", "msvc", NULL};
+    static const char* const languages[] = {"c", "c++", NULL};
+    static const char* const kinds[] = {"executable", "object", "static_library", "shared_library", NULL};
+    int status = prk_check_js_compile_option_keys(context, options);
+    for (size_t index = 0; status == 0 && index < 9; ++index) {
+        status = prk_read_js_compile_text(context, options, prk_js_compile_text_keys[index], &strings->texts[index]);
+    }
+    for (size_t index = 0; status == 0 && index < 6; ++index) {
+        status = prk_read_js_compile_list(context, options, prk_js_compile_list_keys[index], &strings->lists[index]);
+    }
+    const int language = status == 0 ? prk_find_js_choice(context, "language", strings->texts[1], languages) : -1;
+    const int family = language >= 0 ? prk_find_js_choice(context, "compiler", strings->texts[2], families) : -1;
+    const int kind = family >= 0 ? prk_find_js_choice(context, "kind", strings->texts[6], kinds) : -1;
+    if (kind < 0 || prk_read_js_compile_flags(context, script, options, out_request) != 0) {
+        return -1;
+    }
+    out_request->family = (PrkCompilerFamily)family;
+    out_request->language = (PrkSourceLanguage)language;
+    out_request->kind = (PrkOutputKind)kind;
+    out_request->msvc_toolchain = script->host.msvc_toolchain;
+    prk_fill_js_compile_request(strings, out_request);
+    return prk_check_js_compile_request(context, out_request);
 }
 
 /** @brief Builds one diagnostic object. */
@@ -232,6 +263,8 @@ static JSValue prk_make_js_compile_result(JSContext* context, const PrkCompileRe
     JS_SetPropertyStr(context, object, "command",
                       JS_NewString(context, result->command_line != NULL ? result->command_line : ""));
     JS_SetPropertyStr(context, object, "output", JS_NewString(context, result->output_path));
+    JS_SetPropertyStr(context, object, "kind", JS_NewString(context, prk_get_output_kind_name(result->kind)));
+    JS_SetPropertyStr(context, object, "msvcDiscovered", JS_NewBool(context, result->is_msvc_discovered));
     JS_SetPropertyStr(context, object, "errors", JS_NewInt64(context, (int64_t)result->error_count));
     JS_SetPropertyStr(context, object, "warnings", JS_NewInt64(context, (int64_t)result->warning_count));
     return object;

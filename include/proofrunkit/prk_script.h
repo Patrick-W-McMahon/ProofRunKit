@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "proofrunkit/prk.h"
+#include "proofrunkit/prk_msvc_toolchain.h"
 #include "proofrunkit/prk_process.h"
 
 #ifdef __cplusplus
@@ -62,6 +63,8 @@ typedef struct PrkScriptHost {
     void* host_state; /**< Passed back to every callback unchanged; may be NULL. Not owned. */
     /** Spawns processes for prk.run_process / prk.runProcess (#12, #13); a NULL spawn_process disables it. */
     PrkProcessRunner process_runner;
+    /** MSVC discovery cache for prk.compile (#14), shared by every script of a run; NULL disables caching. */
+    PrkMsvcToolchain* msvc_toolchain;
 } PrkScriptHost;
 
 /**

@@ -155,15 +155,15 @@ void test_builds_compiler_arguments(PrkTestContext* context, void*) {
 
 void test_formats_output_path(PrkTestContext* context, void*) {
     std::array<char, 64> path{};
-    prk_format_compile_output_path("build/hello", path.data(), path.size());
+    prk_format_compile_output_path("build/hello", PRK_OUTPUT_EXECUTABLE, path.data(), path.size());
 #if defined(_WIN32)
     PRK_EXPECT(std::strcmp(path.data(), "build/hello.exe") == 0);
-    prk_format_compile_output_path("v1.2\\hello", path.data(), path.size());
+    prk_format_compile_output_path("v1.2\\hello", PRK_OUTPUT_EXECUTABLE, path.data(), path.size());
     PRK_EXPECT(std::strcmp(path.data(), "v1.2\\hello.exe") == 0);
 #else
     PRK_EXPECT(std::strcmp(path.data(), "build/hello") == 0);
 #endif
-    prk_format_compile_output_path("build/hello.out", path.data(), path.size());
+    prk_format_compile_output_path("build/hello.out", PRK_OUTPUT_EXECUTABLE, path.data(), path.size());
     PRK_EXPECT(std::strcmp(path.data(), "build/hello.out") == 0);
 }
 
@@ -216,9 +216,9 @@ void test_compiles_through_runner(PrkTestContext* context, void*) {
 void test_auto_falls_back_when_compiler_missing(PrkTestContext* context, void*) {
     FakeCompilerRunner fake;
 #if defined(_WIN32)
-    fake.missing = {"cl"};
-    const std::vector<std::string> first_order = {"cl", "clang"};
-    const std::vector<std::string> full_order = {"cl", "clang", "gcc"};
+    fake.missing = {"cl", "cmd.exe"}; /* cl is not on PATH and MSVC discovery (cmd.exe) cannot run. */
+    const std::vector<std::string> first_order = {"cl", "cmd.exe", "clang"};
+    const std::vector<std::string> full_order = {"cl", "cmd.exe", "clang", "gcc"};
 #else
     fake.missing = {"gcc"};
     const std::vector<std::string> first_order = {"gcc", "clang"};
@@ -233,10 +233,10 @@ void test_auto_falls_back_when_compiler_missing(PrkTestContext* context, void*) 
     PRK_EXPECT(result.process.outcome == PRK_PROCESS_EXITED);
     prk_release_compile_result(&result);
     fake.programs.clear();
-    fake.missing = {"cl", "clang", "gcc"};
+    fake.missing = {"cl", "cmd.exe", "clang", "gcc"};
     PRK_EXPECT(prk_compile_program(&runner, &request, &result) == PRK_STATUS_OK);
     PRK_EXPECT(fake.programs == full_order && result.process.outcome == PRK_PROCESS_FAILED_TO_START);
-    PRK_EXPECT(std::strstr(result.process.error_message, "no C/C++ compiler found on PATH (tried ") != nullptr);
+    PRK_EXPECT(std::strstr(result.process.error_message, "no C/C++ compiler found (tried ") != nullptr);
     prk_release_compile_result(&result);
 }
 
@@ -280,7 +280,7 @@ void test_lua_compile_binding(PrkTestContext* context, void*) {
         std::move(setup));
     PRK_EXPECT(run->results.size() == 3 && run->results[0].outcome == PRK_OUTCOME_PASSED);
     PRK_EXPECT(run->results.size() == 3 && contains_text(run->results[1].message, "unknown option 'compilr'"));
-    PRK_EXPECT(run->results.size() == 3 && contains_text(run->results[2].message, "program needs compiler"));
+    PRK_EXPECT(run->results.size() == 3 && contains_text(run->results[2].message, "need compiler"));
     PRK_EXPECT(fake.arguments == std::vector<std::string>({"-fdiagnostics-color=never", "-Wall", "-Wextra", "-Werror",
                                                            "-std=c17", "-DX=1", "a.c", "-o", "a.out"}));
 }

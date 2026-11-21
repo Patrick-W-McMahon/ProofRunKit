@@ -1,0 +1,95 @@
+-- Self-hosted tests for the prk.expect_* assertions (#12, #55): each assertion must pass on good
+-- values and fail with a precise message on bad ones. Failures are caught with prk.expect_error,
+-- which works because assertion failures are ordinary (catchable) error objects.
+-- Run with:  prk run tests/lua/self/assertions_test.lua
+
+local function expect_failure(action, pattern)
+    return prk.expect_error(action, pattern)
+end
+
+prk.describe("assertions", function()
+    prk.add_test("truthiness", function()
+        prk.expect_true(true) prk.expect_true(0) prk.expect_true("")
+        prk.expect_false(false) prk.expect_false(nil)
+        expect_failure(function() prk.expect_true(nil) end, "expected a true value, got nil$")
+        expect_failure(function() prk.expect_false(1) end, "expected a false value, got 1$")
+        expect_failure(function() prk.expect_true(false, "custom text") end, ": custom text$")
+    end)
+
+    prk.add_test("equality", function()
+        prk.expect_equal(6 * 7, 42) prk.expect_equal("a" .. "b", "ab") prk.expect_equal(nil, nil)
+        prk.expect_not_equal(1, 2) prk.expect_not_equal("1", 1)
+        expect_failure(function() prk.expect_equal(1, 2) end, "values differ: expected 2, got 1$")
+        expect_failure(function() prk.expect_equal("x", "y", "names") end, 'names: expected "y", got "x"$')
+        expect_failure(function() prk.expect_not_equal(3, 3) end, "values are equal: both are 3$")
+    end)
+
+    prk.add_test("nil_checks", function()
+        prk.expect_nil(nil) prk.expect_not_nil(false)
+        expect_failure(function() prk.expect_nil(0) end, "expected nil: got 0$")
+        expect_failure(function() prk.expect_not_nil(nil) end, "expected a value, got nil$")
+    end)
+
+    prk.add_test("numeric_comparisons", function()
+        prk.expect_near(0.1 + 0.2, 0.3, 1e-12) prk.expect_near(10, 11, 1)
+        prk.expect_less_than(1, 2) prk.expect_less_or_equal(2, 2)
+        prk.expect_greater_than(2, 1) prk.expect_greater_or_equal(2, 2)
+        expect_failure(function() prk.expect_near(1, 2, 0.5) end, "not near: expected 2 %+/%- 0.5, got 1$")
+        expect_failure(function() prk.expect_near("1", 1, 0) end, "actual must be a number")
+        expect_failure(function() prk.expect_less_than(2, 2) end, "value too large: expected 2 < 2$")
+        expect_failure(function() prk.expect_less_or_equal(3, 2) end, "expected 3 <= 2$")
+        expect_failure(function() prk.expect_greater_than(2, 2) end, "value too small: expected 2 > 2$")
+        expect_failure(function() prk.expect_greater_or_equal(1, 2) end, "expected 1 >= 2$")
+        prk.expect_near(0 / 0 == 0 / 0 and 1 or 0, 0, 0, "NaN is not equal to itself")
+        expect_failure(function() prk.expect_near(0 / 0, 0, 1) end, "not near")
+    end)
+
+    prk.add_test("strings_and_tables", function()
+        prk.expect_contains("hello world", "lo w") prk.expect_contains("a.b", ".")
+        prk.expect_contains({ "x", "y" }, "y") prk.expect_contains({ key = 5 }, 5)
+        prk.expect_match("v1.2.3", "^v%d+%.%d+%.%d+$") prk.expect_type(print, "function")
+        expect_failure(function() prk.expect_contains("abc", "%a") end, "item not found")
+        expect_failure(function() prk.expect_contains(42, 4) end, "container must be a string or a table")
+        expect_failure(function() prk.expect_match("abc", "^b") end, 'no match: expected "abc" to match "%^b"$')
+        expect_failure(function() prk.expect_match(5, ".") end, "no match")
+        expect_failure(function() prk.expect_type({}, "string") end, "wrong type: expected string, got table$")
+    end)
+
+    prk.add_test("deep_equality", function()
+        prk.expect_deep_equal({ 1, { 2, { 3 } }, k = "v" }, { 1, { 2, { 3 } }, k = "v" })
+        local a, b = { n = 1 }, { n = 1 }
+        a.self, b.self = a, b
+        prk.expect_deep_equal(a, b)
+        expect_failure(function() prk.expect_deep_equal({ 1, 2 }, { 1, 3 }) end, "at value%[2%]: expected 3, got 2$")
+        expect_failure(function() prk.expect_deep_equal({ k = { 1 } }, { k = {} }) end, 'at value%["k"%]%[1%]: unexpected 1$')
+        expect_failure(function() prk.expect_deep_equal({}, { 1 }) end, "at value%[1%]: expected 1, got nil$")
+        expect_failure(function() prk.expect_deep_equal(1, {}) end, "at value: expected table")
+    end)
+
+    prk.add_test("expect_error", function()
+        prk.expect_equal(prk.expect_error(function() error("plain", 0) end), "plain")
+        prk.expect_match(prk.expect_error(function() error({}) end), "^table: ")
+        expect_failure(function() prk.expect_error(function() end) end, "the function returned normally$")
+        expect_failure(function() prk.expect_error(function() error("abc", 0) end, "xyz") end,
+            'wrong error: expected an error matching "xyz", got "abc"$')
+        expect_failure(function() prk.expect_error(42) end, "action must be a function")
+    end)
+
+    prk.add_test("messages_name_the_calling_line", function()
+        local message = prk.expect_error(function() prk.expect_true(false) end)
+        prk.expect_match(message, "assertions_test%.lua:%d+: expected a true value, got false$")
+        local failure = prk.expect_error(function() prk.fail_test("stop here") end)
+        prk.expect_match(failure, "assertions_test%.lua:%d+: stop here$")
+    end)
+
+    prk.add_test("failures_are_error_objects", function()
+        local ok, failure = pcall(prk.expect_equal, 1, 2)
+        prk.expect_false(ok)
+        prk.expect_type(failure, "table")
+        prk.expect_match(tostring(failure), "values differ")
+        prk.expect_match(failure.message, "expected 2, got 1$")
+        local skipped, skip = pcall(prk.skip_test, "reason")
+        prk.expect_false(skipped)
+        prk.expect_equal(tostring(skip), "reason")
+    end)
+end)

@@ -73,3 +73,31 @@ set_tests_properties(prk_lua_timeout_option PROPERTIES PASS_REGULAR_EXPRESSION "
 add_test(NAME prk_reports_and_exit_codes
     COMMAND ${CMAKE_COMMAND} "-DPRK_EXE=${_prk_short_exe}" "-DPRK_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
             "-DPRK_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/reports" -P "${PROJECT_SOURCE_DIR}/tests/cmake/CheckReportsAndExitCodes.cmake")
+
+# Self-hosted suite (#55): ProofRunKit tests itself with Lua scripts under tests/lua/self, run by the
+# shipped prk executable. Each passes on exit code 0 (no failed tests, no load error).
+# proofrunkit_selftest (the C++ harness) stays as the fallback (#27).
+set(_prk_self "${_prk_lua_tests}/self")
+foreach(_prk_self_script IN ITEMS assertions_test suites_and_hooks_test)
+    add_test(NAME prk_self_${_prk_self_script} COMMAND "${_prk_short_exe}" run "${_prk_self}/${_prk_self_script}.lua")
+endforeach()
+add_test(NAME prk_self_timing_and_files_test COMMAND "${_prk_short_exe}" run "${_prk_self}/timing_and_files_test.lua")
+set_tests_properties(prk_self_timing_and_files_test PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+add_test(NAME prk_self_tags_test
+    COMMAND "${_prk_short_exe}" run --tag selected --exclude-tag excluded "${_prk_self}/tags_test.lua")
+set_tests_properties(prk_self_tags_test PROPERTIES PASS_REGULAR_EXPRESSION "3 tests: 2 passed, 0 failed, 1 skipped")
+
+# Reports: fixture runs write JSON and JUnit files, then reports_test.lua checks them.
+set(_prk_self_reports_dir "${CMAKE_CURRENT_BINARY_DIR}/self-reports-run")
+file(MAKE_DIRECTORY "${_prk_self_reports_dir}/self-reports")
+add_test(NAME prk_self_reports_fixture
+    COMMAND "${_prk_short_exe}" run --filter fixture. --exclude-tag slow --json-file self-reports/fixture.json
+            --junit-file self-reports/fixture.xml "${_prk_self}/fixtures/report_fixture.lua")
+set_tests_properties(prk_self_reports_fixture PROPERTIES WORKING_DIRECTORY "${_prk_self_reports_dir}"
+                     WILL_FAIL TRUE FIXTURES_SETUP prk_self_reports)
+add_test(NAME prk_self_reports_builtin COMMAND "${_prk_short_exe}" run --json-file self-reports/builtin.json)
+set_tests_properties(prk_self_reports_builtin PROPERTIES WORKING_DIRECTORY "${_prk_self_reports_dir}"
+                     FIXTURES_SETUP prk_self_reports)
+add_test(NAME prk_self_reports_test COMMAND "${_prk_short_exe}" run "${_prk_self}/reports_test.lua")
+set_tests_properties(prk_self_reports_test PROPERTIES WORKING_DIRECTORY "${_prk_self_reports_dir}"
+                     FIXTURES_REQUIRED prk_self_reports)

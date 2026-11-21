@@ -71,6 +71,12 @@ resets, or discards changes.
 | `prk_lua_stops_infinite_loop` | The instruction budget stops an endless loop. |
 | `prk_lua_timeout_option` | `--timeout 200` stops an endless loop with a wall-clock timeout (#12). |
 | `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow the contract in docs/exit-codes.md (#21). |
+| `prk_self_assertions_test` | Self-hosted (#55): every `prk.expect_*` assertion, run by `prk` on `tests/lua/self/assertions_test.lua`. |
+| `prk_self_suites_and_hooks_test` | Self-hosted: suites and hook order. |
+| `prk_self_timing_and_files_test` | Self-hosted: clock, timing, and read-only file checks (runs in the repository root). |
+| `prk_self_tags_test` | Self-hosted: `--tag` / `--exclude-tag` selection. |
+| `prk_self_reports_fixture`, `prk_self_reports_builtin` | Write JSON and JUnit reports for `prk_self_reports_test`. The fixture run exits 1 by design. |
+| `prk_self_reports_test` | Self-hosted: checks those reports (runner, reporters, `--filter`, cycle-counter checks). |
 | `proofrunkit_license_rtf_generation` | The installer license RTF is generated correctly from `LICENSE` (#58). |
 
 Run the self-test directly for per-test output: `build\windows-msvc-x64-debug\tests\selftest\Debug\proofrunkit_selftest.exe`

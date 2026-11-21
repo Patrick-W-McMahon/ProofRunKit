@@ -46,6 +46,8 @@ hooks, selection, and execution order are the same engine-neutral code, so both 
 | `prk.failTest(message)` / `prk.skipTest(reason)` | Throw a `prk.AssertionError` / `prk.Skip`. |
 | `prk.readClockMs()`, `prk.measureElapsedMs(fn, ...args)` | Monotonic clock in milliseconds. |
 | `prk.isFilePresent(path)`, `prk.readTextFile(path)` | Read-only, relative paths inside the working directory. |
+| `prk.runProcess({program, args, cwd, env, inheritEnv, stdin, timeoutMs, outputLimit})` | Starts a program (no shell) and returns `{ok, outcome, exitCode, signal, stdout, stderr, stdoutTruncated, stderrTruncated, elapsedMs, error}`. Same rules as `prk.run_process` in [lua-tests.md](lua-tests.md#processes): a missing program or a timeout is returned, not thrown, and the timeout never outlasts the test. |
+| `prk.expectExitCode(result, code [, message])` | Fails with the exit code (or why the program did not run) and its stderr. |
 | `print(...)`, `console.log(...)` | Write a line to the console (to stderr when stdout carries a JSON/JUnit report or a listing). |
 | `prk.version`, `prk.jsEngine` | `"0.1.0"`, `"QuickJS-ng 0.18.0"`. |
 
@@ -81,6 +83,7 @@ The sandbox is a safety aid for honest test code, not a security boundary for ho
 
 | Control | Behavior |
 | --- | --- |
+| Processes | Only through `prk.runProcess` (granted by the front end); time-limited, killed with their children at the limit, not sandboxed. |
 | Modules and ambient access | Only the ECMAScript built-ins plus `prk`, `print`, and `console.log`. QuickJS-ng's `qjs:std` / `qjs:os` library (`quickjs-libc.c`) is not compiled into the executable, there is no module loader (`import` fails), and there is no `require`, `process`, `setTimeout`, `fetch`, file, or environment access. `Atomics.wait` cannot block. |
 | Memory | Each script's runtime may hold at most 64 MiB (`JS_SetMemoryLimit`). Exceeding it fails the test with `memory limit of ... bytes exceeded`; the next test starts after a garbage collection. |
 | Instructions | An interrupt handler charges 10,000 operations per call. Loading a script, and each test (hooks and body together), may use at most 200 million. Exceeding the budget fails the test with `instruction limit of ... instructions exceeded`. The interrupt is uncatchable: `try` / `catch` / `finally` cannot swallow it. |
@@ -107,6 +110,7 @@ what is left out of it are described in
 
 ## Coverage
 
-`tests/js/prk_js_api_test.js` runs through `prk` in CTest (`prk_js_api_selftest`), and `tests/js/samples/` covers a
+`tests/js/prk_js_api_test.js` runs through `prk` in CTest (`prk_js_api_selftest`), `tests/js/process_test.js`
+(`prk_js_process_test`) starts `prk` itself with `prk.runProcess`, and `tests/js/samples/` covers a
 failing test, a syntax error, and an endless loop that tries to catch the interrupt. The C++ self-test suite `js.*`
 covers the sandbox, budgets, async tests, assertions, suites, tags, and files.

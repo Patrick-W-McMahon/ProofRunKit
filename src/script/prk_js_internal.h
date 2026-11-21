@@ -66,4 +66,11 @@ int prk_store_js_function(PrkJsScript* script, JSValueConst function, PrkScriptF
  */
 int prk_open_js_test_api(JSContext* context);
 
+/**
+ * @brief Adds prk.runProcess to the prk object (prk_js_process.c, #12/#13).
+ * @param context Context of the script. @param prk The prk object.
+ * @return 0, or -1 with an exception pending.
+ */
+int prk_add_js_process_api(JSContext* context, JSValueConst prk);
+
 #endif /* PROOFRUNKIT_PRK_JS_INTERNAL_H */

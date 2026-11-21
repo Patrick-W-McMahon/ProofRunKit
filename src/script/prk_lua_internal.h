@@ -99,4 +99,11 @@ void prk_describe_lua_error(const PrkLuaScript* script, int pcall_status, char* 
  */
 int prk_open_lua_test_api(lua_State* state);
 
+/**
+ * @brief Adds prk.run_process to the table on top of the stack (prk_lua_process.c, #12/#13).
+ * @param state Lua state whose stack top is the prk table.
+ * @return 0. Side effects: registers the process-result metatable; may raise a Lua memory error.
+ */
+int prk_add_lua_process_api(lua_State* state);
+
 #endif /* PROOFRUNKIT_PRK_LUA_INTERNAL_H */

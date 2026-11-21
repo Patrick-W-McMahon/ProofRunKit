@@ -11,13 +11,14 @@
  *   prk.fail_test(message), prk.skip_test(reason)
  *   prk.read_clock_ms(), prk.measure_elapsed_ms(fn, ...)
  *   prk.is_file_present(path), prk.read_text_file(path), prk.expect_file_present / expect_file_contains
+ *   prk.run_process{...}, prk.expect_exit_code(result, code)   process spawn (#13; prk_lua_process.c)
  *   prk.version, prk.lua_version
  *
  * Failures and skips are error objects (tables with the metatables prk.AssertionError and prk.Skip
  * whose __tostring is the message), so a script can catch them with pcall exactly as a JavaScript test
  * catches a thrown error (#11). A plain Lua error inside a test also fails it, with a traceback.
  * Must not grant ambient file, process, or environment access: files go through the host's read-only
- * callbacks; process spawn arrives with #13.
+ * callbacks, and processes only through the host's runner (prk.run_process, prk_lua_process.c).
  *
  * Size: over the 400-line review mark because about 160 lines are the Lua assertion prelude, a data table
  * kept beside the C functions it calls.
@@ -453,6 +454,25 @@ static const char* const prk_lua_assertion_prelude[] = {
     "    fail(detail(message, 'text not found', 'expected file ' .. show(path) .. ' to contain ' .. show(text)))\n"
     "  end\n"
     "end\n"
+    "local function describe_process(result)\n"
+    "  local text\n"
+    "  if result.outcome == 'exited' then text = 'exit code ' .. tostring(result.exit_code)\n"
+    "  elseif result.outcome == 'failed to start' then text = 'failed to start: ' .. tostring(result.error)\n"
+    "  elseif result.outcome == 'timed out' then text = 'timed out after ' .. tostring(result.elapsed_ms) .. ' ms'\n"
+    "  else text = tostring(result.outcome) .. ' ' .. tostring(result.signal) end\n"
+    "  local stderr = result.stderr or ''\n"
+    "  if #stderr > 0 then text = text .. '\\nstderr: ' .. stderr:sub(1, 2000) end\n"
+    "  return text\n"
+    "end\n"
+    "function prk.expect_exit_code(result, expected, message)\n"
+    "  if type(result) ~= 'table' or result.outcome == nil then\n"
+    "    error('prk.expect_exit_code: result must come from prk.run_process', 2)\n"
+    "  end\n"
+    "  if result.outcome ~= 'exited' or result.exit_code ~= expected then\n"
+    "    fail(detail(message, 'unexpected process result', 'expected exit code ' .. tostring(expected) .. ', got ' ..\n"
+    "      describe_process(result)))\n"
+    "  end\n"
+    "end\n"
     "function prk.measure_elapsed_ms(action, ...)\n"
     "  local started = prk.read_clock_ms()\n"
     "  action(...)\n"
@@ -525,6 +545,7 @@ int prk_open_lua_test_api(lua_State* state) {
     lua_setfield(state, -2, "version");
     lua_pushliteral(state, LUA_RELEASE);
     lua_setfield(state, -2, "lua_version");
+    (void)prk_add_lua_process_api(state);
 
     PrkLuaPreludeReader reader = {0};
     if (lua_load(state, &prk_read_lua_prelude_piece, &reader, "=prk", "t") != LUA_OK) {

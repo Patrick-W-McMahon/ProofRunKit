@@ -14,6 +14,7 @@
 #include <stdint.h>
 
 #include "proofrunkit/prk.h"
+#include "proofrunkit/prk_process.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,6 +60,8 @@ typedef struct PrkScriptHost {
     /** Streams the whole file at @p path to @p receive_bytes. */
     PrkFileAccessStatus (*read_file)(void* host_state, const char* path, PrkReceiveFileBytes receive_bytes, void* sink);
     void* host_state; /**< Passed back to every callback unchanged; may be NULL. Not owned. */
+    /** Spawns processes for prk.run_process / prk.runProcess (#12, #13); a NULL spawn_process disables it. */
+    PrkProcessRunner process_runner;
 } PrkScriptHost;
 
 /**
@@ -80,6 +83,16 @@ typedef struct PrkScriptRunSettings {
  * @return A static string. Pure function.
  */
 const char* prk_get_file_access_status_name(PrkFileAccessStatus status);
+
+/**
+ * @brief Chooses the timeout of a process a script starts, so it can never outlive the running test.
+ * @param requested_ms Timeout the script asked for; 0 means the process layer's default.
+ * @param deadline_ms Host-clock time the running test must finish by; 0 when there is none.
+ * @param now_ms Current host-clock time.
+ * @return The smaller of the effective request and the time left before the deadline (at least 1 ms).
+ *         Pure function.
+ */
+uint64_t prk_cap_script_process_timeout_ms(uint64_t requested_ms, uint64_t deadline_ms, uint64_t now_ms);
 
 #ifdef __cplusplus
 } /* extern "C" */

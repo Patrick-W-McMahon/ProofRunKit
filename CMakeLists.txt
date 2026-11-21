@@ -55,13 +55,15 @@ include(ProofRunKitLua)
 include(ProofRunKitQuickJs)
 add_library(prk_script STATIC
     src/script/prk_lua_api.c
+    src/script/prk_lua_process.c
+    src/script/prk_js_process.c
     src/script/prk_script.c
     src/script/prk_test_plan.c
     src/script/prk_lua_sandbox.c
     src/script/prk_lua_script.c
     src/script/prk_js_api.c
     src/script/prk_js_script.c)
-target_link_libraries(prk_script PUBLIC prk_core PRIVATE prk_lua prk_quickjs)
+target_link_libraries(prk_script PUBLIC prk_core prk_process PRIVATE prk_lua prk_quickjs)
 prk_apply_project_warnings(prk_script)
 
 # ------------------------------------------------------------- front end (C++20 CLI + reporters)

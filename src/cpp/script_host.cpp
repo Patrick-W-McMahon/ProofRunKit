@@ -41,6 +41,7 @@ ScriptHostServices make_disk_script_host_services() {
         return std::filesystem::is_regular_file(std::filesystem::path(path), error) ? PRK_FILE_ACCESS_OK
                                                                                     : PRK_FILE_ACCESS_NOT_FOUND;
     };
+    services.process_runner = prk_get_system_process_runner();
     services.read_file = [](const std::string& path, std::string& out_bytes) {
         std::error_code error;
         if (!std::filesystem::is_regular_file(std::filesystem::path(path), error)) {
@@ -68,7 +69,9 @@ PrkScriptHost ScriptHost::make_c_host() {
     return PrkScriptHost{&ScriptHost::write_text,
                          services_.read_monotonic_milliseconds ? &ScriptHost::read_monotonic_milliseconds : nullptr,
                          services_.find_file ? &ScriptHost::find_file : nullptr,
-                         services_.read_file ? &ScriptHost::read_file : nullptr, this};
+                         services_.read_file ? &ScriptHost::read_file : nullptr,
+                         this,
+                         services_.process_runner};
 }
 
 void ScriptHost::write_text(void* host_state, const char* text, std::size_t length) {

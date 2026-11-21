@@ -24,6 +24,7 @@ struct ScriptHostServices {
     std::function<std::uint64_t()> read_monotonic_milliseconds;             ///< Clock for timeouts/timing.
     std::function<PrkFileAccessStatus(const std::string& path)> find_file;  ///< OK or NOT_FOUND.
     std::function<PrkFileAccessStatus(const std::string& path, std::string& out_bytes)> read_file;  ///< Whole file.
+    PrkProcessRunner process_runner{};  ///< Process spawn for scripts (#12, #13); spawn_process NULL disables it.
 };
 
 /**

@@ -1,3 +1,13 @@
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="ProofRunKit — a single high-performance test executable, compiled once" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/assets/badge-license.svg" alt="License: Apache-2.0">
+  <img src="docs/assets/badge-windows.svg" alt="Platform: Windows">
+  <img src="docs/assets/badge-status.svg" alt="Status: planning / pre-alpha">
+</p>
+
 # ProofRunKit
 
 **Status: planning / pre-alpha.** This repository is in design. The executable, embedded interpreters, drivers, and installers described here are planned work, not shipped features. Follow progress in the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
@@ -22,6 +32,11 @@ Tests for the kit itself are written in **Lua** or **JavaScript**. The compiled 
 
 Existing project suites that already use Node.js, Vitest, pytest, doctest, or other runners are a later, gated migration. Those suites are not rewritten in this first slice; the kit will grow drivers that can wrap them.
 
+
+<p align="center">
+  <img src="docs/assets/diagram-test-flow.svg" alt="Planned flow: agents write Lua or JavaScript tests, the single proofrunkit.exe loads and runs them, and results are reported. The executable does not change when tests change." width="100%">
+</p>
+
 ## Languages under test
 
 The planned surface covers:
@@ -45,6 +60,11 @@ ProofRunKit is not an in-process compiler and not a replacement for gcc, MSVC, N
 - For script suites, it will invoke `node` or `python` the same way, including wrappers for `node:test`, Vitest, and pytest.
 - HTML and CSS follow a check path (static first; browser-driven later) rather than a compile path.
 
+
+<p align="center">
+  <img src="docs/assets/diagram-hybrid-execution.svg" alt="Planned hybrid execution: compiled languages shell out to gcc, clang, MSVC cl, dotnet, or assemblers; diagnostics, exit codes, and outputs are captured, then produced binaries are run. Script suites run on node or python." width="100%">
+</p>
+
 ## Architecture
 
 The planned executable is one process with clear seams:
@@ -55,6 +75,11 @@ The planned executable is one process with clear seams:
 - Reporters for the console, JSON, and JUnit XML, with a documented exit-code contract.
 
 User tests stay outside that binary. Architecture details, including the JavaScript engine recommendation, will live in `docs/ARCHITECTURE.md` and `docs/PROJECT_BRIEF.md` (see [issue #24](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/24)). The engine choice needs Grok Bot sign-off before it is finalized ([issue #10](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/10)).
+
+
+<p align="center">
+  <img src="docs/assets/diagram-architecture.svg" alt="Planned compiled core: CLI, test registry and runner, reporters, embedded Lua 5.4 and a JavaScript engine, a C/C++ core, and Assembly hot paths with a portable C fallback selected by CMake." width="100%">
+</p>
 
 ## Platform status
 

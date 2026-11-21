@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">Hybrid execution model (planned)</title>
+  <desc id="desc">Compiled languages shell out to gcc, clang, MSVC cl, dotnet, or assemblers; diagnostics, exit codes, and outputs are captured, then produced binaries are run. Script suites run on node or python. The kit records a verdict.</desc>
+  <defs>
+    <pattern id="dotgrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.9" fill="#3EE0C8" opacity="0.08"/>
+    </pattern>
+    <clipPath id="frame">
+      <rect x="0" y="0" width="1200" height="800" rx="16" ry="16"/>
+    </clipPath>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 10 6 L 0 10.5 Z" fill="#3EE0C8"/>
+    </marker>
+    <marker id="arrowMuted" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 10 6 L 0 10.5 Z" fill="#A3B0C2"/>
+    </marker>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1A2740" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#3EE0C8" stop-opacity="0.06"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="800" fill="#0B1220"/>
+    <rect width="1200" height="800" fill="url(#dotgrid)"/>
+    <rect width="1200" height="800" fill="url(#sheen)"/>
+    <rect x="0" y="794" width="1200" height="6" fill="#3EE0C8"/>
+    <rect x="0" y="0" width="1200" height="72" fill="#0A101A"/>
+    <rect x="0" y="0" width="6" height="72" fill="#3EE0C8"/>
+    <text x="28" y="34" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start">Hybrid execution model (planned)</text>
+    <text x="28" y="56" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start">The kit shells out to real compilers and runtimes, captures what they do, and records a verdict. Nothing here is in-process compilation.</text>
+    <rect x="28" y="100" width="572" height="668" rx="16" ry="16" fill="#101828" stroke="#33415C" stroke-width="1.25"/>
+    <rect x="44" y="116" width="232" height="28" rx="14" ry="14" fill="#3EE0C8" stroke="#3EE0C8" stroke-width="0"/>
+    <text x="160" y="135" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">Compiled languages</text>
+    <rect x="52" y="164" width="524" height="92" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="314.0" y="216.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Test requests compile-and-run</text>
+    <line x1="314.0" y1="258" x2="314.0" y2="284" stroke="#3EE0C8" stroke-width="1.75" marker-end="url(#arrow)"/>
+    <rect x="52" y="288" width="524" height="92" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="314.0" y="312" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">Shell out to a toolchain</text>
+    <rect x="83.19999999999999" y="340.0" width="48.4" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="107.39999999999999" y="359.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">gcc</text>
+    <rect x="139.6" y="340.0" width="62.0" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="170.6" y="359.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">clang</text>
+    <rect x="209.6" y="340.0" width="75.6" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="247.39999999999998" y="359.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">MSVC cl</text>
+    <rect x="293.2" y="340.0" width="68.8" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="327.59999999999997" y="359.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">dotnet</text>
+    <rect x="370.0" y="340.0" width="55.2" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="397.6" y="359.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">ml64</text>
+    <rect x="433.2" y="340.0" width="48.4" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="457.4" y="359.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">GAS</text>
+    <rect x="489.59999999999997" y="340.0" width="55.2" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="517.1999999999999" y="359.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">NASM</text>
+    <line x1="314.0" y1="382" x2="314.0" y2="408" stroke="#3EE0C8" stroke-width="1.75" marker-end="url(#arrow)"/>
+    <rect x="52" y="412" width="524" height="92" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="314.0" y="453.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Capture results</text>
+    <text x="314.0" y="473.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Diagnostics, exit codes, object and output files</text>
+    <line x1="314.0" y1="506" x2="314.0" y2="532" stroke="#3EE0C8" stroke-width="1.75" marker-end="url(#arrow)"/>
+    <rect x="52" y="536" width="524" height="92" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="314.0" y="577.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Run the produced binary</text>
+    <text x="314.0" y="597.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Exit code, stdout, stderr, timing</text>
+    <line x1="314.0" y1="630" x2="314.0" y2="656" stroke="#3EE0C8" stroke-width="1.75" marker-end="url(#arrow)"/>
+    <rect x="52" y="660" width="524" height="92" rx="14" ry="14" fill="#1A2438" stroke="#3EE0C8" stroke-width="2"/>
+    <text x="314.0" y="712.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Verdict</text>
+    <rect x="616" y="100" width="556" height="668" rx="16" ry="16" fill="#101828" stroke="#33415C" stroke-width="1.25"/>
+    <rect x="632" y="116" width="180" height="28" rx="14" ry="14" fill="#E8C36A" stroke="#E8C36A" stroke-width="0"/>
+    <text x="722" y="135" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">Script runtimes</text>
+    <rect x="640" y="164" width="508" height="96" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="894.0" y="218.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Test requests a runtime run</text>
+    <line x1="894.0" y1="262" x2="894.0" y2="288" stroke="#3EE0C8" stroke-width="1.75" marker-end="url(#arrow)"/>
+    <rect x="640" y="292" width="508" height="96" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="894.0" y="318" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">Shell out to a runtime</text>
+    <rect x="702.6" y="348.0" width="55.2" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="730.2" y="367.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">node</text>
+    <rect x="765.8000000000001" y="348.0" width="89.19999999999999" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="810.4000000000001" y="367.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">node:test</text>
+    <rect x="863.0" y="348.0" width="68.8" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="897.4" y="367.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">Vitest</text>
+    <rect x="939.8" y="348.0" width="68.8" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="974.1999999999999" y="367.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">python</text>
+    <rect x="1016.5999999999999" y="348.0" width="68.8" height="28" rx="10" ry="10" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.15"/>
+    <text x="1051.0" y="367.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">pytest</text>
+    <line x1="894.0" y1="390" x2="894.0" y2="416" stroke="#3EE0C8" stroke-width="1.75" marker-end="url(#arrow)"/>
+    <rect x="640" y="420" width="508" height="96" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="894.0" y="463.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Capture results</text>
+    <text x="894.0" y="483.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">stdout, stderr, exit code, timing</text>
+    <line x1="894.0" y1="518" x2="894.0" y2="544" stroke="#3EE0C8" stroke-width="1.75" marker-end="url(#arrow)"/>
+    <rect x="640" y="548" width="508" height="96" rx="14" ry="14" fill="#1A2438" stroke="#3EE0C8" stroke-width="2"/>
+    <text x="894.0" y="602.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Verdict</text>
+  </g>
+</svg>

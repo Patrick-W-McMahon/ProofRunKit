@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">ProofRunKit compiled core architecture (planned)</title>
+  <desc id="desc">The compiled executable contains a C/C++ core, embedded Lua and JavaScript engines, Assembly hot paths with a portable C fallback, a test runner, and reporters. User tests are not compiled in.</desc>
+  <defs>
+    <pattern id="dotgrid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.9" fill="#3EE0C8" opacity="0.08"/>
+    </pattern>
+    <clipPath id="frame">
+      <rect x="0" y="0" width="1200" height="620" rx="16" ry="16"/>
+    </clipPath>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 10 6 L 0 10.5 Z" fill="#3EE0C8"/>
+    </marker>
+    <marker id="arrowMuted" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 10 6 L 0 10.5 Z" fill="#A3B0C2"/>
+    </marker>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1A2740" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#3EE0C8" stop-opacity="0.06"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="620" fill="#0B1220"/>
+    <rect width="1200" height="620" fill="url(#dotgrid)"/>
+    <rect width="1200" height="620" fill="url(#sheen)"/>
+    <rect x="0" y="614" width="1200" height="6" fill="#3EE0C8"/>
+    <rect x="0" y="0" width="1200" height="72" fill="#0A101A"/>
+    <rect x="0" y="0" width="6" height="72" fill="#3EE0C8"/>
+    <text x="28" y="34" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start">Compiled core architecture (planned)</text>
+    <text x="28" y="56" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start">Everything below lives inside the single executable. User tests are loaded at runtime and are never compiled in.</text>
+    <rect x="36" y="100" width="1128" height="482" rx="18" ry="18" fill="#101828" stroke="#3EE0C8" stroke-width="1.75"/>
+    <rect x="52" y="114" width="268" height="28" rx="14" ry="14" fill="#3EE0C8" stroke="#3EE0C8" stroke-width="0"/>
+    <text x="186" y="133" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">proofrunkit.exe  ·  compiled once</text>
+    <rect x="56.0" y="158" width="352.0" height="86" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="232.0" y="196.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle">CLI</text>
+    <text x="232.0" y="216.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Command-line options</text>
+    <rect x="424.0" y="158" width="352.0" height="86" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="600.0" y="196.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle">Test registry &amp; runner</text>
+    <text x="600.0" y="216.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Discovery, order, assertions</text>
+    <rect x="792.0" y="158" width="352.0" height="86" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="968.0" y="196.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle">Reporters</text>
+    <text x="968.0" y="216.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Console, JSON, JUnit XML</text>
+    <rect x="56" y="260" width="536.0" height="90" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="324.0" y="300.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle">Embedded Lua 5.4</text>
+    <text x="324.0" y="320.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Loads .lua tests at runtime</text>
+    <rect x="608.0" y="260" width="536.0" height="90" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="876.0" y="300.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle">Embedded JavaScript engine</text>
+    <text x="876.0" y="320.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Loads .js tests at runtime</text>
+    <rect x="56" y="366" width="1088" height="72" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="600.0" y="397.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle">C / C++ core</text>
+    <text x="600.0" y="417.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Public C ABI, process spawn, fixtures, timing</text>
+    <rect x="56" y="454" width="500.0" height="90" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="306.0" y="494.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle">Assembly hot paths</text>
+    <text x="306.0" y="514.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">x86_64, Windows MASM, arm64</text>
+    <line x1="562.0" y1="499.0" x2="574.0" y2="499.0" stroke="#E8C36A" stroke-width="1.75"/>
+    <rect x="574.0" y="477.0" width="52" height="44" rx="10" ry="10" fill="#1A2438" stroke="#E8C36A" stroke-width="1.25"/>
+    <text x="600.0" y="495.0" fill="#E8C36A" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">CMake</text>
+    <text x="600.0" y="511.0" fill="#E8C36A" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">selects</text>
+    <line x1="626.0" y1="499.0" x2="638.0" y2="499.0" stroke="#E8C36A" stroke-width="1.75" marker-end="url(#arrowMuted)"/>
+    <rect x="644.0" y="454" width="500.0" height="90" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+    <text x="894.0" y="494.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="17" font-weight="700" text-anchor="middle">Portable C fallback</text>
+    <text x="894.0" y="514.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Mandatory for every ASM routine</text>
+  </g>
+</svg>

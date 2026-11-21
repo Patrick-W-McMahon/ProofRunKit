@@ -1,7 +1,7 @@
 // Self-hosted (#55): the C/C++ compiler driver from JavaScript (#14), twin of tests/lua/self/compile_test.lua.in.
 // Every test skips when no C compiler is on PATH (for MSVC: a Developer Prompt).
 
-const samples = '@PRK_C_DRIVER_SAMPLES@';
+const samples = '${c_driver_samples}';
 
 function compileOrSkip(options) {
     const result = prk.compile(options);

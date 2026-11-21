@@ -153,7 +153,7 @@ parse correctly because the location is read backward from the severity token.
   through a fake runner; `prk.compile` in Lua and JavaScript; one real compile that skips without a compiler; and
   `c_driver.discovers_real_msvc`, which on Windows runs the real vswhere/vcvarsall and compiles with the discovered
   `cl`, skipping when Visual Studio's C++ tools are not installed).
-- CTest `prk_self_compile_test` and `prk_js_compile_test`: compile the samples in
+- The `prk.tests.json` entries `self.compile` and `js.compile`: compile the samples in
   [`tests/drivers/c`](../tests/drivers/c), run the programs, and check warnings, `werror`, parsed errors, separate
   compile and link, a static library linked through `libraries` / `library_dirs`, and a shared library. Every test
   skips when no compiler is found.

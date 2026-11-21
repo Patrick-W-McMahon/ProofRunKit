@@ -1,7 +1,7 @@
 # Exit codes
 
 `prk` and `proofrunkit` use these exit codes ([#21](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/21)).
-Scripts and CI can rely on them. The self-tests and the `prk_reports_and_exit_codes` CTest check every code end to end.
+Scripts and CI can rely on them. The self-tests and the `prk_reports_and_exit_codes` CTest and the `self.cli` entry of `prk.tests.json` check every code end to end.
 
 | Code | Name | Meaning |
 | --- | --- | --- |

@@ -1,7 +1,7 @@
--- Self-hosted (#55): the assembler pass from Lua (#16). CMake fills in the samples folder; CTest runs this in the
+-- Self-hosted (#55): the assembler pass from Lua (#16). prk test (prk.tests.json) fills in the samples folder and runs this in the
 -- build folder. Each test skips when its assembler is missing (GAS "as"; for .asm: ml64/ml on Windows, else nasm).
 
-local samples = "@PRK_ASM_DRIVER_SAMPLES@"
+local samples = "${asm_driver_samples}"
 
 local function assemble_or_skip(options)
     local result = prk.assemble(options)

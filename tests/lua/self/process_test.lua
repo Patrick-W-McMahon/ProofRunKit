@@ -1,5 +1,5 @@
 -- Self-hosted (#55): process spawn from Lua test scripts (#12 over #13).
--- CTest runs this with the working directory set to the folder that holds prk, so "./prk" is ProofRunKit itself.
+-- prk test (prk.tests.json) runs this with the working directory set to the folder that holds prk, so "./prk" is ProofRunKit itself.
 
 prk.add_test("self.process.runs_a_program_and_captures_stdout", function()
     local result = prk.run_process{program = "./prk", args = {"--version"}, timeout_ms = 30000}

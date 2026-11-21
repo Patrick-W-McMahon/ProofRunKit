@@ -1,5 +1,5 @@
 -- Self-hosted tests for timing and read-only file checks (#12, #55).
--- CTest runs this with the repository root as the working directory, so relative paths below
+-- prk test (prk.tests.json) runs this with the repository root as the working directory, so relative paths below
 -- resolve inside the source tree.
 -- Run with (from the repository root):  prk run tests/lua/self/timing_and_files_test.lua
 

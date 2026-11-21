@@ -1,5 +1,5 @@
 // Process spawn from JavaScript test scripts (#12 over #13).
-// CTest runs this with the working directory set to the folder that holds prk, so './prk' is ProofRunKit itself.
+// prk test (prk.tests.json) runs this with the working directory set to the folder that holds prk, so './prk' is ProofRunKit itself.
 
 prk.addTest('js_process.runs_a_program_and_captures_stdout', () => {
     const result = prk.runProcess({ program: './prk', args: ['--version'], timeoutMs: 30000 });

@@ -1,6 +1,6 @@
 // ProofRunKit testing its JavaScript platform (#11) with its own JavaScript API.
 // Run with:  prk run tests/js/prk_js_api_test.js
-// Every test here must pass (one deliberate skip); CTest runs this file through the shipped prk executable.
+// Every test here must pass (one deliberate skip); prk test (prk.tests.json) runs this file through the shipped prk executable.
 
 prk.addTest('js_api.expect_equal_uses_strict_equality', () => {
     prk.expectEqual(6 * 7, 42);

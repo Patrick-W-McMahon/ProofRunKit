@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "description": "ProofRunKit's own tests, run by ProofRunKit (#55, #83). From the repo root: prk test --build-dir build/windows-msvc-x64-debug. Without --build-dir, the installed prk is tested and entries that need a build are skipped. docs/test-config.md describes the format.",
+  "variables": {
+    "bin_dir": ["${build_dir}/Debug", "${build_dir}/Release", "${build_dir}/RelWithDebInfo", "${build_dir}/MinSizeRel", "${build_dir}"],
+    "selftest_dir": ["${build_dir}/tests/selftest/Debug", "${build_dir}/tests/selftest/Release", "${build_dir}/tests/selftest/RelWithDebInfo", "${build_dir}/tests/selftest/MinSizeRel", "${build_dir}/tests/selftest"],
+    "tool_dir": ["${bin_dir}", "${prk_dir}"],
+    "prk_under_test": ["${tool_dir}/prk${exe}"],
+    "c_driver_samples": "${config_dir}/tests/drivers/c",
+    "asm_driver_samples": "${config_dir}/tests/drivers/asm",
+    "self_fixtures": "${config_dir}/tests/js/self/fixtures"
+  },
+  "defaults": { "env": { "PRK_OFFLINE": "1" }, "timeout_ms": 300000 },
+  "runner": "${prk_under_test}",
+  "setup": [
+    { "name": "reports_fixture", "description": "Fixture run that writes JSON and JUnit reports for reports_test.lua.",
+      "run": "tests/lua/self/fixtures/report_fixture.lua", "cwd": "${work_dir}/reports",
+      "make_dirs": "${work_dir}/reports/self-reports", "expect_exit_code": 1,
+      "args": ["--filter", "fixture.", "--exclude-tag", "slow", "--json-file", "self-reports/fixture.json",
+               "--junit-file", "self-reports/fixture.xml"] },
+    { "name": "reports_builtin", "command": ["${prk_under_test}", "run", "--json-file", "self-reports/builtin.json"],
+      "cwd": "${work_dir}/reports", "make_dirs": "${work_dir}/reports/self-reports" }
+  ],
+  "tests": [
+    { "name": "smoke.proofrunkit_version", "command": ["${tool_dir}/proofrunkit${exe}", "--version"], "expect_output": "ProofRunKit \\d+\\.\\d+\\.\\d+" },
+    { "name": "smoke.proofrunkit_builtin_checks", "command": "${tool_dir}/proofrunkit${exe}" },
+    { "name": "smoke.proofrunkit_rejects_unknown_option", "command": ["${tool_dir}/proofrunkit${exe}", "--no-such-option"], "expect_exit_code": 2, "expect_output": "unknown option" },
+    { "name": "smoke.prk_version", "command": ["${prk_under_test}", "--version"], "expect_output": "ProofRunKit \\d+\\.\\d+\\.\\d+" },
+    { "name": "smoke.prk_version_subcommand", "command": ["${prk_under_test}", "version"], "expect_output": "ProofRunKit \\d+\\.\\d+\\.\\d+" },
+    { "name": "smoke.prk_version_single_dash", "command": ["${prk_under_test}", "-v", "-offline"], "expect_output": "^ProofRunKit \\d+\\.\\d+\\.\\d+ [^\\n]*\\n$" },
+    { "name": "smoke.prk_update_needs_network", "command": ["${prk_under_test}", "-update", "-check"], "expect_exit_code": 6, "expect_output": "updates need the network" },
+    { "name": "smoke.prk_help_run", "command": ["${prk_under_test}", "help", "run"], "expect_output": "Usage: prk run" },
+    { "name": "smoke.prk_help_test", "command": ["${prk_under_test}", "help", "test"], "expect_output": "Usage: prk test" },
+    { "name": "smoke.prk_list", "command": ["${prk_under_test}", "list"], "expect_output": "kit\\." },
+    { "name": "smoke.prk_run_builtin_checks_json", "command": ["${prk_under_test}", "run", "--json"], "expect_output": "\"failed\": 0" },
+    { "name": "smoke.prk_rejects_unknown_command", "command": ["${prk_under_test}", "help", "no-such-command"], "expect_exit_code": 2, "expect_output": "prk: unknown command" },
+
+    { "name": "lua.api", "run": "tests/lua/prk_lua_api_test.lua", "expect_output": "8 tests: 7 passed, 0 failed, 1 skipped" },
+    { "name": "lua.list", "command": ["${prk_under_test}", "list", "tests/lua/prk_lua_api_test.lua"], "expect_output": "lua_sandbox\\.load_accepts_text_and_rejects_bytecode" },
+    { "name": "lua.sample_failure", "run": "tests/lua/samples/failing_test.lua", "expect_exit_code": 1, "expect_output": "deliberate failure: expected 3, got 2" },
+    { "name": "lua.sample_syntax_error", "run": "tests/lua/samples/syntax_error.lua", "expect_exit_code": 4, "expect_output": "syntax_error\\.lua:[0-9]+:" },
+    { "name": "lua.sample_missing_file", "run": "tests/lua/samples/no_such_file.lua", "expect_exit_code": 4, "expect_output": "no_such_file\\.lua: cannot open file" },
+    { "name": "lua.sample_infinite_loop", "run": "tests/lua/samples/infinite_loop.lua", "expect_exit_code": 1, "expect_output": "instruction limit of [0-9]+ instructions exceeded", "timeout_ms": 60000 },
+    { "name": "lua.timeout_option", "run": "tests/lua/samples/infinite_loop.lua", "args": ["--timeout", "200"], "expect_exit_code": 1, "expect_output": "timeout of 200 ms exceeded", "timeout_ms": 60000 },
+
+    { "name": "js.api", "run": "tests/js/prk_js_api_test.js", "expect_output": "8 tests: 7 passed, 0 failed, 1 skipped" },
+    { "name": "js.sample_failure", "run": "tests/js/samples/failing_test.js", "expect_exit_code": 1, "expect_output": "failing_test\\.js:3: deliberate failure: expected 3, got 2" },
+    { "name": "js.sample_syntax_error", "run": "tests/js/samples/syntax_error.js", "expect_exit_code": 4, "expect_output": "syntax_error\\.js:[0-9]+: SyntaxError" },
+    { "name": "js.sample_infinite_loop", "run": "tests/js/samples/infinite_loop.js", "expect_exit_code": 1, "expect_output": "instruction limit of [0-9]+ instructions exceeded", "timeout_ms": 60000 },
+    { "name": "js.timeout_option", "run": "tests/js/samples/infinite_loop.js", "args": ["--timeout", "200"], "expect_exit_code": 1, "expect_output": "timeout of 200 ms exceeded", "timeout_ms": 60000 },
+    { "name": "mixed.lua_and_js_list", "command": ["${prk_under_test}", "list", "tests/lua/prk_lua_api_test.lua", "tests/js/prk_js_api_test.js"], "expect_output": "lua_api\\.reports_versions[\\s\\S]*js_suite\\.hooks_run_in_order" },
+
+    { "name": "self.assertions", "run": "tests/lua/self/assertions_test.lua" },
+    { "name": "self.suites_and_hooks", "run": "tests/lua/self/suites_and_hooks_test.lua" },
+    { "name": "self.timing_and_files", "run": "tests/lua/self/timing_and_files_test.lua" },
+    { "name": "self.tags", "run": "tests/lua/self/tags_test.lua", "args": ["--tag", "selected", "--exclude-tag", "excluded"], "expect_output": "3 tests: 2 passed, 0 failed, 1 skipped" },
+    { "name": "self.sandbox", "run": ["tests/lua/self/sandbox_test.lua", "tests/js/self/sandbox_test.js"] },
+    { "name": "self.reports", "run": "tests/lua/self/reports_test.lua", "cwd": "${work_dir}/reports" },
+    { "name": "self.process", "run": "tests/lua/self/process_test.lua", "cwd": "${tool_dir}" },
+    { "name": "js.process", "run": "tests/js/process_test.js", "cwd": "${tool_dir}" },
+    { "name": "self.process_options", "run": "tests/lua/self/process_options_test.lua", "cwd": "${selftest_dir}", "skip_unless": "${selftest_dir}/prk_spawn_child${exe}" },
+    { "name": "self.cli", "run": "tests/js/self/cli_test.js.in", "template": true, "cwd": "${tool_dir}" },
+    { "name": "self.compile", "run": "tests/lua/self/compile_test.lua.in", "template": true, "cwd": "${work_dir}/compile", "make_dirs": "${work_dir}/compile" },
+    { "name": "js.compile", "run": "tests/js/compile_test.js.in", "template": true, "cwd": "${work_dir}/compile-js", "make_dirs": "${work_dir}/compile-js" },
+    { "name": "self.assemble", "run": "tests/lua/self/assemble_test.lua.in", "template": true, "cwd": "${work_dir}/assemble", "make_dirs": "${work_dir}/assemble" },
+    { "name": "js.assemble", "run": "tests/js/assemble_test.js.in", "template": true, "cwd": "${work_dir}/assemble-js", "make_dirs": "${work_dir}/assemble-js" }
+  ]
+}

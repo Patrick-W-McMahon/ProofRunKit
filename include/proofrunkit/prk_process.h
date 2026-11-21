@@ -114,10 +114,19 @@ PrkStatus prk_spawn_system_process(void* runner_state, const PrkProcessRequest* 
  * @brief Copies the value of this process's environment variable @p name into @p out_value
  *        (_dupenv_s on MSVC, getenv elsewhere).
  * @param name Variable name. @param out_value Receives the value, or "" when it is unset or does not fit.
- * @param capacity Bytes in @p out_value.
+ * @param capacity Bytes in @p out_value. Values that may be long (PATH) need prk_duplicate_environment_variable().
  * @return 1 when the variable is set and fits, else 0. Side effects: none (reads the environment).
  */
 int prk_read_environment_variable(const char* name, char* out_value, size_t capacity);
+
+/**
+ * @brief Copies the value of this process's environment variable @p name, of any length, onto the heap
+ *        (_dupenv_s on MSVC, getenv elsewhere). Use this for values that can be long, such as PATH.
+ * @param name Variable name. @param out_value Receives a malloc'd copy (release it with free()), or NULL when the
+ *        variable is unset or memory runs out.
+ * @return 1 when the variable is set and copied, else 0. Side effects: allocates.
+ */
+int prk_duplicate_environment_variable(const char* name, char** out_value);
 
 /**
  * @brief Validates a request: executable present and non-empty, arrays non-NULL when their counts are

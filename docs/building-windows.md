@@ -1,19 +1,20 @@
-# Building and testing ProofRunKit on Windows (x64)
+# Building and testing ProofRunKit on Windows (x64 and x86)
 
-Windows x64 with MSVC is the first supported build and test host (#7, #23). Linux and macOS presets
-exist for future updates but are untested (#34, #35). There are no GitHub Actions workflows; every
-build and test runs locally.
+Windows x64 with MSVC is the first supported build and test host (#7, #23). 32-bit (Win32) MSVC
+presets and a 32-bit MASM hot path are available for the x86 installer (#38, #39). Linux and macOS
+presets exist for future updates but are untested (#34, #35). There are no GitHub Actions
+workflows; every build and test runs locally.
 
 ## Prerequisites
 
 | Tool | Version | Notes |
 | --- | --- | --- |
-| Visual Studio | 2026 (v18) with **Desktop development with C++** | Provides `cl.exe`, `link.exe`, `rc.exe`, and `ml64.exe` (MASM). |
+| Visual Studio | 2026 (v18) with **Desktop development with C++** | Provides `cl.exe`, `link.exe`, `rc.exe`, `ml64.exe` (64-bit MASM), and `ml.exe` (32-bit MASM). |
 | CMake | 3.21 or newer (4.x recommended) | Must know the `Visual Studio 18 2026` generator. |
 | Git | any recent | |
 
-Ninja is **not** required: the presets use the Visual Studio generator. `ml64.exe` ships with the
-MSVC x64 tools; CMake finds it automatically through the Visual Studio generator.
+Ninja is **not** required: the presets use the Visual Studio generator. `ml64.exe` and `ml.exe` ship with the MSVC tools; CMake finds them automatically through the
+Visual Studio generator (`x64` or `Win32`).
 
 To check what is installed, run (read-only):
 
@@ -36,6 +37,21 @@ ctest --preset windows-msvc-x64-debug --output-on-failure
 
 Use `windows-msvc-x64-release` for an optimised, reproducible (`/Brepro`) build. Outputs land in
 `build/<preset>/<Debug|Release>/`.
+
+For the 32-bit (Win32) build, enter a 32-bit developer shell and use the x86 presets. On a 64-bit
+machine that is `Launch-VsDevShell.ps1 -Arch x86 -HostArch amd64`. The 32-bit hot path is
+`src/asm/x86_windows.asm` (MASM, `ml.exe`, **cdecl**; RDTSC returns EDX:EAX). CMake passes `/safeseh`
+to `ml.exe`. The self-test asserts the implementation name `asm-masm-x86`. `PRK_FORCE_C_FALLBACK=ON`
+still selects the portable C fallback.
+
+```powershell
+cmake --preset windows-msvc-x86-debug
+cmake --build --preset windows-msvc-x86-debug
+ctest --preset windows-msvc-x86-debug --output-on-failure
+```
+
+Or run `.\installeruild-x86.ps1`, which aborts if the working tree is dirty and never stashes,
+resets, or discards changes.
 
 ## What CTest runs
 
@@ -76,4 +92,10 @@ read-only verification script are documented in [installer-windows-x64.md](insta
 .\installer\verify-msi-x64.ps1
 ```
 
-The 32-bit installer is a separate ticket (#38) and is not part of this pass.
+The 32-bit MSI (#38) is documented in [installer-windows-x86.md](installer-windows-x86.md):
+
+```powershell
+.\installer\build-x86.ps1
+.\installer\build-msi-x86.ps1
+.\installer\verify-msi-x86.ps1
+```

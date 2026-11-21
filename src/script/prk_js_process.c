@@ -200,8 +200,7 @@ static int prk_check_js_process_option_keys(JSContext* context, JSValueConst opt
     return status;
 }
 
-/** @brief Builds the JS result object. */
-static JSValue prk_make_js_process_result(JSContext* context, const PrkProcessResult* result) {
+JSValue prk_make_js_process_result(JSContext* context, const PrkProcessResult* result) {
     JSValue object = JS_NewObject(context);
     if (JS_IsException(object)) {
         return object;

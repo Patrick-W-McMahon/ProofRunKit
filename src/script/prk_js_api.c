@@ -549,7 +549,7 @@ static const char* const prk_js_prelude[] = {
     "}\n"
     "prk.expectExitCode = function expectExitCode(result, expected, message) {\n"
     "  if (result === null || typeof result !== 'object' || result.outcome === undefined) {\n"
-    "    throw new TypeError('prk.expectExitCode: result must come from prk.runProcess');\n"
+    "    throw new TypeError('prk.expectExitCode: result must come from prk.runProcess or prk.compile');\n"
     "  }\n"
     "  if (result.outcome !== 'exited' || result.exitCode !== expected) fail(detail(message,\n"
     "    'unexpected process result', 'expected exit code ' + expected + ', got ' + describeProcess(result)));\n"
@@ -634,6 +634,9 @@ int prk_open_js_test_api(JSContext* context) {
         JS_SetPropertyStr(context, console, "log", JS_NewCFunction(context, prk_js_print, "log", 1));
         JS_SetPropertyStr(context, global, "print", JS_NewCFunction(context, prk_js_print, "print", 1));
         status = prk_add_js_process_api(context, prk);
+    }
+    if (status == 0) {
+        status = prk_add_js_compile_api(context, prk);
     }
     if (status == 0) {
         status = prk_run_js_prelude(context, prk);

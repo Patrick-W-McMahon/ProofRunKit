@@ -147,6 +147,13 @@ A missing program or a timeout is returned, not raised, so a test can check for 
 code [, message])` turns any unexpected result into a failure such as
 `build.lua:4: unexpected process result: expected exit code 0, got exit code 1` followed by the program's stderr.
 
+### Compiling C and C++
+
+`prk.compile{sources = {...}, output = ..., language = "c" | "c++", compiler = "auto" | "gcc" | "clang" | "msvc",
+std = ..., includes = {...}, defines = {...}, flags = {...}, werror = true}` compiles with a real toolchain and
+returns the `prk.run_process` fields plus `diagnostics`, `errors`, `warnings`, `output`, and `command`; see
+[c-cpp-driver.md](c-cpp-driver.md) ([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14)).
+
 ### Other fields
 
 | Field | Value |
@@ -190,6 +197,7 @@ The JavaScript engine ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/is
 | `prk.run_process{program=, args=, cwd=, env=, inherit_env=, stdin=, timeout_ms=, output_limit=}` | `prk.runProcess({program, args, cwd, env, inheritEnv, stdin, timeoutMs, outputLimit})` |
 | result `exit_code`, `elapsed_ms`, `stdout_truncated` | result `exitCode`, `elapsedMs`, `stdoutTruncated` |
 | `prk.expect_exit_code(result, code)` | `prk.expectExitCode(result, code)` |
+| `prk.compile{..., timeout_ms=}` | `prk.compile({..., timeoutMs})` |
 
 ## Sandbox
 
@@ -241,6 +249,7 @@ executable on every build:
 | [`tests/lua/self/timing_and_files_test.lua`](../tests/lua/self/timing_and_files_test.lua) | `prk_self_timing_and_files_test` | The clock, `measure_elapsed_ms`, file checks against the source tree, and refusal of paths outside the working directory. |
 | [`tests/lua/self/tags_test.lua`](../tests/lua/self/tags_test.lua) | `prk_self_tags_test` | `--tag` / `--exclude-tag` selection, tag inheritance, the skip option, and hooks of unselected suites not running. |
 | [`tests/lua/self/process_test.lua`](../tests/lua/self/process_test.lua) | `prk_self_process_test` | `prk.run_process` starting `prk` itself: stdout, a non-zero exit with stderr, exact arguments, and a missing program as a result. |
+| [`tests/lua/self/compile_test.lua.in`](../tests/lua/self/compile_test.lua.in) | `prk_self_compile_test` | `prk.compile` on the samples in `tests/drivers/c`: C and C++ programs built and run, warnings, `werror`, parsed errors; skips without a compiler. |
 | [`tests/lua/self/reports_test.lua`](../tests/lua/self/reports_test.lua) | `prk_self_reports_test` (after `prk_self_reports_fixture` and `prk_self_reports_builtin`) | The runner and reporters, end to end. The fixture runs write JSON and JUnit files with `--filter`, `--exclude-tag`, `--json-file`, and `--junit-file`. The script then checks totals, order, outcomes, name mapping, escaping, and the built-in cycle-counter checks. |
 
 Samples under `tests/lua/samples/` show that failures, syntax errors, missing files, endless loops (instruction budget

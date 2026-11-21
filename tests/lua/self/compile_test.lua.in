@@ -1,0 +1,61 @@
+-- Self-hosted (#55): the C/C++ compiler driver from Lua (#14). CMake fills in the samples folder; CTest runs
+-- this in the build folder. Every test skips when no C compiler is on PATH (for MSVC: a Developer Prompt).
+
+local samples = "@PRK_C_DRIVER_SAMPLES@"
+
+local function compile_or_skip(options)
+    local result = prk.compile(options)
+    if result.outcome == "failed to start" then
+        prk.skip_test(tostring(result.error))
+    end
+    return result
+end
+
+prk.add_test("self.compile.c_program_builds_and_runs", function()
+    local result = compile_or_skip{sources = {samples .. "/hello.c"}, output = "./prk_lua_hello_c", werror = true}
+    prk.expect_exit_code(result, 0)
+    prk.expect_equal(result.errors, 0)
+    prk.expect_equal(result.warnings, 0)
+    local run = prk.run_process{program = result.output}
+    prk.expect_exit_code(run, 0)
+    prk.expect_match(run.stdout, "^hello from C\r?\n$")
+end)
+
+prk.add_test("self.compile.cpp_program_builds_and_runs", function()
+    local result = compile_or_skip{sources = samples .. "/hello.cpp", output = "./prk_lua_hello_cpp",
+                                   language = "c++", std = "c++17"}
+    prk.expect_exit_code(result, 0)
+    local run = prk.run_process{program = result.output}
+    prk.expect_exit_code(run, 3)
+    prk.expect_contains(run.stdout, "hello from C++")
+end)
+
+prk.add_test("self.compile.warnings_are_reported", function()
+    local result = compile_or_skip{sources = {samples .. "/warning.c"}, output = "./prk_lua_warning"}
+    prk.expect_exit_code(result, 0)
+    prk.expect_true(result.warnings >= 1)
+    local first = result.diagnostics[1]
+    prk.expect_equal(first.severity, "warning")
+    prk.expect_equal(first.line, 2)
+    prk.expect_contains(first.file, "warning.c")
+end)
+
+prk.add_test("self.compile.werror_turns_warnings_into_failure", function()
+    local result = compile_or_skip{sources = {samples .. "/warning.c"}, output = "./prk_lua_warning_x", werror = true}
+    prk.expect_false(result.ok)
+    prk.expect_true(result.errors + result.warnings >= 1)
+end)
+
+prk.add_test("self.compile.errors_are_parsed", function()
+    local result = compile_or_skip{sources = {samples .. "/broken.c"}, output = "./prk_lua_broken"}
+    prk.expect_false(result.ok)
+    prk.expect_true(result.errors >= 1)
+    local first
+    for _, diagnostic in ipairs(result.diagnostics) do
+        if diagnostic.severity == "error" and first == nil then first = diagnostic end
+    end
+    prk.expect_true(first ~= nil)
+    prk.expect_contains(first.file, "broken.c")
+    prk.expect_equal(first.line, 2)
+    prk.expect_contains(first.message, "undeclared_name")
+end)

@@ -50,12 +50,20 @@ add_library(prk_process STATIC src/process/prk_process.c ${_prk_process_adapter}
 target_link_libraries(prk_process PUBLIC prk_core)
 prk_apply_project_warnings(prk_process)
 
+# ------------------------------------------------------------- language drivers (#14 ...)
+add_library(prk_drivers STATIC src/drivers/prk_c_driver.c src/drivers/prk_c_diagnostics.c)
+target_include_directories(prk_drivers PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(prk_drivers PUBLIC prk_core prk_process)
+prk_apply_project_warnings(prk_drivers)
+
 # ------------------------------------------------------- embedded Lua 5.4 test-script engine (#9)
 include(ProofRunKitLua)
 include(ProofRunKitQuickJs)
 add_library(prk_script STATIC
     src/script/prk_lua_api.c
     src/script/prk_lua_process.c
+    src/script/prk_lua_compile.c
+    src/script/prk_js_compile.c
     src/script/prk_js_process.c
     src/script/prk_script.c
     src/script/prk_test_plan.c
@@ -63,7 +71,7 @@ add_library(prk_script STATIC
     src/script/prk_lua_script.c
     src/script/prk_js_api.c
     src/script/prk_js_script.c)
-target_link_libraries(prk_script PUBLIC prk_core prk_process PRIVATE prk_lua prk_quickjs)
+target_link_libraries(prk_script PUBLIC prk_core prk_process prk_drivers PRIVATE prk_lua prk_quickjs)
 prk_apply_project_warnings(prk_script)
 
 # ------------------------------------------------------------- front end (C++20 CLI + reporters)

@@ -72,7 +72,8 @@ Language drivers sit on the process-spawn layer
 ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13), done: `include/proofrunkit/prk_process.h`,
 `src/process/`, an injectable `PrkProcessRunner`, mandatory timeouts that kill the whole process tree; see
 [process-spawn.md](process-spawn.md)) and invoke real toolchains: C and C++
-([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14)), C#
+([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14), first slice: `include/proofrunkit/prk_c_driver.h`,
+`src/drivers/`, `prk.compile`; see [c-cpp-driver.md](c-cpp-driver.md)), C#
 ([#15](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/15)), Assembly
 ([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16)), Java
 ([#44](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/44)), Rust

@@ -106,4 +106,18 @@ int prk_open_lua_test_api(lua_State* state);
  */
 int prk_add_lua_process_api(lua_State* state);
 
+/**
+ * @brief Pushes the run_process result table (ok, outcome, exit_code, stdout, ...) for @p result.
+ * @param state Lua state. @param result Result to describe; not modified.
+ * @return Nothing. Side effects: pushes one table; may raise a Lua memory error.
+ */
+void prk_push_lua_process_result(lua_State* state, const PrkProcessResult* result);
+
+/**
+ * @brief Adds prk.compile to the table on top of the stack (prk_lua_compile.c, #14).
+ * @param state Lua state whose stack top is the prk table.
+ * @return 0. Side effects: registers the compile-result metatable; may raise a Lua memory error.
+ */
+int prk_add_lua_compile_api(lua_State* state);
+
 #endif /* PROOFRUNKIT_PRK_LUA_INTERNAL_H */

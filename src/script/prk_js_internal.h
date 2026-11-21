@@ -73,4 +73,18 @@ int prk_open_js_test_api(JSContext* context);
  */
 int prk_add_js_process_api(JSContext* context, JSValueConst prk);
 
+/**
+ * @brief Builds the runProcess result object (ok, outcome, exitCode, stdout, ...) for @p result.
+ * @param context Context of the script. @param result Result to describe; not modified.
+ * @return The new object, or JS_EXCEPTION.
+ */
+JSValue prk_make_js_process_result(JSContext* context, const PrkProcessResult* result);
+
+/**
+ * @brief Adds prk.compile to the prk object (prk_js_compile.c, #14).
+ * @param context Context of the script. @param prk The prk object.
+ * @return 0, or -1 with an exception pending.
+ */
+int prk_add_js_compile_api(JSContext* context, JSValueConst prk);
+
 #endif /* PROOFRUNKIT_PRK_JS_INTERNAL_H */

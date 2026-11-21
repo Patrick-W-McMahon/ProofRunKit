@@ -9,6 +9,7 @@ add_executable(proofrunkit_selftest
     test_lua_test_api.cpp
     test_process_spawn.cpp
     test_script_process_api.cpp
+    test_c_driver.cpp
     test_junit_reporting.cpp
     test_registry.cpp
     test_reporting.cpp
@@ -124,6 +125,16 @@ add_test(NAME prk_self_process_test COMMAND "${_prk_short_exe}" run "${_prk_self
 set_tests_properties(prk_self_process_test PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:proofrunkit>")
 add_test(NAME prk_js_process_test COMMAND "${_prk_short_exe}" run "${_prk_js_tests}/process_test.js")
 set_tests_properties(prk_js_process_test PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:proofrunkit>")
+
+# C/C++ compiler driver (#14): the scripts get the samples folder at configure time and run in the build
+# folder, where the programs they compile are written. Each test skips when no compiler is on PATH.
+set(PRK_C_DRIVER_SAMPLES "${PROJECT_SOURCE_DIR}/tests/drivers/c")
+configure_file("${_prk_self}/compile_test.lua.in" "${CMAKE_CURRENT_BINARY_DIR}/compile_test.lua" @ONLY)
+configure_file("${_prk_js_tests}/compile_test.js.in" "${CMAKE_CURRENT_BINARY_DIR}/compile_test.js" @ONLY)
+add_test(NAME prk_self_compile_test COMMAND "${_prk_short_exe}" run "${CMAKE_CURRENT_BINARY_DIR}/compile_test.lua")
+set_tests_properties(prk_self_compile_test PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+add_test(NAME prk_js_compile_test COMMAND "${_prk_short_exe}" run "${CMAKE_CURRENT_BINARY_DIR}/compile_test.js")
+set_tests_properties(prk_js_compile_test PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Reports: fixture runs write JSON and JUnit files, then reports_test.lua checks them.
 set(_prk_self_reports_dir "${CMAKE_CURRENT_BINARY_DIR}/self-reports-run")

@@ -50,7 +50,7 @@ cmake --build --preset windows-msvc-x86-debug
 ctest --preset windows-msvc-x86-debug --output-on-failure
 ```
 
-Or run `.\installeruild-x86.ps1`, which aborts if the working tree is dirty and never stashes,
+Or run `.\installer\build-x86.ps1`, which aborts if the working tree is dirty and never stashes,
 resets, or discards changes.
 
 ## What CTest runs

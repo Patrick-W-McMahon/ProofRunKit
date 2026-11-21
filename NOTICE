@@ -1,0 +1,15 @@
+ProofRunKit
+Copyright 2026 Patrick W. McMahon
+https://github.com/Patrick-W-McMahon/ProofRunKit
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party components
+----------------------
+
+The following components will be included in the ProofRunKit executable when
+they are vendored. Each entry is completed with its pinned version, copyright
+line and license text location at that time.
+
+* Lua 5.4 (MIT License) - placeholder until vendored under third_party/ (#9).
+* QuickJS-ng (MIT License) - placeholder until vendored under third_party/ (#11).

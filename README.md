@@ -12,7 +12,7 @@
 
 A single high-performance test executable, compiled once. Tests change; the binary does not.
 
-**Status: planning / pre-alpha.** Features below describe the intended product. Only the public documentation and visual showcase are in the tree today. See the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
+**Status: pre-alpha.** The core executable, Assembly hot paths, Windows x64 and x86 builds with a self-test, and both Windows MSI installers are in the tree. Script tests and language drivers are next. Features below are marked Done, In progress, or Planned; see the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
 
 ## Why ProofRunKit
 
@@ -30,14 +30,14 @@ Each item is linked to its tracking issue. Status markers mean:
 | In progress | Implementation has started |
 | Planned | Designed and ticketed; not started |
 
-Unchecked boxes are Planned. Checked boxes are Done.
+Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 
 ### Core executable
 
-- [ ] Single compiled `proofrunkit` executable and CMake presets ([#7](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/7)) — Planned
-- [ ] Assembly hot paths with a mandatory portable C fallback ([#8](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/8)) — Planned
+- [x] Single compiled `proofrunkit` executable and CMake presets ([#7](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/7)) — Done
+- [x] Assembly hot paths with a mandatory portable C fallback, for x64 and x86 ([#8](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/8), [#39](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/39)) — Done
 - [ ] Process-spawn and sandbox layer on Windows ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Planned
-- [ ] Windows build and `proofrunkit_selftest` via CTest ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Planned
+- [x] Windows build and `proofrunkit_selftest` via CTest ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Done
 
 ### Test authoring (Lua 5.4 and QuickJS-ng)
 
@@ -74,32 +74,32 @@ Unchecked boxes are Planned. Checked boxes are Done.
 
 ### Reporting
 
-- [ ] Console, JSON, and JUnit XML reports, with a documented exit-code contract ([#21](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/21)) — Planned
+- [ ] Console, JSON, and JUnit XML reports, with a documented exit-code contract ([#21](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/21)) — In progress (console and JSON done)
 
 ### Stability and security
 
-- [ ] Stable binary across test changes, with a fixed artifact directory for compiler and test outputs ([#22](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/22)) — Planned
+- [ ] Stable binary across test changes, with a fixed artifact directory for compiler and test outputs ([#22](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/22)) — In progress (reproducible builds, VERSIONINFO, and manifest done; see [stable-binary.md](docs/stable-binary.md))
 - [ ] Sandboxed process spawn for compilers, scripts, and produced binaries ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Planned
-- [ ] Code signing decision for installers and SmartScreen / antivirus reputation ([#41](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/41)) — Planned
+- [ ] Code signing decision for installers and SmartScreen / antivirus reputation ([#41](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/41)) — In progress (installers ship unsigned for now)
 
 ### Distribution
 
-- [ ] Per-machine Windows installers for x64 and x86, planned as WiX v4 MSI packages ([#36](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/36), [#40](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/40)) — Planned
+- [x] Per-machine WiX v4 MSI installers: x64 to `%ProgramFiles%\ProofRunKit` and x86 to `%ProgramFiles(x86)%\ProofRunKit`, with optional PATH and Add/Remove Programs entries ([#36](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/36), [#37](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/37), [#38](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/38), [#40](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/40)) — Done
 
 ### Platforms
 
-- [ ] Windows as the first tested host ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Planned
+- [x] Windows (x64 and x86) as the first tested host ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Done
 - [ ] Linux testing ([#34](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/34)) — Planned
 - [ ] macOS testing ([#35](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/35)) — Planned
 
 ### Documentation
 
 - [x] Professional README and visual showcase ([#1](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/1), [#2](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/2), [#42](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/42), [#43](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/43)) — Done
-- [ ] `LICENSE` and `NOTICE` (Apache License 2.0) ([#3](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/3)) — Planned
-- [ ] `DISCLAIMER.md` ([#4](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/4)) — Planned
-- [ ] `CONTRIBUTING.md` ([#5](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/5)) — Planned
-- [ ] `CODE_STANDARDS.md` ([#6](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/6)) — Planned
-- [ ] `docs/PROJECT_BRIEF.md` and `docs/ARCHITECTURE.md` ([#24](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/24)) — Planned
+- [x] [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE) (Apache License 2.0) ([#3](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/3)) — Done
+- [x] [`DISCLAIMER.md`](DISCLAIMER.md) ([#4](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/4)) — Done
+- [x] [`CONTRIBUTING.md`](CONTRIBUTING.md), including the commit-to-issue convention ([#5](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/5), [#25](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/25)) — Done
+- [x] [`CODE_STANDARDS.md`](CODE_STANDARDS.md) ([#6](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/6)) — Done
+- [x] [`docs/PROJECT_BRIEF.md`](docs/PROJECT_BRIEF.md) and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) ([#24](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/24)) — Done
 
 ## How it works
 
@@ -143,7 +143,7 @@ None of these drivers or runtimes are implemented yet.
 
 | Platform | Status |
 | --- | --- |
-| Windows | First tested host — Planned ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) |
+| Windows x64 and x86 | First tested host — Done ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23), [#39](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/39)) |
 | Linux | Planned ([#34](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/34)) |
 | macOS | Planned ([#35](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/35)) |
 
@@ -151,9 +151,17 @@ CMake presets for Linux and macOS may appear before those hosts are formally tes
 
 ## Getting started
 
-ProofRunKit is pre-alpha. There is no supported build or install yet.
+ProofRunKit is pre-alpha. Windows x64 and x86 builds, a self-test, and MSI installers are available; script tests are not wired up yet.
 
-Configure and build instructions will land with the core executable and CMake presets ([#7](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/7)). Windows will be the first platform with a documented build and self-test ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)).
+Build and test from a Developer PowerShell for Visual Studio 2026:
+
+```powershell
+cmake --preset windows-msvc-x64-debug
+cmake --build --preset windows-msvc-x64-debug
+ctest --preset windows-msvc-x64-debug --output-on-failure
+```
+
+See [docs/building-windows.md](docs/building-windows.md) for prerequisites, the 32-bit presets, and options, and [docs/installer-windows-x64.md](docs/installer-windows-x64.md) and [docs/installer-windows-x86.md](docs/installer-windows-x86.md) for building the MSI installers. The design is described in [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Roadmap
 
@@ -163,20 +171,18 @@ The first planned suite migration is Trading Agent's doctest suite ([#28](https:
 
 ## Contributing
 
-Contribution guidelines will live in [`CONTRIBUTING.md`](CONTRIBUTING.md). That file is not in the tree yet; it is tracked as [#5](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/5).
-
-Until then, please open an issue before starting work and reference it from each commit (`Refs #N` or `Closes #N`). There is currently no GitHub Actions CI; build and test locally. Windows is the first test host.
+Contributions are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_STANDARDS.md`](CODE_STANDARDS.md) first. In short: open an issue before starting work, reference it from every commit (`Refs #N` or `Closes #N`), and build and run the self-test locally. There is currently no GitHub Actions CI. Windows is the first test host.
 
 ## License
 
-ProofRunKit will be licensed under the **Apache License 2.0**. The `LICENSE` file (verbatim Apache-2.0 text, so GitHub can detect it) and a `NOTICE` file will land with [#3](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/3). They are not in the repository yet.
+ProofRunKit is licensed under the **Apache License 2.0**. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
 
 ## Disclaimer
 
-A separate liability notice will live in [`DISCLAIMER.md`](DISCLAIMER.md) and will be linked here when it lands. That file is tracked as [#4](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/4). It will not modify the Apache License 2.0 terms.
+See [`DISCLAIMER.md`](DISCLAIMER.md). ProofRunKit runs compilers, scripts, and binaries that you supply; use it at your own risk. The disclaimer does not modify the Apache License 2.0 terms.
 
 ## Attribution
 
 If you use ProofRunKit, please credit the project and link to this repository: [https://github.com/Patrick-W-McMahon/ProofRunKit](https://github.com/Patrick-W-McMahon/ProofRunKit).
 
-Downstream redistributions should retain attribution notices. See `NOTICE` (to be added in [#3](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/3)) per Apache License 2.0, section 4(d).
+Downstream redistributions should retain attribution notices. See [`NOTICE`](NOTICE) per Apache License 2.0, section 4(d).

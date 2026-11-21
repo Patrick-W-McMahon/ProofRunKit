@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1214" viewBox="0 0 1440 1214" role="img" aria-labelledby="title desc">
+<title id="title">ProofRunKit architecture overview</title>
+<desc id="desc">Lua and JavaScript test scripts are run by the single compiled ProofRunKit executable. The prk CLI loads each script into a sandboxed Lua 5.4 or QuickJS-ng engine, tests register through the prk API into the C17 test plan and runner, which uses Assembly hot paths with a C fallback. The prk API shells out to real toolchains (MSVC, gcc, clang, MASM, GAS, NASM) through the process-spawn layer and gets results back. Reporters write console, JSON and JUnit XML and set the exit code. CMake presets build the executable, WiX packages a Windows x64 MSI, GitHub Releases publish it with a SHA-256 file, and prk -update downloads, verifies and installs it.</desc>
+<defs>
+<pattern id="dotgrid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.9" fill="#3EE0C8" opacity="0.08"/></pattern>
+<clipPath id="frame"><rect x="0" y="0" width="1440" height="1214" rx="16" ry="16"/></clipPath>
+<marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 1.5 L 10 6 L 0 10.5 Z" fill="#3EE0C8"/></marker>
+<marker id="arrowGold" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 1.5 L 10 6 L 0 10.5 Z" fill="#E8C36A"/></marker>
+<marker id="arrowMuted" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 1.5 L 10 6 L 0 10.5 Z" fill="#A3B0C2"/></marker>
+<marker id="arrowBlue" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M 0 1.5 L 10 6 L 0 10.5 Z" fill="#3B82F6"/></marker>
+<linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1A2740" stop-opacity="0"/><stop offset="100%" stop-color="#3EE0C8" stop-opacity="0.06"/></linearGradient>
+</defs>
+<g clip-path="url(#frame)">
+<rect width="1440" height="1214" fill="#0B1220"/><rect width="1440" height="1214" fill="url(#dotgrid)"/><rect width="1440" height="1214" fill="url(#sheen)"/>
+<rect x="0" y="1208" width="1440" height="6" fill="#3EE0C8"/>
+<rect x="0" y="0" width="1440" height="78" fill="#0A101A"/><rect x="0" y="0" width="6" height="78" fill="#3EE0C8"/>
+<text x="28" y="36" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" text-anchor="start">ProofRunKit architecture overview</text>
+<text x="28" y="60" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start">One executable, compiled once. Tests are scripts loaded at run time; real compilers and assemblers are called as separate processes.</text>
+<line x1="1110" y1="22" x2="1136" y2="22" stroke="#3EE0C8" stroke-width="3" stroke-linecap="round"/>
+<text x="1146" y="26" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">test run flow</text>
+<line x1="1110" y1="40" x2="1136" y2="40" stroke="#3B82F6" stroke-width="3" stroke-linecap="round"/>
+<text x="1146" y="44" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">toolchain shell-out</text>
+<line x1="1110" y1="58" x2="1136" y2="58" stroke="#E8C36A" stroke-width="3" stroke-linecap="round"/>
+<text x="1146" y="62" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">build &amp; distribution</text>
+<circle cx="1306" cy="40" r="12" fill="#3EE0C8" stroke="#0B1220" stroke-width="2"/>
+<text x="1306" y="44.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">n</text>
+<text x="1324" y="44" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">step order</text>
+<rect x="36" y="104" width="256" height="300" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="36" y="118" width="4" height="272" rx="2" fill="#3EE0C8"/>
+<circle cx="64" cy="128" r="12" fill="#3EE0C8" stroke="#0B1220" stroke-width="2"/>
+<text x="64" y="132.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">1</text>
+<text x="84" y="133" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Test scripts</text>
+<text x="54" y="160" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">Written by test authors and</text>
+<text x="54" y="177" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">AI agents. Never compiled in:</text>
+<text x="54" y="194" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">edit a test, the binary is</text>
+<text x="54" y="211" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">unchanged.</text>
+<rect x="54" y="230" width="220" height="30" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="164.0" y="249.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="12" font-weight="400" text-anchor="middle">suite_test.lua</text>
+<text x="54" y="278" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">Lua 5.4.9  ·  snake_case prk table</text>
+<rect x="54" y="292" width="220" height="30" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="164.0" y="311.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="12" font-weight="400" text-anchor="middle">suite_test.js / .mjs</text>
+<text x="54" y="340" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">QuickJS-ng 0.18.0  ·  camelCase prk</text>
+<text x="54" y="380" fill="#3EE0C8" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="start">prk run tests\*.lua --tag fast</text>
+<rect x="36" y="474" width="256" height="366" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="36" y="488" width="4" height="338" rx="2" fill="#3EE0C8"/>
+<circle cx="64" cy="498" r="12" fill="#3EE0C8" stroke="#0B1220" stroke-width="2"/>
+<text x="64" y="502.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">9</text>
+<text x="84" y="503" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Reports &amp; exit code</text>
+<text x="54" y="530" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">stdout (--reporter):</text>
+<rect x="54" y="542" width="68" height="28" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="88.0" y="560.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">console</text>
+<rect x="130" y="542" width="56" height="28" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="158.0" y="560.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">json</text>
+<rect x="194" y="542" width="62" height="28" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="225.0" y="560.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">junit</text>
+<text x="54" y="596" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">files in the same run:</text>
+<text x="54" y="618" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="start">--json-file  out.json</text>
+<text x="54" y="636" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="start">--junit-file out.xml</text>
+<text x="54" y="672" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">exit codes:</text>
+<rect x="54" y="690" width="22" height="18" rx="5" ry="5" fill="#1A2438" stroke="#33415C" stroke-width="1"/>
+<text x="65" y="703" fill="#3EE0C8" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="700" text-anchor="middle">0</text>
+<text x="86" y="703" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">all passed</text>
+<rect x="54" y="712" width="22" height="18" rx="5" ry="5" fill="#1A2438" stroke="#33415C" stroke-width="1"/>
+<text x="65" y="725" fill="#3EE0C8" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="700" text-anchor="middle">1</text>
+<text x="86" y="725" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">test failed</text>
+<rect x="54" y="734" width="22" height="18" rx="5" ry="5" fill="#1A2438" stroke="#33415C" stroke-width="1"/>
+<text x="65" y="747" fill="#3EE0C8" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="700" text-anchor="middle">2</text>
+<text x="86" y="747" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">usage error</text>
+<rect x="54" y="756" width="22" height="18" rx="5" ry="5" fill="#1A2438" stroke="#33415C" stroke-width="1"/>
+<text x="65" y="769" fill="#3EE0C8" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="700" text-anchor="middle">4</text>
+<text x="86" y="769" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">script error</text>
+<rect x="54" y="778" width="22" height="18" rx="5" ry="5" fill="#1A2438" stroke="#33415C" stroke-width="1"/>
+<text x="65" y="791" fill="#3EE0C8" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="700" text-anchor="middle">5</text>
+<text x="86" y="791" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">report error</text>
+<rect x="54" y="800" width="22" height="18" rx="5" ry="5" fill="#1A2438" stroke="#33415C" stroke-width="1"/>
+<text x="65" y="813" fill="#3EE0C8" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="700" text-anchor="middle">6</text>
+<text x="86" y="813" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">update failed</text>
+<rect x="322" y="96" width="680" height="760" rx="18" ry="18" fill="#101828" stroke="#3EE0C8" stroke-width="1.75"/>
+<rect x="338" y="110" width="330" height="28" rx="14" ry="14" fill="#3EE0C8"/>
+<text x="503" y="129" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">proofrunkit.exe  ·  prk.exe  ·  compiled once</text>
+<text x="984" y="129" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="end">C17 core + C++20 front end, static</text>
+<rect x="342" y="158" width="310.0" height="128" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="342" y="172" width="4" height="100" rx="2" fill="#3EE0C8"/>
+<circle cx="370" cy="182" r="12" fill="#3EE0C8" stroke="#0B1220" stroke-width="2"/>
+<text x="370" y="186.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">2</text>
+<text x="390" y="187" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">prk CLI</text>
+<text x="638.0" y="187" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="end">src/cpp</text>
+<rect x="360" y="204" width="40" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="380.0" y="221.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="middle">run</text>
+<rect x="406" y="204" width="46" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="429.0" y="221.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="middle">list</text>
+<rect x="458" y="204" width="104" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="510.0" y="221.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="middle">-version / -v</text>
+<rect x="568" y="204" width="66" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3EE0C8" stroke-width="1.2"/>
+<text x="601.0" y="221.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="middle">-update</text>
+<text x="360" y="252" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">--filter  --tag  --exclude-tag</text>
+<text x="360" y="268" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">--timeout  --reporter  -offline</text>
+<rect x="672.0" y="158" width="310.0" height="128" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="672.0" y="172" width="4" height="100" rx="2" fill="#3EE0C8"/>
+<circle cx="700.0" cy="182" r="12" fill="#3EE0C8" stroke="#0B1220" stroke-width="2"/>
+<text x="700.0" y="186.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">3</text>
+<text x="720.0" y="187" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Script loading</text>
+<text x="690.0" y="216" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">Picks the engine by extension:</text>
+<text x="690.0" y="233" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">.lua → Lua,  .js / .mjs → QuickJS-ng.</text>
+<text x="690.0" y="250" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">Each script gets its own engine state;</text>
+<text x="690.0" y="267" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">a load error stops the run (exit 4).</text>
+<rect x="342" y="316" width="310.0" height="96" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="342" y="330" width="4" height="68" rx="2" fill="#3EE0C8"/>
+<text x="360" y="345" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Lua 5.4.9</text>
+<text x="638.0" y="345" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="end">third_party/, static</text>
+<text x="360" y="372" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">Sandboxed state per script</text>
+<text x="360" y="389" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">prk table over prk_lua.h</text>
+<rect x="672.0" y="316" width="310.0" height="96" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="672.0" y="330" width="4" height="68" rx="2" fill="#3EE0C8"/>
+<text x="690.0" y="345" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">QuickJS-ng 0.18.0</text>
+<text x="968.0" y="345" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="end">third_party/, static</text>
+<text x="690.0" y="372" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">One runtime per script, 512 KiB stack</text>
+<text x="690.0" y="389" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">prk object over prk_js.h; no std/os</text>
+<rect x="342" y="422" width="640" height="30" rx="10" ry="10" fill="#1A2438" stroke="#33415C" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="662.0" y="442" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="middle">Sandbox: memory-limited allocator · instruction budget · no ambient file, process or module access</text>
+<rect x="342" y="484" width="640" height="128" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="342" y="498" width="4" height="100" rx="2" fill="#3EE0C8"/>
+<circle cx="370" cy="508" r="12" fill="#3EE0C8" stroke="#0B1220" stroke-width="2"/>
+<text x="370" y="512.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">4</text>
+<text x="390" y="513" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">prk test-authoring API</text>
+<text x="968" y="513" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="end">capabilities are granted only here</text>
+<rect x="360.0" y="526" width="114.4" height="74" rx="9" ry="9" fill="#1A2438" stroke="#33415C" stroke-width="1.2"/>
+<text x="370.0" y="544" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start">Assertions</text>
+<text x="370.0" y="562" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">expect_equal</text>
+<text x="370.0" y="577" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">expect_error</text>
+<text x="370.0" y="592" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">expect_near …</text>
+<rect x="482.4" y="526" width="114.4" height="74" rx="9" ry="9" fill="#1A2438" stroke="#33415C" stroke-width="1.2"/>
+<text x="492.4" y="544" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start">Suites &amp; hooks</text>
+<text x="492.4" y="562" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">describe</text>
+<text x="492.4" y="577" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">before_all</text>
+<text x="492.4" y="592" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">before_each …</text>
+<rect x="604.8" y="526" width="114.4" height="74" rx="9" ry="9" fill="#1A2438" stroke="#33415C" stroke-width="1.2"/>
+<text x="614.8" y="544" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start">Tags &amp; select</text>
+<text x="614.8" y="562" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">add_test{tags}</text>
+<text x="614.8" y="577" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">--tag / --filter</text>
+<text x="614.8" y="592" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">skip_test</text>
+<rect x="727.2" y="526" width="114.4" height="74" rx="9" ry="9" fill="#1A2438" stroke="#33415C" stroke-width="1.2"/>
+<text x="737.2" y="544" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start">Timing &amp; files</text>
+<text x="737.2" y="562" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">read_clock_ms</text>
+<text x="737.2" y="577" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">read_text_file</text>
+<text x="737.2" y="592" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">is_file_present</text>
+<rect x="849.6" y="526" width="114.4" height="74" rx="9" ry="9" fill="#1A2438" stroke="#3B82F6" stroke-width="1.2"/>
+<text x="859.6" y="544" fill="#3B82F6" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start">Processes</text>
+<text x="859.6" y="562" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">run_process</text>
+<text x="859.6" y="577" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">compile</text>
+<text x="859.6" y="592" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="start">assemble</text>
+<rect x="342" y="642" width="310.0" height="98" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="342" y="656" width="4" height="70" rx="2" fill="#3EE0C8"/>
+<circle cx="370" cy="666" r="12" fill="#3EE0C8" stroke="#0B1220" stroke-width="2"/>
+<text x="370" y="670.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">8</text>
+<text x="390" y="671" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Reporters</text>
+<text x="638.0" y="671" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="end">src/cpp</text>
+<text x="360" y="698" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">console · JSON · JUnit XML</text>
+<text x="360" y="715" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">script print() → stderr for json/junit</text>
+<rect x="672.0" y="642" width="310.0" height="98" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="672.0" y="656" width="4" height="70" rx="2" fill="#3EE0C8"/>
+<circle cx="700.0" cy="666" r="12" fill="#3EE0C8" stroke="#0B1220" stroke-width="2"/>
+<text x="700.0" y="670.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">5</text>
+<text x="720.0" y="671" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Test plan &amp; runner</text>
+<text x="968.0" y="671" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="end">src/core, src/script</text>
+<text x="690.0" y="700" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">Registry, suites, hooks, tag and name</text>
+<text x="690.0" y="717" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">selection, per-test order, timeouts, summary</text>
+<rect x="342" y="762" width="640" height="78" rx="14" ry="14" fill="#141C2E" stroke="#E8C36A" stroke-width="1.4"/>
+<text x="360" y="788" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Assembly hot paths</text>
+<text x="360" y="810" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">cycle counter for timing</text>
+<text x="360" y="827" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">src/asm/</text>
+<rect x="556" y="776" width="82" height="26" rx="8" ry="8" fill="#1A2438" stroke="#E8C36A" stroke-width="1.2"/>
+<text x="597.0" y="793.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">MASM x64</text>
+<rect x="644" y="776" width="82" height="26" rx="8" ry="8" fill="#1A2438" stroke="#E8C36A" stroke-width="1.2"/>
+<text x="685.0" y="793.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">MASM x86</text>
+<rect x="732" y="776" width="92" height="26" rx="8" ry="8" fill="#1A2438" stroke="#E8C36A" stroke-width="1.2"/>
+<text x="778.0" y="793.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">GAS x86-64</text>
+<rect x="830" y="776" width="86" height="26" rx="8" ry="8" fill="#1A2438" stroke="#E8C36A" stroke-width="1.2"/>
+<text x="873.0" y="793.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">GAS arm64</text>
+<text x="556" y="824" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">↔ C fallback per routine, chosen by CMake</text>
+<text x="964" y="824" fill="#E8C36A" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="10.5" font-weight="400" text-anchor="end">PRK_FORCE_C_FALLBACK=ON</text>
+<rect x="1050" y="96" width="366" height="760" rx="18" ry="18" fill="none" stroke="#3B82F6" stroke-width="1.2" stroke-dasharray="6 5"/>
+<text x="1233.0" y="120" fill="#3B82F6" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">Toolchain shell-out (separate processes)</text>
+<rect x="1062" y="136" width="342" height="104" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="1062" y="150" width="4" height="76" rx="2" fill="#3B82F6"/>
+<circle cx="1090" cy="160" r="12" fill="#3B82F6" stroke="#0B1220" stroke-width="2"/>
+<text x="1090" y="164.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">6</text>
+<text x="1110" y="165" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Process spawn</text>
+<text x="1390" y="165" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="end">src/process</text>
+<text x="1080" y="192" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">Mandatory timeout, whole-tree kill,</text>
+<text x="1080" y="209" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">stdout / stderr captured with limits</text>
+<rect x="1062" y="266" width="342" height="210" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="1062" y="280" width="4" height="182" rx="2" fill="#3B82F6"/>
+<text x="1080" y="295" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Find a toolchain</text>
+<text x="1080" y="320" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start">C / C++ (prk.compile)</text>
+<rect x="1080" y="330" width="306" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3B82F6" stroke-width="1.2"/>
+<text x="1233.0" y="347.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">MSVC cl  via vswhere + vcvarsall</text>
+<rect x="1080" y="362" width="150" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3B82F6" stroke-width="1.2"/>
+<text x="1155.0" y="379.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">gcc / g++</text>
+<rect x="1236" y="362" width="150" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3B82F6" stroke-width="1.2"/>
+<text x="1311.0" y="379.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">clang / clang++</text>
+<text x="1080" y="408" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="start">Assembly (prk.assemble)</text>
+<rect x="1080" y="418" width="98" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3B82F6" stroke-width="1.2"/>
+<text x="1129.0" y="435.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">ml64 / ml</text>
+<rect x="1184" y="418" width="98" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3B82F6" stroke-width="1.2"/>
+<text x="1233.0" y="435.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">as (GAS)</text>
+<rect x="1288" y="418" width="98" height="26" rx="8" ry="8" fill="#1A2438" stroke="#3B82F6" stroke-width="1.2"/>
+<text x="1337.0" y="435.0" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="middle">nasm</text>
+<text x="1080" y="464" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11" font-weight="400" text-anchor="start">MSVC discovery is cached for the run</text>
+<rect x="1062" y="502" width="342" height="74" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="1062" y="516" width="4" height="46" rx="2" fill="#3B82F6"/>
+<text x="1080" y="531" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Compile → link</text>
+<text x="1080" y="556" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">object, library or executable</text>
+<rect x="1062" y="602" width="342" height="74" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="1062" y="616" width="4" height="46" rx="2" fill="#3B82F6"/>
+<text x="1080" y="631" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Run the artifact</text>
+<text x="1080" y="656" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="start">prk.run_process(output, …)</text>
+<rect x="1062" y="702" width="342" height="138" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="1062" y="716" width="4" height="110" rx="2" fill="#3B82F6"/>
+<circle cx="1090" cy="726" r="12" fill="#3B82F6" stroke="#0B1220" stroke-width="2"/>
+<text x="1090" y="730.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">7</text>
+<text x="1110" y="731" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Result back to the test</text>
+<text x="1080" y="758" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="start">ok · outcome · exit_code</text>
+<text x="1080" y="776" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="start">stdout · stderr · elapsed_ms</text>
+<text x="1080" y="794" fill="#A3B0C2" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11.5" font-weight="400" text-anchor="start">diagnostics {file, line, severity}</text>
+<text x="1080" y="820" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">then asserted with expect_*</text>
+<path d="M 1233.0 242 L 1233.0 263" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowBlue)"/>
+<path d="M 1233.0 478 L 1233.0 499" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowBlue)"/>
+<path d="M 1233.0 578 L 1233.0 599" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowBlue)"/>
+<path d="M 1233.0 678 L 1233.0 699" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowBlue)"/>
+<path d="M 294 214 L 338 214" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 654.0 262 L 668.0 262" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 827.0 288 L 827.0 312" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 712.0 288 L 612.0 312" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 497.0 454 L 497.0 480" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 827.0 454 L 827.0 480" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 827.0 614 L 827.0 638" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 670.0 692 L 656.0 692" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 827.0 760 L 827.0 744" fill="none" stroke="#E8C36A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowGold)"/>
+<path d="M 340 692 L 296 692" fill="none" stroke="#3EE0C8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M 984 544 L 1026 544 L 1026 188 L 1058 188" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowBlue)"/>
+<path d="M 1060 772 L 1040 772 L 1040 580 L 986 580" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 5" marker-end="url(#arrowBlue)"/>
+<rect x="36" y="884" width="1368" height="296" rx="18" ry="18" fill="#101828" stroke="#E8C36A" stroke-width="1.5"/>
+<rect x="52" y="898" width="250" height="28" rx="14" ry="14" fill="#E8C36A"/>
+<text x="177" y="917" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" text-anchor="middle">Build &amp; distribution</text>
+<text x="1386" y="917" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="end">Windows x64 is the shipped target; the 32-bit package is on hold</text>
+<rect x="56" y="944" width="240" height="220" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="56" y="958" width="4" height="192" rx="2" fill="#E8C36A"/>
+<circle cx="84" cy="968" r="12" fill="#E8C36A" stroke="#0B1220" stroke-width="2"/>
+<text x="84" y="972.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">10</text>
+<text x="104" y="973" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">CMake presets</text>
+<text x="74" y="1008" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">windows-msvc-x64-debug</text>
+<text x="74" y="1030" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">windows-msvc-x64-release</text>
+<text x="74" y="1052" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">windows-msvc-x64-msi</text>
+<text x="74" y="1074" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">linux-* · macos-*</text>
+<line x1="74" y1="1112" x2="278" y2="1112" stroke="#33415C" stroke-width="1"/>
+<text x="74" y="1138" fill="#E8C36A" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">Visual Studio 18 2026 · CTest</text>
+<path d="M 299 1054 L 324 1054" fill="none" stroke="#E8C36A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowGold)"/>
+<rect x="328" y="944" width="240" height="220" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="328" y="958" width="4" height="192" rx="2" fill="#E8C36A"/>
+<text x="346" y="973" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">Release executable</text>
+<text x="346" y="1008" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">Deterministic (/Brepro)</text>
+<text x="346" y="1030" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">VERSIONINFO + asInvoker</text>
+<text x="346" y="1052" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">manifest; no packers or</text>
+<text x="346" y="1074" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="400" text-anchor="start">runtime code generation</text>
+<line x1="346" y1="1112" x2="550" y2="1112" stroke="#33415C" stroke-width="1"/>
+<text x="346" y="1138" fill="#E8C36A" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">same source → same bytes</text>
+<path d="M 571 1054 L 596 1054" fill="none" stroke="#E8C36A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowGold)"/>
+<rect x="600" y="944" width="240" height="220" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="600" y="958" width="4" height="192" rx="2" fill="#E8C36A"/>
+<circle cx="628" cy="968" r="12" fill="#E8C36A" stroke="#0B1220" stroke-width="2"/>
+<text x="628" y="972.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">11</text>
+<text x="648" y="973" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">WiX v4 MSI</text>
+<text x="618" y="1008" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">ProofRunKit-&lt;ver&gt;-win-x64.msi</text>
+<text x="618" y="1030" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">→ %ProgramFiles%\ProofRunKit</text>
+<text x="618" y="1052" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">prk.exe + proofrunkit.exe</text>
+<text x="618" y="1074" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">optional system PATH entry</text>
+<line x1="618" y1="1112" x2="822" y2="1112" stroke="#33415C" stroke-width="1"/>
+<text x="618" y="1138" fill="#E8C36A" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">MajorUpgrade replaces old</text>
+<path d="M 843 1054 L 868 1054" fill="none" stroke="#E8C36A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowGold)"/>
+<rect x="872" y="944" width="240" height="220" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="872" y="958" width="4" height="192" rx="2" fill="#E8C36A"/>
+<circle cx="900" cy="968" r="12" fill="#E8C36A" stroke="#0B1220" stroke-width="2"/>
+<text x="900" y="972.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">12</text>
+<text x="920" y="973" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">GitHub Releases</text>
+<text x="890" y="1008" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">ProofRunKit-&lt;ver&gt;-win-x64.msi</text>
+<text x="890" y="1030" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">+ the matching .msi.sha256</text>
+<text x="890" y="1074" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">found via the Releases API</text>
+<line x1="890" y1="1112" x2="1094" y2="1112" stroke="#33415C" stroke-width="1"/>
+<text x="890" y="1138" fill="#E8C36A" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">public, versioned</text>
+<path d="M 1115 1054 L 1140 1054" fill="none" stroke="#E8C36A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrowGold)"/>
+<rect x="1144" y="944" width="240" height="220" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
+<rect x="1144" y="958" width="4" height="192" rx="2" fill="#E8C36A"/>
+<circle cx="1172" cy="968" r="12" fill="#E8C36A" stroke="#0B1220" stroke-width="2"/>
+<text x="1172" y="972.5" fill="#0B1220" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle">13</text>
+<text x="1192" y="973" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="start">prk -update</text>
+<text x="1162" y="1008" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">WinHTTP → %TEMP%</text>
+<text x="1162" y="1030" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">verify SHA-256, confirm</text>
+<text x="1162" y="1052" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">msiexec /i … /passive</text>
+<text x="1162" y="1074" fill="#F4F7FB" font-family="Liberation Mono, DejaVu Sans Mono, Consolas, Menlo, monospace" font-size="11" font-weight="400" text-anchor="start">-check -yes -dry-run</text>
+<line x1="1162" y1="1112" x2="1366" y2="1112" stroke="#33415C" stroke-width="1"/>
+<text x="1162" y="1138" fill="#E8C36A" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" text-anchor="start">prk -v: latest + up to date</text>
+</g></svg>

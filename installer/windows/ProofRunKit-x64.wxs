@@ -65,6 +65,14 @@
               Name="proofrunkit.exe"
               KeyPath="yes" />
       </Component>
+      <!-- The short `prk` command (#60): the same build output installed under a second name, so
+           both names have one file hash. The install folder is on PATH via AddToPath. -->
+      <Component Id="PrkShortExe" Guid="*">
+        <File Id="PrkShortExeFile"
+              Source="$(var.PrkExePath)"
+              Name="prk.exe"
+              KeyPath="yes" />
+      </Component>
       <Component Id="LicenseFile" Guid="*">
         <File Id="LicenseTxt"
               Source="$(var.PrkLicenseTxt)"

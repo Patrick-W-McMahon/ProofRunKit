@@ -56,6 +56,15 @@ prk_apply_project_warnings(proofrunkit)
 include(ProofRunKitWindowsResources)
 prk_add_windows_resources(proofrunkit)
 
+# The short `prk` command (#60) is a byte-identical copy of the same build output, not a second
+# compiled program: one file hash for antivirus reputation (#22), and the MSIs install both names.
+set(PRK_SHORT_EXECUTABLE_NAME "prk${CMAKE_EXECUTABLE_SUFFIX}")
+add_custom_command(TARGET proofrunkit POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:proofrunkit>"
+            "$<TARGET_FILE_DIR:proofrunkit>/${PRK_SHORT_EXECUTABLE_NAME}"
+    COMMENT "Copying proofrunkit to ${PRK_SHORT_EXECUTABLE_NAME} (same binary, #60)"
+    VERBATIM)
+
 # ------------------------------------------------------------------------------- self-test (#23)
 if(PRK_BUILD_SELFTEST)
     enable_testing()

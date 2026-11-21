@@ -7,7 +7,7 @@
 #   .\installer\build-x86.ps1
 #   .\installer\build-x86.ps1 -RepoRoot C:\path\to\ProofRunKit
 #
-# Refs #39.
+# Refs #39, Refs #60.
 [CmdletBinding()]
 param(
     [string]$RepoRoot = ''
@@ -68,5 +68,6 @@ Invoke-Checked 'configure' { cmake --preset $Preset }
 Invoke-Checked 'build'     { cmake --build --preset $Preset }
 Invoke-Checked 'ctest'     { ctest --preset $Preset --output-on-failure }
 & ".\build\$Preset\Debug\proofrunkit.exe" --version
+& ".\build\$Preset\Debug\prk.exe" version
 & ".\build\$Preset\tests\selftest\Debug\proofrunkit_selftest.exe"
 Write-Host '== Done: configure, build, and CTest all succeeded.' -ForegroundColor Green

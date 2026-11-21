@@ -76,6 +76,7 @@ is already installed. Uninstall it before installing this version.*
 | Item | Location |
 | --- | --- |
 | `proofrunkit.exe` | `%ProgramFiles%\ProofRunKit` |
+| `prk.exe` | Same folder. The short `prk` command: a byte-identical copy of `proofrunkit.exe` from the same build output (#60). |
 | `LICENSE.txt` | Same folder. The repo-root [`LICENSE`](../LICENSE) (verbatim Apache License 2.0), packaged unchanged (#58). |
 | `NOTICE.txt` | Same folder. The repo-root [`NOTICE`](../NOTICE), per Apache-2.0 section 4(d) (#58). |
 | Start Menu shortcuts | `ProofRunKit Help` (opens a console with `proofrunkit --help`) and `ProofRunKit on GitHub.url` |
@@ -165,7 +166,7 @@ cmake --build --preset windows-msvc-x64-release --target package-msi
 This is read-only: it never runs `msiexec /i`. It inspects the MSI with the
 Windows Installer COM API (Directory, Property, Feature, File, Environment, and
 LaunchCondition tables) and then performs an administrative extraction
-(`msiexec /a ... TARGETDIR=<temp>`) to confirm `proofrunkit.exe`, `LICENSE.txt`, and `NOTICE.txt`
+(`msiexec /a ... TARGETDIR=<temp>`) to confirm `proofrunkit.exe`, `prk.exe` (same SHA-256), `LICENSE.txt`, and `NOTICE.txt`
 are present. The Directory table is what proves the real destination is
 `ProgramFiles64Folder\ProofRunKit`; the administrative `TARGETDIR` is only a
 temporary unpack folder and is deleted afterwards.

@@ -1,6 +1,6 @@
 /**
  * @file command_line_app.cpp
- * @brief Implementation of prk::run_command_line.
+ * @brief Implementation of prk::run_command_line (flag form and `prk` subcommands, #60).
  */
 #include "command_line_app.hpp"
 
@@ -57,7 +57,8 @@ int run_command_line(std::string_view program_name, std::span<const std::string_
     }
     const CommandLineOptions& options = parsed.options;
     if (options.show_help) {
-        output << format_usage_text(program_name);
+        output << (options.help_topic.empty() ? format_usage_text(program_name)
+                                              : format_command_help_text(program_name, options.help_topic));
         return kExitAllPassed;
     }
     if (options.show_version) {

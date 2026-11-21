@@ -23,6 +23,23 @@ add_test(NAME proofrunkit_builtin_checks COMMAND proofrunkit)
 add_test(NAME proofrunkit_rejects_unknown_option COMMAND proofrunkit --no-such-option)
 set_tests_properties(proofrunkit_rejects_unknown_option PROPERTIES PASS_REGULAR_EXPRESSION "unknown option")
 
+# The short `prk` command (#60): the same binary under a second name, with subcommands.
+set(_prk_short_exe "$<TARGET_FILE_DIR:proofrunkit>/${PRK_SHORT_EXECUTABLE_NAME}")
+add_test(NAME prk_is_identical_copy
+    COMMAND ${CMAKE_COMMAND} -E compare_files "$<TARGET_FILE:proofrunkit>" "${_prk_short_exe}")
+add_test(NAME prk_version COMMAND "${_prk_short_exe}" --version)
+set_tests_properties(prk_version PROPERTIES PASS_REGULAR_EXPRESSION "ProofRunKit ${PROJECT_VERSION}")
+add_test(NAME prk_version_subcommand COMMAND "${_prk_short_exe}" version)
+set_tests_properties(prk_version_subcommand PROPERTIES PASS_REGULAR_EXPRESSION "ProofRunKit ${PROJECT_VERSION}")
+add_test(NAME prk_help_run COMMAND "${_prk_short_exe}" help run)
+set_tests_properties(prk_help_run PROPERTIES PASS_REGULAR_EXPRESSION "Usage: prk run")
+add_test(NAME prk_list COMMAND "${_prk_short_exe}" list)
+set_tests_properties(prk_list PROPERTIES PASS_REGULAR_EXPRESSION "kit\\.")
+add_test(NAME prk_run_builtin_checks_json COMMAND "${_prk_short_exe}" run --json)
+set_tests_properties(prk_run_builtin_checks_json PROPERTIES PASS_REGULAR_EXPRESSION "\"failed\": 0")
+add_test(NAME prk_rejects_unknown_command COMMAND "${_prk_short_exe}" help no-such-command)
+set_tests_properties(prk_rejects_unknown_command PROPERTIES PASS_REGULAR_EXPRESSION "prk: unknown command")
+
 # The installer license dialog RTF is generated from the repo-root LICENSE (#58).
 add_test(NAME proofrunkit_license_rtf_generation
     COMMAND ${CMAKE_COMMAND} "-DPRK_SOURCE_DIR=${PROJECT_SOURCE_DIR}"

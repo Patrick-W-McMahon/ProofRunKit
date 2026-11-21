@@ -67,23 +67,30 @@ Studio 2026:
 # 64-bit
 cmake --preset windows-msvc-x64-debug
 cmake --build --preset windows-msvc-x64-debug
-ctest --preset windows-msvc-x64-debug --output-on-failure
+build\windows-msvc-x64-debug\Debug\prk.exe test --build-dir build\windows-msvc-x64-debug
 
 # 32-bit (from an x86 developer shell: Launch-VsDevShell.ps1 -Arch x86 -HostArch amd64)
 cmake --preset windows-msvc-x86-debug
 cmake --build --preset windows-msvc-x86-debug
-ctest --preset windows-msvc-x86-debug --output-on-failure
+build\windows-msvc-x86-debug\Debug\prk.exe test --build-dir build\windows-msvc-x86-debug
 ```
+
+`prk test` is the way to test ProofRunKit: it runs every entry of [`prk.tests.json`](prk.tests.json) (smoke tests,
+Lua and JavaScript scripts, samples, and the internal C++ cases in `proofrunkit_selftest` as the `cpp.selftest`
+entry) with one combined summary ([docs/test-config.md](docs/test-config.md),
+[docs/self-hosting.md](docs/self-hosting.md)). `ctest --preset <preset> --output-on-failure` runs the same suite once
+through its `prk_test_suite` entry, plus a few build checks.
 
 Before requesting review:
 
 - [ ] The build has no warnings (`-DPRK_WARNINGS_AS_ERRORS=ON` is recommended).
-- [ ] `ctest` passes, including `proofrunkit_selftest`.
+- [ ] `prk test --build-dir <build>` passes (or `ctest`, which runs it as `prk_test_suite`).
 - [ ] If you touched Assembly, the build also passes with `-DPRK_FORCE_C_FALLBACK=ON`.
 - [ ] If you touched the installer, the MSI builds and its `installer\verify-msi-*.ps1` check passes
       ([docs/installer-windows-x64.md](docs/installer-windows-x64.md),
       [docs/installer-windows-x86.md](docs/installer-windows-x86.md)).
-- [ ] New or changed public functions have unit tests in `tests/selftest/`.
+- [ ] New or changed public functions have tests: a prk script listed in `prk.tests.json` when the behavior is
+      reachable from a script or the command line, otherwise a C++ case in `tests/selftest/`.
 
 ## No CI: build and test locally
 

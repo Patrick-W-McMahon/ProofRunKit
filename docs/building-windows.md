@@ -55,12 +55,11 @@ resets, or discards changes.
 
 ## What CTest runs
 
-CTest has five entries. Everything that runs through `prk` is listed once, in [`prk.tests.json`](../prk.tests.json),
-and CTest runs it with a single `prk test` (#83).
+`prk test` is the way to test ProofRunKit. Everything, including the internal C++ cases, is listed once in
+[`prk.tests.json`](../prk.tests.json), and CTest runs it with a single `prk test` (#83, #96). CTest has four entries.
 
 | Test | Checks |
 | --- | --- |
-| `proofrunkit_selftest` | The C++ harness (the fallback, #27): registry, runner, reporters, CLI parsing, engines and sandboxes, script loading, process spawn, the compiler and assembler drivers, `prk test`, the update helpers, and the MASM cycle counter vs. its C fallback. |
 | `prk_is_identical_copy` | `prk.exe` is byte-identical to `proofrunkit.exe` (#60). |
 | `proofrunkit_license_rtf_generation` | The installer license RTF is generated correctly from `LICENSE` (#58). |
 | `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow docs/exit-codes.md (#21). |
@@ -69,6 +68,7 @@ and CTest runs it with a single `prk test` (#83).
 `prk.tests.json` covers:
 - **Smoke tests:** `proofrunkit` / `prk` version lines, built-in checks, usage errors, help, list, `-v -offline`, and `-update` without the network.
 - **Lua and JS API scripts and samples:** failures with messages (exit 1), syntax errors and missing files (exit 4), endless loops stopped by the instruction budget and by `--timeout`, and mixed Lua + JS listings.
+- **The internal C++ cases** (`cpp.selftest`): `proofrunkit_selftest` keeps only what scripts cannot reach (C ABI argument checks, fake runners and services, injected clocks, the MASM cycle counter vs. its C fallback); `prk test` reads its JSON report so each case shows up in the combined summary. It has no CTest entry of its own (#96).
 - **The self-hosted suite** (`tests/lua/self`, `tests/js/self`): assertions, suites and hooks, timing and files, tags, sandbox, reports (after two setup runs that write the fixture reports), process spawn, process options with `prk_spawn_child`, the CLI suite, and the compiler and assembler drivers. The compile and assemble tests skip when no compiler or assembler is found.
 
 Run the same suite without CTest from the repository root, with the built or the installed `prk`:
@@ -79,8 +79,9 @@ prk test --build-dir build\windows-msvc-x64-debug     # installed prk drives the
 prk test                                               # no build: tests the installed prk, skips build-only entries
 ```
 
-Run the self-test directly for per-test output: `build\windows-msvc-x64-debug\tests\selftest\Debug\proofrunkit_selftest.exe`
-(it accepts `--list`, `--filter TEXT`, and `--format json`).
+To debug one internal C++ case, `proofrunkit_selftest` still accepts `--list`, `--filter TEXT`, and `--format json`
+(`build\windows-msvc-x64-debug\tests\selftest\Debug\proofrunkit_selftest.exe --filter c_driver.`); for testing, use
+`prk test`.
 
 ## The `prk` command (#60)
 

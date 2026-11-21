@@ -41,14 +41,6 @@ void test_registers_in_order_and_copies_names(PrkTestContext* context, void*) {
     PRK_EXPECT(prk_get_test_case_name(registry.get(), 2) == nullptr);
 }
 
-void test_rejects_duplicate_names(PrkTestContext* context, void*) {
-    const RegistryPointer registry = create_owned_registry();
-    const PrkTestCase test_case{"same", &do_nothing, nullptr};
-    PRK_EXPECT(prk_register_test_case(registry.get(), &test_case) == PRK_STATUS_OK);
-    PRK_EXPECT(prk_register_test_case(registry.get(), &test_case) == PRK_STATUS_DUPLICATE_NAME);
-    PRK_EXPECT(prk_count_test_cases(registry.get()) == 1);
-}
-
 void test_rejects_invalid_arguments(PrkTestContext* context, void*) {
     const RegistryPointer registry = create_owned_registry();
     const PrkTestCase empty_name{"", &do_nothing, nullptr};
@@ -84,7 +76,6 @@ PrkStatus register_registry_tests(PrkRegistry& registry) {
     const PrkTestCase test_cases[] = {
         {"core.registry.new_registry_is_empty", &test_new_registry_is_empty, nullptr},
         {"core.registry.registers_in_order_and_copies_names", &test_registers_in_order_and_copies_names, nullptr},
-        {"core.registry.rejects_duplicate_names", &test_rejects_duplicate_names, nullptr},
         {"core.registry.rejects_invalid_arguments", &test_rejects_invalid_arguments, nullptr},
         {"core.registry.grows_past_initial_capacity", &test_grows_past_initial_capacity, nullptr},
         {"core.registry.destroy_accepts_null", &test_destroy_accepts_null, nullptr},

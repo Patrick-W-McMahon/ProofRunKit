@@ -69,5 +69,5 @@ Invoke-Checked 'build'     { cmake --build --preset $Preset }
 Invoke-Checked 'ctest'     { ctest --preset $Preset --output-on-failure }
 & ".\build\$Preset\Debug\proofrunkit.exe" --version
 & ".\build\$Preset\Debug\prk.exe" version
-& ".\build\$Preset\tests\selftest\Debug\proofrunkit_selftest.exe"
+# The C++ self-test runs inside `prk test` (CTest prk_test_suite, #96); no separate run.
 Write-Host '== Done: configure, build, and CTest all succeeded.' -ForegroundColor Green

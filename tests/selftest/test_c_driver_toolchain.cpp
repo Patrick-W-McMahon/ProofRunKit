@@ -306,36 +306,6 @@ void test_missing_msvc_is_a_result(PrkTestContext* context, void*) {
     PRK_EXPECT(prk_compile_program(&runner, &request, &result) == PRK_STATUS_INVALID_ARGUMENT);
 }
 
-void test_lua_compile_library_options(PrkTestContext* context, void*) {
-    FakeMsvcRunner fake;
-    LuaScriptRunSetup setup;
-    setup.process_runner = fake.make_runner();
-    const auto run = load_and_run_lua_script(
-        "prk.add_test('archive', function()\n"
-        "  local r = prk.compile{sources = {'a.o', 'b.o'}, output = 'libab.a', kind = 'static_library',\n"
-        "    compiler = 'gcc', archiver = 'x86_64-w64-mingw32-ar'}\n"
-        "  prk.expect_exit_code(r, 0) prk.expect_equal(r.kind, 'static_library')\n"
-        "  prk.expect_equal(r.program, 'x86_64-w64-mingw32-ar') prk.expect_false(r.msvc_discovered)\n"
-        "  prk.expect_equal(r.command, 'x86_64-w64-mingw32-ar rcs libab.a a.o b.o')\n"
-        "end)\n"
-        "prk.add_test('link', function()\n"
-        "  local r = prk.compile{sources = 'main.c', output = 'app.out', compiler = 'clang', libraries = {'m'},\n"
-        "    library_dirs = 'lib'}\n"
-        "  prk.expect_match(r.command, ' %-Llib %-lm$')\n"
-        "end)\n"
-        "prk.add_test('object_needs_one', function()\n"
-        "  prk.compile{sources = {'a.c', 'b.c'}, output = 'a.o', kind = 'object'} end)\n"
-        "prk.add_test('bad_arch', function()\n"
-        "  prk.compile{sources = 'a.c', output = 'a', msvc_arch = 'x64 extra'} end)\n"
-        "prk.add_test('bad_kind', function() prk.compile{sources = 'a.c', output = 'a', kind = 'dll'} end)\n",
-        std::move(setup));
-    PRK_EXPECT(run->results.size() == 5 && run->results[0].outcome == PRK_OUTCOME_PASSED);
-    PRK_EXPECT(run->results.size() == 5 && run->results[1].outcome == PRK_OUTCOME_PASSED);
-    PRK_EXPECT(run->results.size() == 5 && contains_text(run->results[2].message, "exactly one source"));
-    PRK_EXPECT(run->results.size() == 5 && contains_text(run->results[3].message, "msvc_arch must be"));
-    PRK_EXPECT(run->results.size() == 5 && contains_text(run->results[4].message, "unknown kind 'dll'"));
-}
-
 void test_discovers_real_msvc(PrkTestContext* context, void*) {
 #if defined(_WIN32)
     const PrkProcessRunner runner = prk_get_system_process_runner();
@@ -385,7 +355,6 @@ PrkStatus register_c_driver_toolchain_tests(PrkRegistry& registry) {
         {"c_driver.discovers_msvc_through_runner", &test_discovers_msvc_through_runner, nullptr},
         {"c_driver.msvc_falls_back_to_discovery", &test_msvc_falls_back_to_discovery, nullptr},
         {"c_driver.missing_msvc_is_a_result", &test_missing_msvc_is_a_result, nullptr},
-        {"c_driver.lua_compile_library_options", &test_lua_compile_library_options, nullptr},
         {"c_driver.discovers_real_msvc", &test_discovers_real_msvc, nullptr},
     };
     return register_test_cases(registry, test_cases);

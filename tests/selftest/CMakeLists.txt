@@ -1,8 +1,8 @@
-# proofrunkit_selftest (#23): the core's own unit tests, run through the same registry, runner, and
-# reporters that ProofRunKit uses for user tests.
+# proofrunkit_selftest (#23): the internal-only C/C++ unit tests (docs/self-hosting.md), run through the same
+# registry, runner, and reporters that ProofRunKit uses for user tests. It has no CTest entry of its own (#96):
+# `prk test` runs it once as the `cpp.selftest` entry of prk.tests.json (CTest prk_test_suite below).
 add_executable(proofrunkit_selftest
     selftest_main.cpp
-    test_command_line.cpp
     test_cycle_counter.cpp
     test_js_engine.cpp
     test_lua_engine.cpp
@@ -15,7 +15,6 @@ add_executable(proofrunkit_selftest
     test_asm_driver.cpp
     test_release_info.cpp
     test_update_command.cpp
-    test_junit_reporting.cpp
     test_registry.cpp
     test_reporting.cpp
     test_runner.cpp
@@ -29,14 +28,12 @@ if(PRK_FORCE_C_FALLBACK)
     target_compile_definitions(proofrunkit_selftest PRIVATE PRK_EXPECT_C_FALLBACK)
 endif()
 
-# Child program for the process-spawn tests (#13). Same directory as the self-test (also per config
-# with Visual Studio generators), which finds it next to its own executable.
+# Child program for the process-spawn scripts (#13), run with cwd = its folder (selftest_dir in prk.tests.json).
+# Same directory as the self-test, also per config with Visual Studio generators.
 add_executable(prk_spawn_child prk_spawn_child.c)
 target_link_libraries(prk_spawn_child PRIVATE prk_process)
 prk_apply_project_warnings(prk_spawn_child)
 add_dependencies(proofrunkit_selftest prk_spawn_child)
-
-add_test(NAME proofrunkit_selftest COMMAND proofrunkit_selftest)
 
 # The short `prk` command (#60): the same binary under a second name, with subcommands.
 set(_prk_short_exe "$<TARGET_FILE_DIR:proofrunkit>/${PRK_SHORT_EXECUTABLE_NAME}")

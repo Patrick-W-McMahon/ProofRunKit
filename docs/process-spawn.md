@@ -52,7 +52,8 @@ hardening beyond kill-on-close (memory or CPU limits, UI restrictions) can be ad
 
 ## Tests
 
-`proofrunkit_selftest` covers validation, the environment merge, quoting, and bounded output as pure functions, and
-spawns `prk_spawn_child` (a small test program built next to the self-test, never installed) for success, a non-zero
-exit with both streams, environment and working directory, a 200 KB stdin, a timeout, a missing program and a missing
-directory, and the output limit.
+`proofrunkit_selftest` (run by `prk test` as `cpp.selftest`) covers validation, the environment merge, quoting, and
+bounded output as pure functions. Real spawns of `prk_spawn_child` (a small test program built next to the self-test,
+never installed) are checked by the `prk.tests.json` entries `self.process_options` and `js.process_options`: success,
+a non-zero exit with both streams, environment and working directory, stdin, a timeout, a missing program, and the
+output limit.

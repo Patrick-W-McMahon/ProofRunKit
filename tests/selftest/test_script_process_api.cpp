@@ -1,8 +1,8 @@
 /**
  * @file test_script_process_api.cpp
- * @brief Tests for process spawn from test scripts (#12 over #13): prk.run_process (Lua) and
- *        prk.runProcess (JavaScript) with a fake runner that records requests, prk.expect_exit_code /
- *        prk.expectExitCode messages, the timeout cap, and one real spawn of prk_spawn_child.
+ * @brief Internal tests for process spawn from test scripts (#12 over #13) with a fake runner that records
+ *        requests: the timeout cap and prk.expect_exit_code messages.
+ *        Cases that prk scripts cover are in prk.tests.json (docs/self-hosting.md, #96).
  */
 #include <array>
 #include <cstdint>
@@ -126,63 +126,12 @@ std::unique_ptr<JsProcessRun> load_and_run_js(std::string_view source, const Prk
     return run;
 }
 
-std::string find_spawn_child_path() {
-#if defined(_WIN32)
-    std::wstring path(32768, L'\0');
-    path.resize(GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size())));
-    const int size = WideCharToMultiByte(CP_UTF8, 0, path.c_str(), -1, nullptr, 0, nullptr, nullptr);
-    std::string text(static_cast<std::size_t>(size > 0 ? size : 1), '\0');
-    (void)WideCharToMultiByte(CP_UTF8, 0, path.c_str(), -1, text.data(), size, nullptr, nullptr);
-    text.resize(text.find('\0'));
-    const char* const name = "prk_spawn_child.exe";
-#else
-    std::string text(4096, '\0');
-    const ssize_t length = readlink("/proc/self/exe", text.data(), text.size() - 1);
-    text.resize(length > 0 ? static_cast<std::size_t>(length) : 0);
-    const char* const name = "prk_spawn_child";
-#endif
-    return text.substr(0, text.find_last_of("/\\") + 1) + name;
-}
-
-/** @brief Escapes @p text as a Lua / JavaScript single-quoted string body. */
-std::string quote_script_string(const std::string& text) {
-    std::string quoted = "'";
-    for (const char character : text) {
-        if (character == '\\' || character == '\'') {
-            quoted += '\\';
-        }
-        quoted += character;
-    }
-    return quoted + "'";
-}
-
 void test_caps_script_process_timeout(PrkTestContext* context, void*) {
     PRK_EXPECT(prk_cap_script_process_timeout_ms(0, 0, 500) == PRK_PROCESS_DEFAULT_TIMEOUT_MS);
     PRK_EXPECT(prk_cap_script_process_timeout_ms(5000, 0, 500) == 5000);
     PRK_EXPECT(prk_cap_script_process_timeout_ms(5000, 1700, 1000) == 700);
     PRK_EXPECT(prk_cap_script_process_timeout_ms(300, 1700, 1000) == 300);
     PRK_EXPECT(prk_cap_script_process_timeout_ms(0, 900, 1000) == 1);
-}
-
-void test_lua_run_process_passes_request(PrkTestContext* context, void*) {
-    FakeProcessRunner fake;
-    fake.standard_output = "built\n";
-    LuaScriptRunSetup setup;
-    setup.process_runner = fake.make_runner();
-    const auto run = load_and_run_lua_script(
-        "prk.add_test('spawn', function()\n"
-        "  local r = prk.run_process{program = 'gcc', args = {'-c', 'a b.c'}, cwd = 'build', env = {LANG = 'C'},\n"
-        "    inherit_env = false, stdin = 'in', timeout_ms = 400, output_limit = 64}\n"
-        "  prk.expect_true(r.ok) prk.expect_equal(r.outcome, 'exited') prk.expect_equal(r.exit_code, 0)\n"
-        "  prk.expect_equal(r.stdout, 'built\\n') prk.expect_equal(r.stderr, '') prk.expect_equal(r.elapsed_ms, 12)\n"
-        "  prk.expect_exit_code(r, 0)\n"
-        "end, {timeout_ms = 1000})\n",
-        std::move(setup));
-    PRK_EXPECT(run->results.size() == 1 && run->results[0].outcome == PRK_OUTCOME_PASSED);
-    PRK_EXPECT(fake.program == "gcc" && fake.arguments == std::vector<std::string>({"-c", "a b.c"}));
-    PRK_EXPECT(fake.working_directory == "build" && fake.environment == std::vector<std::string>({"LANG=C"}));
-    PRK_EXPECT(fake.is_environment_inherited == 0 && fake.standard_input == "in");
-    PRK_EXPECT(fake.timeout_ms == 400 && fake.output_limit_bytes == 64);
 }
 
 void test_lua_process_failures_are_clear(PrkTestContext* context, void*) {
@@ -224,33 +173,6 @@ void test_lua_process_failures_are_clear(PrkTestContext* context, void*) {
     PRK_EXPECT(contains_text(find_message(*no_runner, 0), "process spawn is not available in this host"));
 }
 
-void test_js_run_process_passes_request(PrkTestContext* context, void*) {
-    FakeProcessRunner fake;
-    fake.exit_code = 2;
-    fake.standard_output = "out";
-    fake.standard_error = "boom";
-    const auto run = load_and_run_js(
-        "prk.addTest('spawn', () => {\n"
-        "  const r = prk.runProcess({program: 'node', args: ['x.js', ''], cwd: 'web', env: {A: '1', B: 'two'},\n"
-        "    stdin: 'data', timeoutMs: 250, outputLimit: 99});\n"
-        "  prk.expectFalse(r.ok); prk.expectEqual(r.exitCode, 2); prk.expectEqual(r.stdout, 'out');\n"
-        "  prk.expectEqual(r.outcome, 'exited'); prk.expectExitCode(r, 2);\n"
-        "});\n"
-        "prk.addTest('fails', () => prk.expectExitCode(prk.runProcess({program: 'node'}), 0, 'node run'));\n"
-        "prk.addTest('typo', () => prk.runProcess({program: 'node', timeout: 5}));\n",
-        fake.make_runner());
-    PRK_EXPECT(run->results.size() == 3 && run->results[0].outcome == PRK_OUTCOME_PASSED);
-    PRK_EXPECT(fake.program == "node" && fake.arguments == std::vector<std::string>({"x.js", ""}));
-    PRK_EXPECT(fake.environment == std::vector<std::string>({"A=1", "B=two"}) && fake.is_environment_inherited == 1);
-    PRK_EXPECT(fake.working_directory == "web" && fake.standard_input == "data");
-    PRK_EXPECT(fake.timeout_ms == 250 && fake.output_limit_bytes == 99);
-    PRK_EXPECT(run->message(1) == "sample.js:7: node run: expected exit code 0, got exit code 2\nstderr: boom");
-    PRK_EXPECT(contains_text(run->message(2), "unknown option 'timeout'"));
-    const auto no_runner = load_and_run_js("prk.addTest('t', () => prk.runProcess({program: 'x'}));\n",
-                                           PrkProcessRunner{nullptr, nullptr});
-    PRK_EXPECT(contains_text(no_runner->message(0), "process spawn is not available in this host"));
-}
-
 void test_js_process_timeout_is_capped_by_test(PrkTestContext* context, void*) {
     FakeProcessRunner fake;
     const auto run = load_and_run_js(
@@ -259,45 +181,13 @@ void test_js_process_timeout_is_capped_by_test(PrkTestContext* context, void*) {
     PRK_EXPECT(fake.spawn_count == 1 && fake.timeout_ms > 0 && fake.timeout_ms <= 300);
 }
 
-void test_scripts_spawn_real_processes(PrkTestContext* context, void*) {
-    const std::string child = quote_script_string(find_spawn_child_path());
-    LuaScriptRunSetup setup;
-    setup.process_runner = prk_get_system_process_runner();
-    const auto lua = load_and_run_lua_script(
-        "prk.add_test('real', function()\n"
-        "  local r = prk.run_process{program = " +
-            child +
-            ", args = {'echo', 'two words'}}\n"
-            "  prk.expect_exit_code(r, 0) prk.expect_equal(r.stdout:gsub('\\r', ''), '[two words]\\n')\n"
-            "  prk.expect_exit_code(prk.run_process{program = " +
-            child +
-            ", args = {'exit', '3'}}, 3)\n"
-            "  prk.expect_equal(prk.run_process{program = 'prk_no_such_tool_4711'}.outcome, 'failed to start')\n"
-            "end)\n",
-        std::move(setup));
-    PRK_EXPECT(lua->results.size() == 1 && lua->results[0].outcome == PRK_OUTCOME_PASSED);
-    PRK_EXPECT(find_message(*lua, 0).empty());
-    const auto js = load_and_run_js(
-        "prk.addTest('real', () => {\n"
-        "  const r = prk.runProcess({program: " +
-            child +
-            ", args: ['cat'], stdin: 'piped'});\n"
-            "  prk.expectExitCode(r, 0); prk.expectEqual(r.stdout, 'piped');\n"
-            "});\n",
-        prk_get_system_process_runner());
-    PRK_EXPECT(js->results.size() == 1 && js->message(0).empty());
-}
-
 }  // namespace
 
 PrkStatus register_script_process_api_tests(PrkRegistry& registry) {
     const PrkTestCase test_cases[] = {
         {"script_process.caps_timeout_to_the_test", &test_caps_script_process_timeout, nullptr},
-        {"script_process.lua_passes_request", &test_lua_run_process_passes_request, nullptr},
         {"script_process.lua_failures_are_clear", &test_lua_process_failures_are_clear, nullptr},
-        {"script_process.js_passes_request", &test_js_run_process_passes_request, nullptr},
         {"script_process.js_timeout_is_capped_by_test", &test_js_process_timeout_is_capped_by_test, nullptr},
-        {"script_process.scripts_spawn_real_processes", &test_scripts_spawn_real_processes, nullptr},
     };
     return register_test_cases(registry, test_cases);
 }

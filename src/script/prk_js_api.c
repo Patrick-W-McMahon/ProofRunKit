@@ -639,6 +639,9 @@ int prk_open_js_test_api(JSContext* context) {
         status = prk_add_js_compile_api(context, prk);
     }
     if (status == 0) {
+        status = prk_add_js_assemble_api(context, prk);
+    }
+    if (status == 0) {
         status = prk_run_js_prelude(context, prk);
     }
     if (status == 0) {

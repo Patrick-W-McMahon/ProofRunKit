@@ -1,0 +1,28 @@
+// Self-hosted (#55): the assembler pass from JavaScript (#16), twin of tests/lua/self/assemble_test.lua.in.
+// Each test skips when its assembler is missing (GAS "as"; for .asm: ml64/ml on Windows, else nasm).
+
+const samples = '@PRK_ASM_DRIVER_SAMPLES@';
+
+function assembleOrSkip(options) {
+    const result = prk.assemble(options);
+    if (result.outcome === 'failed to start') {
+        prk.skipTest(String(result.error));
+    }
+    return result;
+}
+
+prk.addTest('self.assemble_js.gas_object_builds', () => {
+    const result = assembleOrSkip({source: samples + '/neutral.s', output: './prk_js_neutral.o', werror: true});
+    prk.expectExitCode(result, 0);
+    prk.expectEqual(result.assembler, 'gas');
+    prk.expectEqual(result.kind, 'object');
+});
+
+prk.addTest('self.assemble_js.asm_errors_are_parsed', () => {
+    const result = assembleOrSkip({source: samples + '/broken.asm', output: './prk_js_broken_asm.obj'});
+    prk.expectFalse(result.ok);
+    const first = result.diagnostics.find((diagnostic) => diagnostic.severity === 'error');
+    prk.expectTrue(first !== undefined);
+    prk.expectEqual(first.line, 2);
+    prk.expectTrue(first.file.endsWith('broken.asm'));
+});

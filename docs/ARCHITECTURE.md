@@ -76,7 +76,9 @@ Language drivers sit on the process-spawn layer
 `prk_msvc_toolchain.h`, `src/drivers/`, `prk.compile`, MSVC found with vswhere/vcvarsall and cached per run; see
 [c-cpp-driver.md](c-cpp-driver.md)), C#
 ([#15](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/15)), Assembly
-([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16)), Java
+([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16), done: `include/proofrunkit/prk_asm_driver.h`,
+`src/drivers/prk_asm_driver.c`, `prk.assemble` with MASM, GAS, or NASM, sharing the MSVC discovery cache; see
+[asm-driver.md](asm-driver.md)), Java
 ([#44](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/44)), Rust
 ([#45](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/45)), Go
 ([#46](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/46)), Python

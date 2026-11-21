@@ -156,6 +156,14 @@ with vswhere when `cl` is not on PATH) and returns the `prk.run_process` fields 
 `warnings`, `output`, `kind`, `msvc_discovered`, and `command`; see
 [c-cpp-driver.md](c-cpp-driver.md) ([#14](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/14)).
 
+### Assembling
+
+`prk.assemble{source = ..., output = ..., assembler = "auto" | "masm" | "gas" | "nasm", program = ..., includes = {...},
+defines = {...}, flags = {...}, format = ..., msvc_arch = ..., werror = true}` assembles one source into an object
+file with `ml64` / `ml` (found with vswhere when not on PATH), GNU `as`, or NASM, and returns the `prk.compile` fields
+with `assembler` instead of `compiler`; link the object with `prk.compile`. See
+[asm-driver.md](asm-driver.md) ([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16)).
+
 ### Other fields
 
 | Field | Value |

@@ -127,6 +127,37 @@ static const char* choose_program(const PrkCompileRequest* request, PrkCompilerF
     return toolchain != NULL ? toolchain->cl_path : prk_get_default_compiler_program(family, request->language);
 }
 
+PrkStatus prk_run_driver_tool(const PrkProcessRunner* runner, const PrkDriverTool* tool, PrkCompileResult* out_result) {
+    copy_text(tool->program, strlen(tool->program), out_result->compiler_program, sizeof out_result->compiler_program);
+    const char* const* const arguments = (const char* const*)tool->arguments->items;
+    PrkStatus status =
+        prk_format_windows_command_line(tool->program, arguments, tool->arguments->count, &out_result->command_line);
+    PrkProcessRequest process_request;
+    memset(&process_request, 0, sizeof process_request);
+    process_request.executable = tool->program;
+    process_request.arguments = arguments;
+    process_request.argument_count = tool->arguments->count;
+    process_request.working_directory = tool->working_directory;
+    process_request.environment = tool->toolchain != NULL ? (const char* const*)tool->toolchain->environment : NULL;
+    process_request.environment_count = tool->toolchain != NULL ? tool->toolchain->environment_count : 0;
+    process_request.is_environment_inherited = tool->toolchain == NULL;
+    process_request.timeout_ms = tool->timeout_ms;
+    if (status == PRK_STATUS_OK) {
+        status = runner->spawn_process(runner->runner_state, &process_request, &out_result->process);
+    }
+    const PrkProcessResult* const process = &out_result->process;
+    if (status == PRK_STATUS_OK && (collect_diagnostics(tool->diagnostics_family, process->standard_output,
+                                                        process->standard_output_length, out_result) != 0 ||
+                                    collect_diagnostics(tool->diagnostics_family, process->standard_error,
+                                                        process->standard_error_length, out_result) != 0)) {
+        status = PRK_STATUS_OUT_OF_MEMORY;
+    }
+    if (status != PRK_STATUS_OK) {
+        prk_release_compile_result(out_result);
+    }
+    return status;
+}
+
 /** @brief Runs one tool (compiler or archiver) and fills @p out_result. @p toolchain is NULL to use PATH. */
 static PrkStatus run_tool(const PrkProcessRunner* runner, const PrkCompileRequest* request, PrkCompilerFamily family,
                           const PrkMsvcToolchain* toolchain, PrkCompileResult* out_result) {
@@ -134,8 +165,6 @@ static PrkStatus run_tool(const PrkProcessRunner* runner, const PrkCompileReques
     out_result->family = family;
     out_result->kind = request->kind;
     out_result->is_msvc_discovered = toolchain != NULL;
-    const char* const program = choose_program(request, family, toolchain);
-    copy_text(program, strlen(program), out_result->compiler_program, sizeof out_result->compiler_program);
     prk_format_compile_output_path(request->output_path, request->kind, out_result->output_path,
                                    sizeof out_result->output_path);
     PrkArgumentList arguments;
@@ -143,31 +172,14 @@ static PrkStatus run_tool(const PrkProcessRunner* runner, const PrkCompileReques
     if (status != PRK_STATUS_OK) {
         return status;
     }
-    status = prk_format_windows_command_line(program, (const char* const*)arguments.items, arguments.count,
-                                             &out_result->command_line);
-    PrkProcessRequest process_request;
-    memset(&process_request, 0, sizeof process_request);
-    process_request.executable = program;
-    process_request.arguments = (const char* const*)arguments.items;
-    process_request.argument_count = arguments.count;
-    process_request.working_directory = request->working_directory;
-    process_request.environment = toolchain != NULL ? (const char* const*)toolchain->environment : NULL;
-    process_request.environment_count = toolchain != NULL ? toolchain->environment_count : 0;
-    process_request.is_environment_inherited = toolchain == NULL;
-    process_request.timeout_ms = request->timeout_ms;
-    if (status == PRK_STATUS_OK) {
-        status = runner->spawn_process(runner->runner_state, &process_request, &out_result->process);
-    }
+    const PrkDriverTool tool = {choose_program(request, family, toolchain),
+                                &arguments,
+                                request->working_directory,
+                                toolchain,
+                                request->timeout_ms,
+                                family};
+    status = prk_run_driver_tool(runner, &tool, out_result);
     prk_free_argument_list(&arguments);
-    if (status == PRK_STATUS_OK && (collect_diagnostics(family, out_result->process.standard_output,
-                                                        out_result->process.standard_output_length, out_result) != 0 ||
-                                    collect_diagnostics(family, out_result->process.standard_error,
-                                                        out_result->process.standard_error_length, out_result) != 0)) {
-        status = PRK_STATUS_OUT_OF_MEMORY;
-    }
-    if (status != PRK_STATUS_OK) {
-        prk_release_compile_result(out_result);
-    }
     return status;
 }
 

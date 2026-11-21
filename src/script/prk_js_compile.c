@@ -17,12 +17,6 @@
 #include "prk_js_internal.h"
 #include "proofrunkit/prk_c_driver.h"
 
-/** @brief One list option (sources, includes, defines, flags) borrowed from JS. */
-typedef struct PrkJsStringList {
-    const char** items; /**< JS C strings (JS_FreeCString). */
-    size_t count;       /**< Entries in @p items. */
-} PrkJsStringList;
-
 /** @brief Every C string borrowed for one compile request; released together. */
 typedef struct PrkJsCompileStrings {
     const char* texts[9];     /**< output, language, compiler, program, std, cwd, kind, archiver, msvcArch. */
@@ -39,126 +33,16 @@ static void prk_release_js_compile_strings(JSContext* context, PrkJsCompileStrin
         JS_FreeCString(context, strings->texts[index]);
     }
     for (size_t list = 0; list < 6; ++list) {
-        for (size_t index = 0; index < strings->lists[list].count; ++index) {
-            JS_FreeCString(context, strings->lists[list].items[index]);
-        }
-        free((void*)strings->lists[list].items);
+        prk_release_js_string_list(context, &strings->lists[list]);
     }
     memset(strings, 0, sizeof *strings);
-}
-
-/** @brief Rejects unknown option keys. @return 0, or -1 with an exception pending. */
-static int prk_check_js_compile_option_keys(JSContext* context, JSValueConst options) {
-    static const char* const known[] = {"sources",   "output",      "language", "compiler", "program",   "std",
-                                        "includes",  "defines",     "flags",    "werror",   "cwd",       "kind",
-                                        "libraries", "libraryDirs", "archiver", "msvcArch", "timeoutMs", NULL};
-    JSPropertyEnum* properties = NULL;
-    uint32_t count = 0;
-    if (JS_GetOwnPropertyNames(context, &properties, &count, options, JS_GPN_STRING_MASK | JS_GPN_ENUM_ONLY) != 0) {
-        return -1;
-    }
-    int status = 0;
-    for (uint32_t index = 0; status == 0 && index < count; ++index) {
-        const char* const key = JS_AtomToCString(context, properties[index].atom);
-        int is_known = 0;
-        for (size_t known_index = 0; key != NULL && known[known_index] != NULL; ++known_index) {
-            is_known |= strcmp(key, known[known_index]) == 0;
-        }
-        if (!is_known) {
-            JS_ThrowTypeError(context, "prk.compile: unknown option '%s'", key != NULL ? key : "?");
-            status = -1;
-        }
-        JS_FreeCString(context, key);
-    }
-    JS_FreePropertyEnum(context, properties, count);
-    return status;
-}
-
-/** @brief Reads an optional string property. @return 0, or -1 with an exception pending. */
-static int prk_read_js_compile_text(JSContext* context, JSValueConst options, const char* key, const char** out_text) {
-    JSValue value = JS_GetPropertyStr(context, options, key);
-    int status = JS_IsException(value) ? -1 : 0;
-    if (JS_IsString(value)) {
-        *out_text = JS_ToCString(context, value);
-        status = *out_text != NULL ? 0 : -1;
-    } else if (status == 0 && !JS_IsUndefined(value)) {
-        JS_ThrowTypeError(context, "prk.compile: %s must be a string", key);
-        status = -1;
-    }
-    JS_FreeValue(context, value);
-    return status;
-}
-
-/** @brief Reads a string or an array of strings. @return 0, or -1 with an exception pending. */
-static int prk_read_js_compile_list(JSContext* context, JSValueConst options, const char* key,
-                                    PrkJsStringList* out_list) {
-    JSValue value = JS_GetPropertyStr(context, options, key);
-    int64_t length = 1;
-    int status = 0;
-    const int is_single = JS_IsString(value);
-    if (JS_IsUndefined(value)) {
-        length = 0;
-    } else if (!is_single && (!JS_IsArray(value) || JS_GetLength(context, value, &length) != 0 || length > 100000)) {
-        JS_ThrowTypeError(context, "prk.compile: %s must be a string or an array of strings", key);
-        status = -1;
-    }
-    if (status == 0 && length > 0) {
-        out_list->items = (const char**)calloc((size_t)length, sizeof *out_list->items);
-        status = out_list->items != NULL ? 0 : -1;
-        if (status != 0) {
-            JS_ThrowOutOfMemory(context);
-        }
-    }
-    for (int64_t index = 0; status == 0 && index < length; ++index) {
-        JSValue item = is_single ? JS_DupValue(context, value) : JS_GetPropertyInt64(context, value, index);
-        const char* const text = JS_IsString(item) ? JS_ToCString(context, item) : NULL;
-        JS_FreeValue(context, item);
-        if (text == NULL) {
-            JS_ThrowTypeError(context, "prk.compile: %s[%d] must be a string", key, (int)index);
-            status = -1;
-        } else {
-            out_list->items[out_list->count++] = text;
-        }
-    }
-    JS_FreeValue(context, value);
-    return status;
-}
-
-/** @brief Maps a name to its index in @p names. @return the index, or -1 with an exception pending. */
-static int prk_find_js_choice(JSContext* context, const char* key, const char* text, const char* const* names) {
-    if (text == NULL) {
-        return 0;
-    }
-    for (int index = 0; names[index] != NULL; ++index) {
-        if (strcmp(text, names[index]) == 0) {
-            return index;
-        }
-    }
-    JS_ThrowTypeError(context, "prk.compile: unknown %s '%s'", key, text);
-    return -1;
 }
 
 /** @brief Reads werror and timeoutMs. @return 0, or -1 with an exception pending. */
 static int prk_read_js_compile_flags(JSContext* context, const PrkJsScript* script, JSValueConst options,
                                      PrkCompileRequest* out_request) {
-    JSValue werror = JS_GetPropertyStr(context, options, "werror");
-    out_request->is_warnings_as_errors = JS_ToBool(context, werror) > 0;
-    JS_FreeValue(context, werror);
-    JSValue timeout = JS_GetPropertyStr(context, options, "timeoutMs");
-    double requested = 0.0;
-    int status = 0;
-    if (!JS_IsUndefined(timeout) &&
-        (!JS_IsNumber(timeout) || JS_ToFloat64(context, &requested, timeout) != 0 || requested < 1 ||
-         requested != (double)(int64_t)requested || requested > (double)PRK_PROCESS_MAX_TIMEOUT_MS)) {
-        JS_ThrowRangeError(context, "prk.compile: timeoutMs must be a positive integer up to one day");
-        status = -1;
-    }
-    JS_FreeValue(context, timeout);
-    const uint64_t now = script->host.read_monotonic_milliseconds != NULL
-                             ? script->host.read_monotonic_milliseconds(script->host.host_state)
-                             : 0;
-    out_request->timeout_ms = prk_cap_script_process_timeout_ms((uint64_t)requested, script->deadline_ms, now);
-    return status;
+    return prk_read_js_werror_and_timeout(context, script, options, "prk.compile", &out_request->is_warnings_as_errors,
+                                          &out_request->timeout_ms);
 }
 
 /** @brief Points @p out_request at the borrowed strings. */
@@ -209,16 +93,23 @@ static int prk_read_js_compile_request(JSContext* context, const PrkJsScript* sc
     static const char* const families[] = {"auto", "gcc", "clang", "msvc", NULL};
     static const char* const languages[] = {"c", "c++", NULL};
     static const char* const kinds[] = {"executable", "object", "static_library", "shared_library", NULL};
-    int status = prk_check_js_compile_option_keys(context, options);
+    static const char* const known[] = {"sources",   "output",      "language", "compiler", "program",   "std",
+                                        "includes",  "defines",     "flags",    "werror",   "cwd",       "kind",
+                                        "libraries", "libraryDirs", "archiver", "msvcArch", "timeoutMs", NULL};
+    int status = prk_check_js_option_keys(context, options, known, "prk.compile");
     for (size_t index = 0; status == 0 && index < 9; ++index) {
-        status = prk_read_js_compile_text(context, options, prk_js_compile_text_keys[index], &strings->texts[index]);
+        status = prk_read_js_text_option(context, options, prk_js_compile_text_keys[index], "prk.compile",
+                                         &strings->texts[index]);
     }
     for (size_t index = 0; status == 0 && index < 6; ++index) {
-        status = prk_read_js_compile_list(context, options, prk_js_compile_list_keys[index], &strings->lists[index]);
+        status = prk_read_js_list_option(context, options, prk_js_compile_list_keys[index], "prk.compile",
+                                         &strings->lists[index]);
     }
-    const int language = status == 0 ? prk_find_js_choice(context, "language", strings->texts[1], languages) : -1;
-    const int family = language >= 0 ? prk_find_js_choice(context, "compiler", strings->texts[2], families) : -1;
-    const int kind = family >= 0 ? prk_find_js_choice(context, "kind", strings->texts[6], kinds) : -1;
+    const int language =
+        status == 0 ? prk_find_js_choice(context, "language", strings->texts[1], languages, "prk.compile") : -1;
+    const int family =
+        language >= 0 ? prk_find_js_choice(context, "compiler", strings->texts[2], families, "prk.compile") : -1;
+    const int kind = family >= 0 ? prk_find_js_choice(context, "kind", strings->texts[6], kinds, "prk.compile") : -1;
     if (kind < 0 || prk_read_js_compile_flags(context, script, options, out_request) != 0) {
         return -1;
     }
@@ -245,8 +136,7 @@ static JSValue prk_make_js_diagnostic(JSContext* context, const PrkCompilerDiagn
     return object;
 }
 
-/** @brief Builds the compile result object. */
-static JSValue prk_make_js_compile_result(JSContext* context, const PrkCompileResult* result) {
+JSValue prk_make_js_compile_result(JSContext* context, const PrkCompileResult* result) {
     JSValue object = prk_make_js_process_result(context, &result->process);
     JSValue diagnostics = JS_IsException(object) ? JS_EXCEPTION : JS_NewArray(context);
     if (JS_IsException(diagnostics)) {

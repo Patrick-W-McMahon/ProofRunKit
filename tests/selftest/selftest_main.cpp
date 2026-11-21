@@ -32,6 +32,7 @@ PrkStatus register_all_selftests(PrkRegistry& registry) {
         &prk::selftest::register_c_driver_tests,
         &prk::selftest::register_c_driver_toolchain_tests,
         &prk::selftest::register_msvc_discovery_text_tests,
+        &prk::selftest::register_asm_driver_tests,
     };
     for (const RegisterSuite register_suite : suites) {
         const PrkStatus status = register_suite(registry);

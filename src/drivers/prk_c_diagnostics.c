@@ -1,7 +1,8 @@
 /**
  * @file prk_c_diagnostics.c
  * @brief Compiler diagnostics parsing for the C/C++ driver (#14): GCC/Clang
- *        "file:line:col: severity: message [-Wflag]" and MSVC "file(line,col): severity CODE: message" lines,
+ *        "file:line:col: severity: message [-Wflag]" (also NASM, and GAS "file:line: Error: message") and MSVC
+ *        "file(line,col): severity CODE: message" lines (also ml64 "file(line) : error A2008:message"),
  *        including tool lines such as "collect2: error: ..." and "LINK : fatal error LNK1561: ...".
  *
  * Pure functions: no allocation, no I/O, no global state.
@@ -64,12 +65,12 @@ static void split_gcc_option_code(PrkCompilerDiagnostic* diagnostic) {
     }
 }
 
-/** @brief Parses "file:line:col: severity: message" (GCC and Clang). */
+/** @brief Parses "file:line:col: severity: message" (GCC, Clang, NASM) and "file:line: Error: message" (GAS). */
 static int parse_gcc_diagnostic(const char* line, PrkCompilerDiagnostic* out_diagnostic) {
-    static const SeverityToken tokens[] = {{": fatal error: ", PRK_DIAGNOSTIC_ERROR},
-                                           {": error: ", PRK_DIAGNOSTIC_ERROR},
-                                           {": warning: ", PRK_DIAGNOSTIC_WARNING},
-                                           {": note: ", PRK_DIAGNOSTIC_NOTE}};
+    static const SeverityToken tokens[] = {
+        {": fatal error: ", PRK_DIAGNOSTIC_ERROR}, {": error: ", PRK_DIAGNOSTIC_ERROR},
+        {": warning: ", PRK_DIAGNOSTIC_WARNING},   {": note: ", PRK_DIAGNOSTIC_NOTE},
+        {": Error: ", PRK_DIAGNOSTIC_ERROR},       {": Warning: ", PRK_DIAGNOSTIC_WARNING}};
     const SeverityToken* token = NULL;
     const char* const found = find_earliest_token(line, tokens, sizeof tokens / sizeof tokens[0], &token);
     if (found == NULL || found == line) {
@@ -112,12 +113,18 @@ static int parse_msvc_diagnostic(const char* line, PrkCompilerDiagnostic* out_di
     diagnostic.severity = token->severity;
     const char* message = found + strlen(token->text);
     if (token->severity != PRK_DIAGNOSTIC_NOTE) {
-        const char* const code_end = strstr(message, ": ");
-        if (code_end == NULL || code_end == message || memchr(message, ' ', (size_t)(code_end - message)) != NULL) {
+        const char* code_end = message; /* "C2065: msg" (cl) or "A2008:msg" (ml64). */
+        while (isalnum((unsigned char)*code_end)) {
+            ++code_end;
+        }
+        if (code_end == message || *code_end != ':') {
             return 0;
         }
         copy_text(message, (size_t)(code_end - message), diagnostic.code, sizeof diagnostic.code);
-        message = code_end + 2;
+        message = code_end + 1;
+        while (*message == ' ') {
+            ++message;
+        }
     }
     const char* file_end = found;
     while (file_end > line && file_end[-1] == ' ') {

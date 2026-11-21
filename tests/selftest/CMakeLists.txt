@@ -4,6 +4,7 @@ add_executable(proofrunkit_selftest
     selftest_main.cpp
     test_command_line.cpp
     test_cycle_counter.cpp
+    test_js_engine.cpp
     test_lua_engine.cpp
     test_lua_test_api.cpp
     test_junit_reporting.cpp
@@ -69,6 +70,29 @@ set_tests_properties(prk_lua_stops_infinite_loop PROPERTIES PASS_REGULAR_EXPRESS
 # Per-test wall-clock timeout from the command line (#12).
 add_test(NAME prk_lua_timeout_option COMMAND "${_prk_short_exe}" run --timeout 200 "${_prk_lua_tests}/samples/infinite_loop.lua")
 set_tests_properties(prk_lua_timeout_option PROPERTIES PASS_REGULAR_EXPRESSION "timeout of 200 ms exceeded" TIMEOUT 60)
+# JavaScript test scripts run through the shipped prk executable on the embedded QuickJS-ng (#11).
+set(_prk_js_tests "${PROJECT_SOURCE_DIR}/tests/js")
+add_test(NAME prk_js_api_selftest COMMAND "${_prk_short_exe}" run "${_prk_js_tests}/prk_js_api_test.js")
+set_tests_properties(prk_js_api_selftest PROPERTIES PASS_REGULAR_EXPRESSION "8 tests: 7 passed, 0 failed, 1 skipped")
+add_test(NAME prk_js_api_selftest_exit_code COMMAND "${_prk_short_exe}" run "${_prk_js_tests}/prk_js_api_test.js")
+add_test(NAME prk_js_failure_message COMMAND "${_prk_short_exe}" run "${_prk_js_tests}/samples/failing_test.js")
+set_tests_properties(prk_js_failure_message PROPERTIES PASS_REGULAR_EXPRESSION
+                     "failing_test\\.js:3: deliberate failure: expected 3, got 2")
+add_test(NAME prk_js_reports_failures COMMAND "${_prk_short_exe}" run "${_prk_js_tests}/samples/failing_test.js")
+set_tests_properties(prk_js_reports_failures PROPERTIES WILL_FAIL TRUE)
+add_test(NAME prk_js_reports_syntax_error COMMAND "${_prk_short_exe}" run "${_prk_js_tests}/samples/syntax_error.js")
+set_tests_properties(prk_js_reports_syntax_error PROPERTIES PASS_REGULAR_EXPRESSION
+                     "syntax_error\\.js:[0-9]+: SyntaxError")
+add_test(NAME prk_js_stops_infinite_loop COMMAND "${_prk_short_exe}" run "${_prk_js_tests}/samples/infinite_loop.js")
+set_tests_properties(prk_js_stops_infinite_loop PROPERTIES PASS_REGULAR_EXPRESSION
+                     "instruction limit of [0-9]+ instructions exceeded" TIMEOUT 60)
+add_test(NAME prk_js_timeout_option COMMAND "${_prk_short_exe}" run --timeout 200 "${_prk_js_tests}/samples/infinite_loop.js")
+set_tests_properties(prk_js_timeout_option PROPERTIES PASS_REGULAR_EXPRESSION "timeout of 200 ms exceeded" TIMEOUT 60)
+add_test(NAME prk_mixed_lua_and_js_list
+    COMMAND "${_prk_short_exe}" list "${_prk_lua_tests}/prk_lua_api_test.lua" "${_prk_js_tests}/prk_js_api_test.js")
+set_tests_properties(prk_mixed_lua_and_js_list PROPERTIES PASS_REGULAR_EXPRESSION
+                     "lua_api\\.reports_versions.*js_suite\\.hooks_run_in_order")
+
 # Report files and the exit-code contract, end to end through prk (#21).
 add_test(NAME prk_reports_and_exit_codes
     COMMAND ${CMAKE_COMMAND} "-DPRK_EXE=${_prk_short_exe}" "-DPRK_SOURCE_DIR=${PROJECT_SOURCE_DIR}"

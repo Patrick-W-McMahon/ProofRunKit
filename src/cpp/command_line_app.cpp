@@ -1,6 +1,7 @@
 /**
  * @file command_line_app.cpp
- * @brief Implementation of prk::run_command_line (flag form and `prk` subcommands, #60; Lua scripts, #9).
+ * @brief Implementation of prk::run_command_line (flag form and `prk` subcommands, #60; Lua scripts, #9;
+ *        JavaScript scripts, #11).
  */
 #include "command_line_app.hpp"
 
@@ -128,14 +129,7 @@ int report_script_problems(std::string_view program_name, const LoadedTestScript
     for (const std::string& load_error : loaded.load_errors) {
         errors << program_name << ": " << load_error << '\n';
     }
-    if (!loaded.load_errors.empty()) {
-        return kExitScriptError;
-    }
-    for (const std::string& path : loaded.unsupported_scripts) {
-        errors << program_name << ": " << path
-               << ": JavaScript test scripts are not implemented yet (#11); Lua scripts (.lua) are supported.\n";
-    }
-    return loaded.unsupported_scripts.empty() ? -1 : kExitNotImplemented;
+    return loaded.load_errors.empty() ? -1 : kExitScriptError;
 }
 
 /** @brief Loads the scripts named in @p options, then lists or runs their tests. */
@@ -183,7 +177,7 @@ int run_command_line(std::string_view program_name, std::span<const std::string_
     if (options.show_version) {
         environment.output << "ProofRunKit " << prk_get_version_string()
                            << " (cycle counter: " << prk_get_cycle_counter_implementation_name() << ", "
-                           << prk_get_lua_version_string() << ")\n";
+                           << prk_get_lua_version_string() << ", " << prk_get_js_engine_version_string() << ")\n";
         return kExitAllPassed;
     }
     if (options.list_tests && (!options.json_file.empty() || !options.junit_file.empty())) {

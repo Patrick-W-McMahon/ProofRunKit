@@ -37,10 +37,13 @@ prk_expect_file_contains("${PRK_WORK_DIR}/fail.json" "\"outcome\": \"failed\"" "
 prk_expect_file_contains("${PRK_WORK_DIR}/fail.xml" "<failure message=" "JUnit failure")
 prk_expect_file_contains("${PRK_WORK_DIR}/fail.xml" "deliberate failure: expected 3, got 2" "JUnit failure text")
 
-# 2: usage error.  3: not implemented.  4: script error.  5: report not writable (wins over 1).
+# 2: usage error.  4: script error.  5: report not writable (wins over 1).
+# 3 (not implemented) is reserved; since #11 no shipped feature returns it.
 prk_expect_exit_code(2 "unknown option" run --no-such-option)
-prk_expect_exit_code(3 "JavaScript script" run "not_yet_supported.js")
 prk_expect_exit_code(4 "syntax error" run "${_prk_samples}/syntax_error.lua")
+prk_expect_exit_code(4 "JavaScript syntax error" run "${PRK_SOURCE_DIR}/tests/js/samples/syntax_error.js")
+prk_expect_exit_code(1 "failing JavaScript run" run --junit-file js-fail.xml "${PRK_SOURCE_DIR}/tests/js/samples/failing_test.js")
+prk_expect_file_contains("${PRK_WORK_DIR}/js-fail.xml" "deliberate failure: expected 3, got 2" "JUnit JavaScript failure")
 prk_expect_exit_code(5 "unwritable report" run --junit-file "no_such_dir/sub/report.xml")
 prk_expect_exit_code(5 "unwritable report after failures" run --json-file "no_such_dir/r.json"
                      "${_prk_samples}/failing_test.lua")

@@ -42,7 +42,7 @@ GAS for Linux/macOS x86-64 and arm64. Every routine has a portable C fallback; C
 ([#21](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/21) extends this to JUnit XML and the exit-code
 contract).
 
-### Script test layer - Lua done, JavaScript planned
+### Script test layer - Lua and JavaScript done
 
 Embedded interpreters load test scripts at run time and register their tests with the core through the same C ABI
 ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9),
@@ -59,6 +59,12 @@ state. The test-authoring API (#12) is split so JavaScript can reuse it: `src/sc
 hooks, tag and name selection, and the per-test execution order behind an engine callback table, and
 `include/proofrunkit/prk_script.h` defines the host callbacks (print, monotonic clock, read-only relative file access)
 that `src/cpp/script_host.cpp` implements. See [lua-tests.md](lua-tests.md).
+
+QuickJS-ng 0.18.0 is in place on the same plan and host (#11): `src/script/prk_js_script.c` creates one runtime per
+script with a memory limit, a 512 KiB stack limit, and an interrupt handler that enforces the instruction budget and
+timeouts, and `src/script/prk_js_api.c` defines the camelCase `prk` object. The C ABI is
+`include/proofrunkit/prk_js.h`; `quickjs-libc` (the `std` / `os` modules) is not vendored. See
+[js-tests.md](js-tests.md).
 
 ### Drivers - Planned
 

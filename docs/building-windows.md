@@ -57,7 +57,7 @@ resets, or discards changes.
 
 | Test | Checks |
 | --- | --- |
-| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, the Lua engine and sandbox, script loading, and the MASM cycle counter vs. its C fallback. |
+| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, the Lua and QuickJS-ng engines and sandboxes, script loading, and the MASM cycle counter vs. its C fallback. |
 | `proofrunkit_version` | `proofrunkit --version` prints the version and `asm-masm-x64`. |
 | `proofrunkit_builtin_checks` | `proofrunkit` with no scripts runs its built-in environment checks. |
 | `proofrunkit_rejects_unknown_option` | Bad options produce a usage error. |
@@ -70,6 +70,10 @@ resets, or discards changes.
 | `prk_lua_reports_syntax_error`, `prk_lua_reports_missing_file` | Broken or missing scripts exit 4 with `file:line:` or `cannot open file`. |
 | `prk_lua_stops_infinite_loop` | The instruction budget stops an endless loop. |
 | `prk_lua_timeout_option` | `--timeout 200` stops an endless loop with a wall-clock timeout (#12). |
+| `prk_js_api_selftest`, `prk_js_api_selftest_exit_code` | `tests/js/prk_js_api_test.js` runs through `prk` on QuickJS-ng and passes (#11). |
+| `prk_js_failure_message`, `prk_js_reports_failures`, `prk_js_reports_syntax_error` | A failing JavaScript test exits 1 with `file:line:`; a syntax error exits 4. |
+| `prk_js_stops_infinite_loop`, `prk_js_timeout_option` | The uncatchable instruction budget and `--timeout` stop an endless loop that tries `try`/`catch`. |
+| `prk_mixed_lua_and_js_list` | One `prk list` loads a Lua and a JavaScript script together. |
 | `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow the contract in docs/exit-codes.md (#21). |
 | `prk_self_assertions_test` | Self-hosted (#55): every `prk.expect_*` assertion, run by `prk` on `tests/lua/self/assertions_test.lua`. |
 | `prk_self_suites_and_hooks_test` | Self-hosted: suites and hook order. |

@@ -1,6 +1,6 @@
 /**
  * @file script_loading.cpp
- * @brief Implementation of the test-script loader (#9). Only read_script_file_from_disk touches disk.
+ * @brief Implementation of the test-script loader (#9, #11). Only read_script_file_from_disk touches disk.
  */
 #include "script_loading.hpp"
 
@@ -28,31 +28,46 @@ std::string find_lowercase_extension(std::string_view path) {
     return extension;
 }
 
-/** @brief Loads one Lua script into @p loaded; records a "path: message" error on failure. */
-void load_lua_test_script(const std::string& path, const ScriptFileReader& read_script_file, const PrkScriptHost& host,
-                          const PrkScriptRunSettings* settings, const PrkLuaLimits* limits, LoadedTestScripts& loaded) {
+/** @brief The C entry points of one script engine, so Lua and JavaScript share one loader. */
+template <typename Script, typename Deleter>
+struct ScriptEngineEntryPoints {
+    const char* engine_name;
+    Script* (*create)(const PrkScriptLimits*, const PrkScriptHost*, const PrkScriptRunSettings*);
+    PrkStatus (*load)(Script*, PrkRegistry*, const char*, const char*, size_t, char*, size_t);
+};
+
+/** @brief Loads one script into @p loaded; records a "path: message" error on failure. */
+template <typename Script, typename Deleter>
+void load_engine_test_script(const ScriptEngineEntryPoints<Script, Deleter>& engine, const std::string& path,
+                             const ScriptFileReader& read_script_file, const PrkScriptHost& host,
+                             const PrkScriptRunSettings* settings, const PrkScriptLimits* limits,
+                             std::vector<std::unique_ptr<Script, Deleter>>& scripts, LoadedTestScripts& loaded) {
     const ScriptFileContent content = read_script_file(path);
     if (!content.was_read) {
         loaded.load_errors.push_back(path + ": " + content.error_message);
         return;
     }
-    std::unique_ptr<PrkLuaScript, LuaScriptDeleter> script(prk_create_lua_script(limits, &host, settings));
+    std::unique_ptr<Script, Deleter> script(engine.create(limits, &host, settings));
     if (!script) {
-        loaded.load_errors.push_back(path + ": out of memory creating the Lua state");
+        loaded.load_errors.push_back(path + ": out of memory creating the " + engine.engine_name + " state");
         return;
     }
-    std::array<char, PRK_LUA_ERROR_CAPACITY> error{};
-    const PrkStatus status =
-        prk_load_lua_test_script(script.get(), loaded.registry.get(), path.c_str(), content.text.data(),
-                                 content.text.size(), error.data(), error.size());
+    std::array<char, PRK_SCRIPT_ERROR_CAPACITY> error{};
+    const PrkStatus status = engine.load(script.get(), loaded.registry.get(), path.c_str(), content.text.data(),
+                                         content.text.size(), error.data(), error.size());
     // Keep the state even on failure: tests registered before the error point into it.
-    loaded.lua_scripts.push_back(std::move(script));
+    scripts.push_back(std::move(script));
     if (status != PRK_STATUS_OK) {
         const std::string message = error[0] != '\0' ? std::string(error.data()) : prk_get_status_name(status);
-        // Lua already prefixes syntax and runtime errors with "path:line:"; add the path otherwise.
+        // The engines usually prefix errors with "path:line:"; add the path otherwise.
         loaded.load_errors.push_back(message.starts_with(path + ":") ? message : path + ": " + message);
     }
 }
+
+constexpr ScriptEngineEntryPoints<PrkLuaScript, LuaScriptDeleter> kLuaEngine{"Lua", &prk_create_lua_script,
+                                                                             &prk_load_lua_test_script};
+constexpr ScriptEngineEntryPoints<PrkJsScript, JsScriptDeleter> kJsEngine{"JavaScript", &prk_create_js_script,
+                                                                          &prk_load_js_test_script};
 
 }  // namespace
 
@@ -91,10 +106,12 @@ LoadedTestScripts load_test_scripts(const std::vector<std::string>& script_paths
     for (const std::string& path : script_paths) {
         switch (detect_script_language(path)) {
             case ScriptLanguage::Lua:
-                load_lua_test_script(path, read_script_file, host, settings, limits, loaded);
+                load_engine_test_script(kLuaEngine, path, read_script_file, host, settings, limits, loaded.lua_scripts,
+                                        loaded);
                 break;
             case ScriptLanguage::JavaScript:
-                loaded.unsupported_scripts.push_back(path);
+                load_engine_test_script(kJsEngine, path, read_script_file, host, settings, limits, loaded.js_scripts,
+                                        loaded);
                 break;
             case ScriptLanguage::Unsupported:
                 loaded.unknown_type_scripts.push_back(path);

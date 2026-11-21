@@ -1,6 +1,6 @@
 /**
  * @file script_loading.hpp
- * @brief Loads test scripts named on the command line into a registry (#9, #12).
+ * @brief Loads test scripts named on the command line into a registry (#9, #12, #11).
  *
  * File reading is injected (ScriptFileReader) so the loader can be tested without a disk; the
  * only real file IO is read_script_file_from_disk(), used by main().
@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "proofrunkit/prk.h"
+#include "proofrunkit/prk_js.h"
 #include "proofrunkit/prk_lua.h"
 
 namespace prk {
@@ -49,6 +50,9 @@ enum class ScriptLanguage { Lua, JavaScript, Unsupported };
 struct LuaScriptDeleter {
     void operator()(PrkLuaScript* script) const noexcept { prk_destroy_lua_script(script); }
 };
+struct JsScriptDeleter {
+    void operator()(PrkJsScript* script) const noexcept { prk_destroy_js_script(script); }
+};
 struct RegistryDeleter {
     void operator()(PrkRegistry* registry) const noexcept { prk_destroy_registry(registry); }
 };
@@ -59,20 +63,21 @@ struct RegistryDeleter {
  * Member order matters: the registry is destroyed before the scripts its bodies point into.
  */
 struct LoadedTestScripts {
-    std::vector<std::unique_ptr<PrkLuaScript, LuaScriptDeleter>> lua_scripts;  ///< One state per script.
+    std::vector<std::unique_ptr<PrkLuaScript, LuaScriptDeleter>> lua_scripts;  ///< One state per Lua script.
+    std::vector<std::unique_ptr<PrkJsScript, JsScriptDeleter>> js_scripts;     ///< One runtime per JS script.
     std::unique_ptr<PrkRegistry, RegistryDeleter> registry;                    ///< Every loaded test.
     std::vector<std::string> load_errors;           ///< "path: message" for each script that failed.
-    std::vector<std::string> unsupported_scripts;   ///< Scripts whose engine has not landed (JavaScript, #11).
     std::vector<std::string> unknown_type_scripts;  ///< Scripts with an unrecognised extension.
 };
 
 /**
- * @brief Loads every script into one new registry. Scripts are isolated: each gets its own Lua state.
+ * @brief Loads every script into one new registry. Scripts are isolated: each gets its own Lua state or
+ *        QuickJS-ng runtime.
  * @param script_paths Paths in command-line order.
  * @param read_script_file Reader for script contents.
  * @param host Services granted to every script (print, clock, read-only files).
  * @param settings Test selection by name and tags plus the default timeout; NULL selects all tests.
- * @param limits Lua sandbox limits; NULL selects the defaults.
+ * @param limits Sandbox limits for both engines; NULL selects the defaults.
  * @return The loaded tests and any per-script problems. registry is NULL only when memory runs out.
  * Side effects: runs each script's top-level code in the sandbox.
  */

@@ -187,7 +187,7 @@ void test_app_exit_codes(PrkTestContext* context, void*) {
     PRK_EXPECT(run_with_sample_registry({"--filter", "sample."}).exit_code == kExitAllPassed);
     PRK_EXPECT(run_with_sample_registry({"--nope"}).exit_code == kExitUsageError);
     PRK_EXPECT(run_with_sample_registry({"suite.lua"}).exit_code == kExitScriptError);
-    PRK_EXPECT(run_with_sample_registry({"suite.js"}).exit_code == kExitNotImplemented);
+    PRK_EXPECT(run_with_sample_registry({"suite.js"}).exit_code == kExitScriptError);
     const CapturedRun tag_without_scripts = run_with_sample_registry({"run", "--tag", "fast"});
     PRK_EXPECT(tag_without_scripts.exit_code == kExitUsageError);
     PRK_EXPECT(tag_without_scripts.errors == "prk: --tag, --exclude-tag, and --timeout apply only to test scripts\n");
@@ -199,6 +199,7 @@ void test_app_help_version_and_list(PrkTestContext* context, void*) {
     const CapturedRun version = run_with_sample_registry({"--version"});
     PRK_EXPECT(version.output.find(std::string("ProofRunKit ") + prk_get_version_string()) == 0);
     PRK_EXPECT(version.output.find(prk_get_cycle_counter_implementation_name()) != std::string::npos);
+    PRK_EXPECT(version.output.find(prk_get_js_engine_version_string()) != std::string::npos);
     const CapturedRun listing = run_with_sample_registry({"--list"});
     PRK_EXPECT(listing.output == "sample.pass\nother.fail\n");
     const CapturedRun filtered = run_with_sample_registry({"--list", "--filter", "other"});
@@ -231,7 +232,7 @@ void test_app_writes_errors_and_json(PrkTestContext* context, void*) {
     const CapturedRun usage = run_with_sample_registry({"--format", "xml"});
     PRK_EXPECT(usage.output.empty() && usage.errors.find("prk: unknown --format") == 0);
     const CapturedRun scripts = run_with_sample_registry({"suite.js"});
-    PRK_EXPECT(scripts.errors.find("not implemented yet") != std::string::npos);
+    PRK_EXPECT(scripts.errors.find("prk: suite.js: ") == 0);
     const CapturedRun json = run_with_sample_registry({"--format", "json", "--filter", "sample."});
     PRK_EXPECT(json.output.find("\"passed\": 1") != std::string::npos);
 }

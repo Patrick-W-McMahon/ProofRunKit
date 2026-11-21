@@ -1,7 +1,7 @@
 /**
  * @file lua_script_fixture.hpp
- * @brief Shared self-test fixture for the Lua engine (#9, #12): loads a script with a fake host
- *        (captured print, a scripted clock, in-memory files) and runs the tests it registers.
+ * @brief Shared self-test fixture for the Lua engine (#9, #12; the host part is shared with #11): loads a script with a
+ * fake host (captured print, a scripted clock, in-memory files) and runs the tests it registers.
  */
 #pragma once
 
@@ -22,13 +22,17 @@ namespace prk::selftest {
 using RegistryPointer = std::unique_ptr<PrkRegistry, decltype(&prk_destroy_registry)>;
 using LuaScriptPointer = std::unique_ptr<PrkLuaScript, decltype(&prk_destroy_lua_script)>;
 
-/** @brief A loaded script, its fake host, and what loading and running it produced. */
-struct LuaScriptRun {
-    RegistryPointer registry{prk_create_registry(), &prk_destroy_registry};
+/** @brief State behind the fake PrkScriptHost shared by the Lua and JavaScript fixtures. */
+struct FakeScriptHostState {
     std::string printed;                       ///< Everything the script printed.
     std::uint64_t clock_ms = 1000;             ///< Fake monotonic clock.
     std::uint64_t clock_step_ms = 0;           ///< Added to clock_ms on every read.
     std::map<std::string, std::string> files;  ///< Readable files; "secret/denied" paths are refused.
+};
+
+/** @brief A loaded script, its fake host, and what loading and running it produced. */
+struct LuaScriptRun : FakeScriptHostState {
+    RegistryPointer registry{prk_create_registry(), &prk_destroy_registry};
     LuaScriptPointer script{nullptr, &prk_destroy_lua_script};
     PrkStatus load_status = PRK_STATUS_OK;
     std::string load_error;
@@ -55,8 +59,8 @@ struct LuaScriptRunSetup {
 
 namespace fixture_detail {
 
-inline LuaScriptRun& find_run(void* host_state) {
-    return *static_cast<LuaScriptRun*>(host_state);
+inline FakeScriptHostState& find_run(void* host_state) {
+    return *static_cast<FakeScriptHostState*>(host_state);
 }
 
 inline void append_printed_text(void* host_state, const char* text, std::size_t length) {
@@ -64,7 +68,7 @@ inline void append_printed_text(void* host_state, const char* text, std::size_t 
 }
 
 inline std::uint64_t read_fake_clock(void* host_state) {
-    LuaScriptRun& run = find_run(host_state);
+    FakeScriptHostState& run = find_run(host_state);
     run.clock_ms += run.clock_step_ms;
     return run.clock_ms;
 }
@@ -90,6 +94,12 @@ inline void record_test_finished(void* state, const PrkTestResult* result) {
     static_cast<std::vector<RecordedTestResult>*>(state)->push_back(record_test_result(*result));
 }
 
+/** @brief A PrkScriptHost over @p state (captured print, scripted clock, in-memory files). */
+inline PrkScriptHost make_fake_host(FakeScriptHostState& state) {
+    return PrkScriptHost{&append_printed_text, &read_fake_clock, &find_fake_file, &read_fake_file,
+                         static_cast<FakeScriptHostState*>(&state)};
+}
+
 }  // namespace fixture_detail
 
 /** @brief Loads @p source as "sample.lua" and, when it loads, runs every test it registered. */
@@ -98,8 +108,7 @@ inline std::unique_ptr<LuaScriptRun> load_and_run_lua_script(std::string_view so
     auto run = std::make_unique<LuaScriptRun>();
     run->clock_step_ms = setup.clock_step_ms;
     run->files = std::move(setup.files);
-    const PrkScriptHost host{&fixture_detail::append_printed_text, &fixture_detail::read_fake_clock,
-                             &fixture_detail::find_fake_file, &fixture_detail::read_fake_file, run.get()};
+    const PrkScriptHost host = fixture_detail::make_fake_host(*run);
     run->script.reset(prk_create_lua_script(setup.limits, setup.grants_host ? &host : nullptr, setup.settings));
     std::array<char, PRK_LUA_ERROR_CAPACITY> error{};
     run->load_status = prk_load_lua_test_script(run->script.get(), run->registry.get(), "sample.lua", source.data(),

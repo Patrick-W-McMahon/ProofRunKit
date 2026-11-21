@@ -53,7 +53,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 - [ ] Java via `javac` and `java` (JDK discovery) ([#44](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/44)) — Planned
 - [ ] Rust via `rustc` and `cargo` ([#45](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/45)) — Planned
 - [ ] Go via `go build` and `go test` ([#46](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/46)) — Planned
-- [ ] Assembly: assemble, link, execute, and check exit code and output, with `ml64` / `ml` on Windows and GAS or NASM elsewhere ([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16)) — Planned
+- [ ] Assembly: assemble, link, execute, and check exit code and output, with `ml64` / `ml` on Windows and GAS or NASM elsewhere ([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16)) — Done (`prk.assemble`: MASM from PATH or vswhere/vcvarsall, GAS, NASM; parsed diagnostics; link with `prk.compile`; [docs/asm-driver.md](docs/asm-driver.md))
 
 ### Script runtimes
 
@@ -131,7 +131,7 @@ ProofRunKit is not an in-process compiler. For compiled languages it shells out 
 | Java | Compile with `javac`, then run with `java` or `java -jar` | JDK (`JAVA_HOME` / `PATH`) | Planned ([#44](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/44)) |
 | Rust | `cargo build` / `cargo test` or `rustc`, then run artifacts | `rustc`, `cargo`, rustup (MSVC target on Windows) | Planned ([#45](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/45)) |
 | Go | `go build` / `go test -json`, then run artifacts | Go (`GOROOT` / `PATH`) | Planned ([#46](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/46)) |
-| Assembly | Assemble, link, execute, and check exit code and output | `ml64` / `ml` (Windows), GAS, NASM | Planned ([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16)) |
+| Assembly | Assemble, link, execute, and check exit code and output | `ml64` / `ml` (Windows), GAS, NASM | Done ([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16), [docs/asm-driver.md](docs/asm-driver.md)) |
 | JavaScript | Kit-authored tests in QuickJS-ng; existing suites via Node.js | QuickJS-ng, Node.js, `node:test`, Vitest | Kit-authored tests done ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)); Node.js planned ([#18](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/18)) |
 | TypeScript | Type-check with `tsc --noEmit`; run via Node.js type stripping or compiled JS; wrap Vitest | `tsc`, Node.js, Vitest | Planned ([#47](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/47)) |
 | Lua | Kit-authored tests loaded by the embedded, sandboxed interpreter | Lua 5.4.9 | Done ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9)) |

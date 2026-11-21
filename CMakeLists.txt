@@ -52,7 +52,7 @@ prk_apply_project_warnings(prk_process)
 
 # ------------------------------------------------------------- language drivers (#14 ...)
 add_library(prk_drivers STATIC src/drivers/prk_c_driver.c src/drivers/prk_c_arguments.c src/drivers/prk_c_diagnostics.c
-    src/drivers/prk_msvc_toolchain.c)
+    src/drivers/prk_msvc_toolchain.c src/drivers/prk_asm_driver.c)
 target_include_directories(prk_drivers PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(prk_drivers PUBLIC prk_core prk_process)
 prk_apply_project_warnings(prk_drivers)
@@ -65,6 +65,8 @@ add_library(prk_script STATIC
     src/script/prk_lua_process.c
     src/script/prk_lua_compile.c
     src/script/prk_js_compile.c
+    src/script/prk_js_options.c
+    src/script/prk_js_assemble.c
     src/script/prk_js_process.c
     src/script/prk_script.c
     src/script/prk_test_plan.c

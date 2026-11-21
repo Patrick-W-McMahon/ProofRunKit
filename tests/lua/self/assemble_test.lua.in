@@ -1,0 +1,43 @@
+-- Self-hosted (#55): the assembler pass from Lua (#16). CMake fills in the samples folder; CTest runs this in the
+-- build folder. Each test skips when its assembler is missing (GAS "as"; for .asm: ml64/ml on Windows, else nasm).
+
+local samples = "@PRK_ASM_DRIVER_SAMPLES@"
+
+local function assemble_or_skip(options)
+    local result = prk.assemble(options)
+    if result.outcome == "failed to start" then
+        prk.skip_test(tostring(result.error))
+    end
+    return result
+end
+
+local function expect_first_error_on_line_2(result, file_name)
+    prk.expect_false(result.ok)
+    prk.expect_true(result.errors >= 1)
+    for _, diagnostic in ipairs(result.diagnostics) do
+        if diagnostic.severity == "error" then
+            prk.expect_equal(diagnostic.line, 2)
+            prk.expect_contains(diagnostic.file, file_name)
+            return
+        end
+    end
+    prk.fail_test("no error diagnostic in: " .. tostring(result.stderr) .. tostring(result.stdout))
+end
+
+prk.add_test("self.assemble.gas_object_builds", function()
+    local result = assemble_or_skip{source = samples .. "/neutral.s", output = "./prk_lua_neutral.o", werror = true}
+    prk.expect_exit_code(result, 0)
+    prk.expect_equal(result.assembler, "gas")
+    prk.expect_equal(result.kind, "object")
+    prk.expect_equal(result.errors, 0)
+end)
+
+prk.add_test("self.assemble.gas_errors_are_parsed", function()
+    local result = assemble_or_skip{source = samples .. "/broken.s", output = "./prk_lua_broken_gas.o"}
+    expect_first_error_on_line_2(result, "broken.s")
+end)
+
+prk.add_test("self.assemble.asm_errors_are_parsed", function()
+    local result = assemble_or_skip{source = samples .. "/broken.asm", output = "./prk_lua_broken_asm.obj"}
+    expect_first_error_on_line_2(result, "broken.asm")
+end)

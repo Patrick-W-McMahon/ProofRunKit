@@ -11,6 +11,7 @@ add_executable(proofrunkit_selftest
     test_script_process_api.cpp
     test_c_driver.cpp
     test_c_driver_toolchain.cpp
+    test_asm_driver.cpp
     test_junit_reporting.cpp
     test_registry.cpp
     test_reporting.cpp
@@ -136,6 +137,15 @@ add_test(NAME prk_self_compile_test COMMAND "${_prk_short_exe}" run "${CMAKE_CUR
 set_tests_properties(prk_self_compile_test PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 add_test(NAME prk_js_compile_test COMMAND "${_prk_short_exe}" run "${CMAKE_CURRENT_BINARY_DIR}/compile_test.js")
 set_tests_properties(prk_js_compile_test PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+# Assembler pass (#16): same layout as the compile tests; each test skips when its assembler is missing.
+set(PRK_ASM_DRIVER_SAMPLES "${PROJECT_SOURCE_DIR}/tests/drivers/asm")
+configure_file("${_prk_self}/assemble_test.lua.in" "${CMAKE_CURRENT_BINARY_DIR}/assemble_test.lua" @ONLY)
+configure_file("${_prk_js_tests}/assemble_test.js.in" "${CMAKE_CURRENT_BINARY_DIR}/assemble_test.js" @ONLY)
+add_test(NAME prk_self_assemble_test COMMAND "${_prk_short_exe}" run "${CMAKE_CURRENT_BINARY_DIR}/assemble_test.lua")
+set_tests_properties(prk_self_assemble_test PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+add_test(NAME prk_js_assemble_test COMMAND "${_prk_short_exe}" run "${CMAKE_CURRENT_BINARY_DIR}/assemble_test.js")
+set_tests_properties(prk_js_assemble_test PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Reports: fixture runs write JSON and JUnit files, then reports_test.lua checks them.
 set(_prk_self_reports_dir "${CMAKE_CURRENT_BINARY_DIR}/self-reports-run")

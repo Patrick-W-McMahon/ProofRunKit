@@ -1,6 +1,7 @@
 /**
  * @file prk_lua_compile.c
- * @brief prk.compile for Lua test scripts (#14, C/C++ driver over the #13 spawn layer).
+ * @brief prk.compile (#14, C/C++ driver) and prk.assemble (#16, assembler pass) for Lua test scripts, over the
+ *        #13 spawn layer.
  *
  *   local result = prk.compile{sources = {"hello.c"}, output = "build/hello", language = "c",
  *                              kind = "executable" | "object" | "static_library" | "shared_library",
@@ -12,11 +13,19 @@
  * The result has every prk.run_process field (ok, outcome, exit_code, stdout, stderr, elapsed_ms, error)
  * plus compiler, program, command, output, kind, msvc_discovered, errors, warnings, and diagnostics (a sequence of
  * {severity, file, line, column, code, message}). A missing compiler is a result, not an error.
+ *
+ *   local object = prk.assemble{source = "add.asm", output = "add.obj", assembler = "auto" | "masm" | "gas" | "nasm",
+ *                               program = nil, includes = {...}, defines = {...}, flags = {...}, werror = true,
+ *                               format = "win64", msvc_arch = "x64", cwd = nil, timeout_ms = 60000}
+ *
+ * prk.assemble (#16) returns the same fields with `assembler` instead of `compiler`; link the object with
+ * prk.compile.
  */
 #include <string.h>
 
 #include "lauxlib.h"
 #include "prk_lua_internal.h"
+#include "proofrunkit/prk_asm_driver.h"
 #include "proofrunkit/prk_c_driver.h"
 
 /** @brief Registry name of the userdata that owns a PrkCompileResult until Lua has copied it. */
@@ -29,11 +38,14 @@ static int prk_free_lua_compile_result(lua_State* state) {
     return 0;
 }
 
-/** @brief Rejects unknown option keys. */
-static void prk_check_lua_compile_option_keys(lua_State* state, int options) {
-    static const char* const known[] = {"sources",   "output",       "language", "compiler",  "program",    "std",
-                                        "includes",  "defines",      "flags",    "werror",    "cwd",        "kind",
-                                        "libraries", "library_dirs", "archiver", "msvc_arch", "timeout_ms", NULL};
+/** @brief Name of the running API function ("prk.compile" or "prk.assemble"), its closure's upvalue. */
+static const char* prk_get_lua_api_name(lua_State* state) {
+    const char* const name = lua_tostring(state, lua_upvalueindex(1));
+    return name != NULL ? name : "prk";
+}
+
+/** @brief Rejects option keys not in @p known (NULL-terminated). */
+static void prk_check_lua_option_keys(lua_State* state, int options, const char* const* known) {
     lua_pushnil(state);
     while (lua_next(state, options) != 0) {
         const char* const key = lua_type(state, -2) == LUA_TSTRING ? lua_tostring(state, -2) : NULL;
@@ -42,7 +54,8 @@ static void prk_check_lua_compile_option_keys(lua_State* state, int options) {
             is_known |= strcmp(key, known[index]) == 0;
         }
         if (!is_known) {
-            luaL_error(state, "prk.compile: unknown option '%s'", key != NULL ? key : "(non-string key)");
+            luaL_error(state, "%s: unknown option '%s'", prk_get_lua_api_name(state),
+                       key != NULL ? key : "(non-string key)");
         }
         lua_pop(state, 1);
     }
@@ -53,7 +66,7 @@ static const char* prk_read_lua_compile_string(lua_State* state, int options, co
     const int type = lua_getfield(state, options, key);
     const char* const text = type == LUA_TSTRING ? lua_tostring(state, -1) : NULL;
     if (type != LUA_TSTRING && type != LUA_TNIL) {
-        luaL_error(state, "prk.compile: %s must be a string", key);
+        luaL_error(state, "%s: %s must be a string", prk_get_lua_api_name(state), key);
     }
     lua_pop(state, 1);
     return text;
@@ -77,13 +90,13 @@ static const char* const* prk_read_lua_string_list(lua_State* state, int options
         return pointers;
     }
     if (type != LUA_TTABLE) {
-        luaL_error(state, "prk.compile: %s must be a string or a sequence of strings", key);
+        luaL_error(state, "%s: %s must be a string or a sequence of strings", prk_get_lua_api_name(state), key);
     }
     const size_t count = (size_t)luaL_len(state, -1);
     const char** const pointers = (const char**)lua_newuserdatauv(state, (count + 1) * sizeof *pointers, 0);
     for (size_t index = 0; index < count; ++index) {
         if (lua_geti(state, -2, (lua_Integer)index + 1) != LUA_TSTRING) {
-            luaL_error(state, "prk.compile: %s[%d] must be a string", key, (int)index + 1);
+            luaL_error(state, "%s: %s[%d] must be a string", prk_get_lua_api_name(state), key, (int)index + 1);
         }
         pointers[index] = lua_tostring(state, -1); /* Kept alive by the list table in the options table. */
         lua_pop(state, 1);
@@ -104,7 +117,7 @@ static int prk_read_lua_choice(lua_State* state, int options, const char* key, c
             return index;
         }
     }
-    return luaL_error(state, "prk.compile: unknown %s '%s'", key, text);
+    return luaL_error(state, "%s: unknown %s '%s'", prk_get_lua_api_name(state), key, text);
 }
 
 /** @brief Reads the list options; leaves one holder per list on the stack. */
@@ -128,8 +141,9 @@ static uint64_t prk_read_lua_compile_timeout(lua_State* state, const PrkLuaScrip
     if (lua_getfield(state, 1, "timeout_ms") != LUA_TNIL) {
         int is_integer = 0;
         requested = lua_tointegerx(state, -1, &is_integer);
-        luaL_argcheck(state, is_integer && requested > 0 && requested <= (lua_Integer)PRK_PROCESS_MAX_TIMEOUT_MS, 1,
-                      "prk.compile: timeout_ms must be a positive integer up to one day");
+        if (!is_integer || requested <= 0 || requested > (lua_Integer)PRK_PROCESS_MAX_TIMEOUT_MS) {
+            luaL_error(state, "%s: timeout_ms must be a positive integer up to one day", prk_get_lua_api_name(state));
+        }
     }
     lua_pop(state, 1);
     const uint64_t now = script->host.read_monotonic_milliseconds != NULL
@@ -218,7 +232,10 @@ static int prk_lua_compile(lua_State* state) {
     if (script->host.process_runner.spawn_process == NULL) {
         return luaL_error(state, "prk.compile: process spawn is not available in this host");
     }
-    prk_check_lua_compile_option_keys(state, 1);
+    static const char* const known[] = {"sources",   "output",       "language", "compiler",  "program",    "std",
+                                        "includes",  "defines",      "flags",    "werror",    "cwd",        "kind",
+                                        "libraries", "library_dirs", "archiver", "msvc_arch", "timeout_ms", NULL};
+    prk_check_lua_option_keys(state, 1, known);
     PrkCompileRequest request;
     prk_read_lua_compile_request(state, script, &request);
     PrkCompileResult* const result = (PrkCompileResult*)lua_newuserdatauv(state, sizeof *result, 0);
@@ -234,12 +251,78 @@ static int prk_lua_compile(lua_State* state) {
     return 1;
 }
 
+/** @brief Reads every prk.assemble option into @p out_request; leaves the list holders on the stack. */
+static void prk_read_lua_assemble_request(lua_State* state, const PrkLuaScript* script,
+                                          PrkAssembleRequest* out_request) {
+    static const char* const families[] = {"auto", "masm", "gas", "nasm", NULL};
+    memset(out_request, 0, sizeof *out_request);
+    out_request->family = (PrkAssemblerFamily)prk_read_lua_choice(state, 1, "assembler", families, 0);
+    out_request->assembler_program = prk_read_lua_compile_string(state, 1, "program");
+    out_request->source = prk_read_lua_compile_string(state, 1, "source");
+    out_request->output_path = prk_read_lua_compile_string(state, 1, "output");
+    out_request->object_format = prk_read_lua_compile_string(state, 1, "format");
+    out_request->msvc_architecture = prk_read_lua_compile_string(state, 1, "msvc_arch");
+    out_request->working_directory = prk_read_lua_compile_string(state, 1, "cwd");
+    luaL_argcheck(state, out_request->source != NULL && out_request->output_path != NULL, 1,
+                  "prk.assemble: source and output are required");
+    luaL_argcheck(state, out_request->assembler_program == NULL || out_request->family != PRK_ASSEMBLER_AUTO, 1,
+                  "prk.assemble: program needs assembler = \"masm\", \"gas\", or \"nasm\"");
+    luaL_argcheck(state, prk_choose_assembler_family(out_request->family, out_request->source) != PRK_ASSEMBLER_AUTO, 1,
+                  "prk.assemble: unknown source extension; name the assembler");
+    luaL_argcheck(
+        state,
+        out_request->msvc_architecture == NULL || prk_is_msvc_architecture_allowed(out_request->msvc_architecture), 1,
+        "prk.assemble: msvc_arch must be a vcvarsall architecture such as \"x64\" or \"x86\"");
+    lua_getfield(state, 1, "werror");
+    out_request->is_warnings_as_errors = lua_toboolean(state, -1);
+    lua_pop(state, 1);
+    out_request->include_directories =
+        prk_read_lua_string_list(state, 1, "includes", &out_request->include_directory_count);
+    out_request->defines = prk_read_lua_string_list(state, 1, "defines", &out_request->define_count);
+    out_request->extra_flags = prk_read_lua_string_list(state, 1, "flags", &out_request->extra_flag_count);
+    out_request->timeout_ms = prk_read_lua_compile_timeout(state, script);
+    out_request->msvc_toolchain = script->host.msvc_toolchain;
+}
+
+/** @brief prk.assemble(options) -> result table (the prk.compile fields, with assembler instead of compiler). */
+static int prk_lua_assemble(lua_State* state) {
+    static const char* const known[] = {"source", "output", "assembler", "program", "includes",   "defines", "flags",
+                                        "werror", "format", "msvc_arch", "cwd",     "timeout_ms", NULL};
+    const PrkLuaScript* const script = prk_find_lua_script(state);
+    luaL_checktype(state, 1, LUA_TTABLE);
+    if (script->host.process_runner.spawn_process == NULL) {
+        return luaL_error(state, "prk.assemble: process spawn is not available in this host");
+    }
+    prk_check_lua_option_keys(state, 1, known);
+    PrkAssembleRequest request;
+    prk_read_lua_assemble_request(state, script, &request);
+    PrkCompileResult* const result = (PrkCompileResult*)lua_newuserdatauv(state, sizeof *result, 0);
+    memset(result, 0, sizeof *result);
+    luaL_setmetatable(state, PRK_LUA_COMPILE_RESULT_TYPE);
+    const PrkStatus status = prk_assemble_source(&script->host.process_runner, &request, result);
+    if (status != PRK_STATUS_OK) {
+        return luaL_error(state, "prk.assemble: %s", prk_get_status_name(status));
+    }
+    prk_push_lua_process_result(state, &result->process);
+    prk_add_lua_compile_fields(state, result);
+    lua_pushnil(state);
+    lua_setfield(state, -2, "compiler");
+    lua_pushstring(state, prk_get_assembler_family_name(prk_choose_assembler_family(request.family, request.source)));
+    lua_setfield(state, -2, "assembler");
+    prk_release_compile_result(result);
+    return 1;
+}
+
 int prk_add_lua_compile_api(lua_State* state) {
     luaL_newmetatable(state, PRK_LUA_COMPILE_RESULT_TYPE);
     lua_pushcfunction(state, &prk_free_lua_compile_result);
     lua_setfield(state, -2, "__gc");
     lua_pop(state, 1);
-    lua_pushcfunction(state, &prk_lua_compile);
+    lua_pushstring(state, "prk.compile");
+    lua_pushcclosure(state, &prk_lua_compile, 1);
     lua_setfield(state, -2, "compile");
+    lua_pushstring(state, "prk.assemble");
+    lua_pushcclosure(state, &prk_lua_assemble, 1);
+    lua_setfield(state, -2, "assemble");
     return 0;
 }

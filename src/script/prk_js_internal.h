@@ -9,6 +9,7 @@
 #define PROOFRUNKIT_PRK_JS_INTERNAL_H
 
 #include "prk_test_plan.h"
+#include "proofrunkit/prk_c_driver.h"
 #include "proofrunkit/prk_js.h"
 /* The vendored header is not ProofRunKit code: keep MSVC's /W4 /WX from failing on its inline functions. */
 #if defined(_MSC_VER) && !defined(__clang__)
@@ -86,5 +87,68 @@ JSValue prk_make_js_process_result(JSContext* context, const PrkProcessResult* r
  * @return 0, or -1 with an exception pending.
  */
 int prk_add_js_compile_api(JSContext* context, JSValueConst prk);
+
+/** @brief A string or string-array option borrowed from JS (prk_js_options.c). */
+typedef struct PrkJsStringList {
+    const char** items; /**< JS C strings (JS_FreeCString); the array is malloc'd. */
+    size_t count;       /**< Entries in @p items. */
+} PrkJsStringList;
+
+/**
+ * @brief Rejects option keys not in @p known. @param context Context. @param options Options object.
+ * @param known NULL-terminated key list. @param api Function name for messages, e.g. "prk.compile".
+ * @return 0, or -1 with an exception pending.
+ */
+int prk_check_js_option_keys(JSContext* context, JSValueConst options, const char* const* known, const char* api);
+
+/**
+ * @brief Reads an optional string option. @param context Context. @param options Options object.
+ * @param key Option name. @param api Function name for messages. @param out_text Receives a JS C string or stays NULL.
+ * @return 0, or -1 with an exception pending.
+ */
+int prk_read_js_text_option(JSContext* context, JSValueConst options, const char* key, const char* api,
+                            const char** out_text);
+
+/**
+ * @brief Reads a string or an array of strings. @param context Context. @param options Options object.
+ * @param key Option name. @param api Function name for messages.
+ * @param out_list Receives the strings (a documented mutator); release with prk_release_js_string_list().
+ * @return 0, or -1 with an exception pending.
+ */
+int prk_read_js_list_option(JSContext* context, JSValueConst options, const char* key, const char* api,
+                            PrkJsStringList* out_list);
+
+/** @brief Frees a string list. @param context Context. @param list List to release (a documented mutator). */
+void prk_release_js_string_list(JSContext* context, PrkJsStringList* list);
+
+/**
+ * @brief Maps @p text to its index in @p names (NULL text selects 0). @param context Context.
+ * @param key Option name. @param text Value or NULL. @param names NULL-terminated names. @param api Function name.
+ * @return The index, or -1 with an exception pending.
+ */
+int prk_find_js_choice(JSContext* context, const char* key, const char* text, const char* const* names,
+                       const char* api);
+
+/**
+ * @brief Reads werror and timeoutMs; the timeout is capped by the running test's deadline.
+ * @param context Context. @param script Running script. @param options Options object. @param api Function name.
+ * @param out_is_warnings_as_errors Receives werror. @param out_timeout_ms Receives the capped timeout.
+ * @return 0, or -1 with an exception pending.
+ */
+int prk_read_js_werror_and_timeout(JSContext* context, const PrkJsScript* script, JSValueConst options, const char* api,
+                                   int* out_is_warnings_as_errors, uint64_t* out_timeout_ms);
+
+/**
+ * @brief Builds the prk.compile / prk.assemble result object. @param context Context.
+ * @param result Result to describe; not modified. @return The object, or JS_EXCEPTION.
+ */
+JSValue prk_make_js_compile_result(JSContext* context, const PrkCompileResult* result);
+
+/**
+ * @brief Adds prk.assemble to the prk object (prk_js_assemble.c, #16).
+ * @param context Context of the script. @param prk The prk object.
+ * @return 0, or -1 with an exception pending.
+ */
+int prk_add_js_assemble_api(JSContext* context, JSValueConst prk);
 
 #endif /* PROOFRUNKIT_PRK_JS_INTERNAL_H */

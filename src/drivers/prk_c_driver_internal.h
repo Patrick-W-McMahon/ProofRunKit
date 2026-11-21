@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 
+#include "proofrunkit/prk_asm_driver.h"
 #include "proofrunkit/prk_c_driver.h"
 
 #ifdef __cplusplus
@@ -75,6 +76,34 @@ PrkStatus prk_build_vcvars_arguments(const char* installation_path, const char* 
  * @return PRK_STATUS_OK or PRK_STATUS_OUT_OF_MEMORY. Pure apart from the allocation.
  */
 PrkStatus prk_parse_vcvars_output(const char* text, size_t length, PrkMsvcToolchain* out_toolchain);
+
+/** @brief One tool run of a driver (compiler, archiver, or assembler). Every pointer is borrowed. */
+typedef struct PrkDriverTool {
+    const char* program;                  /**< Program name or path. */
+    const PrkArgumentList* arguments;     /**< Arguments without the program. */
+    const char* working_directory;        /**< NULL inherits. */
+    const PrkMsvcToolchain* toolchain;    /**< Discovered MSVC environment, or NULL to inherit ProofRunKit's. */
+    uint64_t timeout_ms;                  /**< 0 selects the spawn layer's default. */
+    PrkCompilerFamily diagnostics_family; /**< MSVC format, or GCC format (also GAS and NASM). */
+} PrkDriverTool;
+
+/**
+ * @brief Runs @p tool and fills compiler_program, command_line, process, and diagnostics of @p out_result (the
+ *        caller sets family, kind, and output_path first). On an error status the result is released.
+ * @param runner Process runner. @param tool What to run. @param out_result Result to fill (a documented mutator).
+ * @return PRK_STATUS_OK (whatever the tool's outcome), PRK_STATUS_INVALID_ARGUMENT, or PRK_STATUS_OUT_OF_MEMORY.
+ *         Side effects: runs the tool.
+ */
+PrkStatus prk_run_driver_tool(const PrkProcessRunner* runner, const PrkDriverTool* tool, PrkCompileResult* out_result);
+
+/**
+ * @brief Builds the assembler arguments (without the program name) for MASM, GAS, or NASM (#16).
+ * @param request A validated request. @param family A concrete family.
+ * @param out_arguments Receives the list (a documented mutator); free with prk_free_argument_list().
+ * @return PRK_STATUS_OK or PRK_STATUS_OUT_OF_MEMORY. Pure apart from the allocation.
+ */
+PrkStatus prk_build_assembler_arguments(const PrkAssembleRequest* request, PrkAssemblerFamily family,
+                                        PrkArgumentList* out_arguments);
 
 #ifdef __cplusplus
 } /* extern "C" */

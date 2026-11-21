@@ -5,10 +5,13 @@
 #include "command_line_app.hpp"
 
 #include <cstdint>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include "command_line.hpp"
+#include "junit_reporter.hpp"
 #include "reporters.hpp"
 
 namespace prk {
@@ -32,29 +35,82 @@ void write_selected_test_names(const PrkRegistry& registry, std::string_view nam
     }
 }
 
-/** @brief Runs the selected tests with the chosen reporter and returns the exit code. */
-int run_selected_tests(const CommandLineOptions& options, const PrkRegistry& registry, const PrkClock& clock,
-                       std::ostream& output) {
-    const PrkRunOptions run_options{options.name_filter.c_str(), clock};
-    ConsoleReporter console_reporter(output);
-    JsonReporter json_reporter(output);
-    const PrkReporter reporter = options.report_format == ReportFormat::Json ? json_reporter.make_c_reporter()
-                                                                             : console_reporter.make_c_reporter();
-    PrkRunSummary summary{};
-    if (prk_run_test_cases(&registry, &run_options, &reporter, &summary) != PRK_STATUS_OK) {
-        return kExitTestFailed;
+/** @brief Returns the JUnit wall clock: the script host clock in seconds, or none. */
+SecondsClock make_report_seconds_clock(const CommandLineEnvironment& environment) {
+    if (!environment.script_services.read_monotonic_milliseconds) {
+        return {};
     }
-    return summary.failed == 0 ? kExitAllPassed : kExitTestFailed;
+    return [read_milliseconds = environment.script_services.read_monotonic_milliseconds] {
+        return static_cast<double>(read_milliseconds()) / 1000.0;
+    };
+}
+
+/** @brief Writes one report file; returns false (after an error line) when it cannot be written. */
+bool write_report_file(std::string_view program_name, const std::string& path, const std::string& text,
+                       const CommandLineEnvironment& environment) {
+    std::string problem = environment.write_report_file ? environment.write_report_file(path, text)
+                                                        : std::string("report files are not available");
+    if (problem.empty()) {
+        return true;
+    }
+    environment.errors << program_name << ": cannot write report '" << path << "': " << problem << '\n';
+    return false;
+}
+
+/** @brief Runs the selected tests with the stdout reporter plus any report files; returns the exit code. */
+int run_selected_tests(std::string_view program_name, const CommandLineOptions& options, const PrkRegistry& registry,
+                       const CommandLineEnvironment& environment) {
+    const PrkRunOptions run_options{options.name_filter.c_str(), environment.clock};
+    const SecondsClock seconds_clock = make_report_seconds_clock(environment);
+    ConsoleReporter console_reporter(environment.output);
+    JsonReporter json_reporter(environment.output);
+    JUnitReporter junit_reporter(environment.output, seconds_clock);
+    std::ostringstream json_file_text;
+    std::ostringstream junit_file_text;
+    JsonReporter json_file_reporter(json_file_text);
+    JUnitReporter junit_file_reporter(junit_file_text, seconds_clock);
+    ReporterFanOut reporters;
+    switch (options.report_format) {
+        case ReportFormat::Console:
+            reporters.add_reporter(console_reporter.make_c_reporter());
+            break;
+        case ReportFormat::Json:
+            reporters.add_reporter(json_reporter.make_c_reporter());
+            break;
+        case ReportFormat::Junit:
+            reporters.add_reporter(junit_reporter.make_c_reporter());
+            break;
+    }
+    if (!options.json_file.empty()) {
+        reporters.add_reporter(json_file_reporter.make_c_reporter());
+    }
+    if (!options.junit_file.empty()) {
+        reporters.add_reporter(junit_file_reporter.make_c_reporter());
+    }
+    const PrkReporter reporter = reporters.make_c_reporter();
+    PrkRunSummary summary{};
+    const PrkStatus status = prk_run_test_cases(&registry, &run_options, &reporter, &summary);
+    bool are_reports_written = true;
+    if (!options.json_file.empty()) {
+        are_reports_written &= write_report_file(program_name, options.json_file, json_file_text.str(), environment);
+    }
+    if (!options.junit_file.empty()) {
+        are_reports_written &= write_report_file(program_name, options.junit_file, junit_file_text.str(), environment);
+    }
+    if (!are_reports_written) {
+        return kExitReportError;
+    }
+    return status == PRK_STATUS_OK && summary.failed == 0 ? kExitAllPassed : kExitTestFailed;
 }
 
 /** @brief Lists or runs @p registry according to @p options. */
-int list_or_run_tests(const CommandLineOptions& options, const PrkRegistry& registry,
+int list_or_run_tests(std::string_view program_name, const CommandLineOptions& options, const PrkRegistry& registry,
                       const CommandLineEnvironment& environment) {
     if (options.list_tests) {
         write_selected_test_names(registry, options.name_filter, environment.output);
         return kExitAllPassed;
     }
-    return run_selected_tests(options, registry, environment.clock, environment.output);
+    return run_selected_tests(program_name, options, registry, environment);
 }
 
 /** @brief Writes "<program>: <problem>" lines for scripts that cannot run; returns the exit code or -1. */
@@ -86,7 +142,7 @@ int report_script_problems(std::string_view program_name, const LoadedTestScript
 int list_or_run_script_tests(std::string_view program_name, const CommandLineOptions& options,
                              const CommandLineEnvironment& environment) {
     // print() must not corrupt a JSON report or a test-name listing on the output stream.
-    const bool is_output_machine_read = options.report_format == ReportFormat::Json || options.list_tests;
+    const bool is_output_machine_read = options.report_format != ReportFormat::Console || options.list_tests;
     std::ostream& print_stream = is_output_machine_read ? environment.errors : environment.output;
     ScriptHost host(environment.script_services, print_stream);
     const PrkScriptHost c_host = host.make_c_host();
@@ -106,7 +162,7 @@ int list_or_run_script_tests(std::string_view program_name, const CommandLineOpt
     if (problem_exit_code >= 0) {
         return problem_exit_code;
     }
-    return list_or_run_tests(options, *loaded.registry, environment);
+    return list_or_run_tests(program_name, options, *loaded.registry, environment);
 }
 
 }  // namespace
@@ -130,6 +186,10 @@ int run_command_line(std::string_view program_name, std::span<const std::string_
                            << prk_get_lua_version_string() << ")\n";
         return kExitAllPassed;
     }
+    if (options.list_tests && (!options.json_file.empty() || !options.junit_file.empty())) {
+        environment.errors << program_name << ": --json-file and --junit-file apply to runs, not listings\n";
+        return kExitUsageError;
+    }
     if (!options.script_paths.empty()) {
         return list_or_run_script_tests(program_name, options, environment);
     }
@@ -137,7 +197,17 @@ int run_command_line(std::string_view program_name, std::span<const std::string_
         environment.errors << program_name << ": --tag, --exclude-tag, and --timeout apply only to test scripts\n";
         return kExitUsageError;
     }
-    return list_or_run_tests(options, environment.builtin_registry, environment);
+    return list_or_run_tests(program_name, options, environment.builtin_registry, environment);
+}
+
+std::string write_report_file_to_disk(const std::string& path, const std::string& text) {
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    if (!file) {
+        return "cannot open file for writing";
+    }
+    file.write(text.data(), static_cast<std::streamsize>(text.size()));
+    file.close();
+    return file ? std::string() : std::string("cannot write file");
 }
 
 PrkClock make_cycle_counter_clock() {

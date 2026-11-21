@@ -117,6 +117,18 @@ void test_parses_tags_and_timeout(PrkTestContext* context, void*) {
     }
 }
 
+void test_parses_report_options(PrkTestContext* context, void*) {
+    const CommandLineParseResult parsed =
+        parse_arguments({"run", "--reporter", "junit", "--json-file", "r.json", "--junit-file", "out/r.xml"});
+    PRK_EXPECT(parsed.error_message.empty());
+    PRK_EXPECT(parsed.options.report_format == ReportFormat::Junit);
+    PRK_EXPECT(parsed.options.json_file == "r.json" && parsed.options.junit_file == "out/r.xml");
+    PRK_EXPECT(parse_arguments({"--format", "junit"}).options.report_format == ReportFormat::Junit);
+    PRK_EXPECT(parse_arguments({"run", "--json-file", ""}).error_message == "--json-file needs a non-empty path");
+    PRK_EXPECT(parse_arguments({"run", "--format", "xml"}).error_message.find("(use console, json, or junit)") !=
+               std::string::npos);
+}
+
 void test_command_help_text(PrkTestContext* context, void*) {
     const std::string run_help = format_command_help_text("prk", "run");
     PRK_EXPECT(run_help.find("Usage: prk run [options] [test scripts...]") == 0);
@@ -165,7 +177,7 @@ CapturedRun run_with_sample_registry(std::vector<std::string_view> arguments) {
     std::ostringstream errors;
     const auto read_no_files = [](const std::string&) { return ScriptFileContent{false, {}, "cannot open file"}; };
     const CommandLineEnvironment environment{
-        *registry, PrkClock{nullptr, nullptr}, read_no_files, ScriptHostServices{}, output, errors};
+        *registry, PrkClock{nullptr, nullptr}, read_no_files, ScriptHostServices{}, ReportFileWriter{}, output, errors};
     const int exit_code = run_command_line("prk", arguments, environment);
     return CapturedRun{exit_code, output.str(), errors.str()};
 }
@@ -237,6 +249,7 @@ PrkStatus register_command_line_tests(PrkRegistry& registry) {
         {"cli.parse.reports_subcommand_usage_errors", &test_reports_subcommand_usage_errors, nullptr},
         {"cli.parse.flag_form_accepts_json_and_reporter", &test_flag_form_accepts_json_and_reporter, nullptr},
         {"cli.parse.tags_and_timeout", &test_parses_tags_and_timeout, nullptr},
+        {"cli.parse.report_options", &test_parses_report_options, nullptr},
         {"cli.help.command_help_text", &test_command_help_text, nullptr},
         {"cli.name.selects_program_name_from_invoked_path", &test_selects_program_name_from_invoked_path, nullptr},
         {"cli.app.exit_codes", &test_app_exit_codes, nullptr},

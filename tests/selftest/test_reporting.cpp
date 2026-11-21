@@ -58,7 +58,7 @@ void test_json_report_document(PrkTestContext* context, void*) {
     const std::vector<RecordedTestResult> results = {{"core.a", PRK_OUTCOME_PASSED, "", 5},
                                                      {"core.\"b\"", PRK_OUTCOME_FAILED, "bad", 6}};
     const std::string json = format_json_report(results, PrkRunSummary{2, 1, 1, 0});
-    PRK_EXPECT(json.find("\"tool\": \"proofrunkit\"") != std::string::npos);
+    PRK_EXPECT(json.starts_with("{\n  \"schema_version\": 1,\n  \"tool\": \"proofrunkit\","));
     PRK_EXPECT(json.find("\"total\": 2, \"passed\": 1, \"failed\": 1, \"skipped\": 0") != std::string::npos);
     PRK_EXPECT(json.find("{\"name\": \"core.a\", \"outcome\": \"passed\", \"elapsed_ticks\": 5, \"message\": \"\"}") !=
                std::string::npos);

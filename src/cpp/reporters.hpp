@@ -17,6 +17,12 @@
 
 namespace prk {
 
+/**
+ * @brief Version of the JSON report layout (docs/report-formats.md). Bumped only for incompatible
+ *        changes; new fields may be added without a bump.
+ */
+inline constexpr int kJsonReportSchemaVersion = 1;
+
 /** @brief Owned copy of one PrkTestResult (the C struct is only valid during the callback). */
 struct RecordedTestResult {
     std::string name;             ///< Test name.

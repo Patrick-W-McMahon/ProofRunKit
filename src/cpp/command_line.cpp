@@ -27,6 +27,9 @@ std::optional<ReportFormat> parse_report_format(std::string_view value) {
     if (value == "json") {
         return ReportFormat::Json;
     }
+    if (value == "junit") {
+        return ReportFormat::Junit;
+    }
     return std::nullopt;
 }
 
@@ -55,7 +58,8 @@ std::optional<CliCommand> find_command(std::string_view word) {
 /** @brief Returns true when @p argument is an option that takes a value. */
 bool is_option_with_value(std::string_view argument) {
     return argument == "--filter" || argument == "--format" || argument == "--reporter" || argument == "--tag" ||
-           argument == "--exclude-tag" || argument == "--timeout";
+           argument == "--exclude-tag" || argument == "--timeout" || argument == "--json-file" ||
+           argument == "--junit-file";
 }
 
 /** @brief Parses a --timeout value: a positive whole number of milliseconds up to 24 hours. */
@@ -84,6 +88,11 @@ std::optional<std::uint64_t> parse_timeout_milliseconds(std::string_view value) 
 std::string apply_option_value(std::string_view option, std::string_view value, CommandLineOptions& options) {
     if (option == "--filter") {
         options.name_filter = std::string(value);
+    } else if (option == "--json-file" || option == "--junit-file") {
+        if (value.empty()) {
+            return std::string(option) + " needs a non-empty path";
+        }
+        (option == "--json-file" ? options.json_file : options.junit_file) = std::string(value);
     } else if (option == "--tag" || option == "--exclude-tag") {
         if (value.empty()) {
             return std::string(option) + " needs a non-empty tag";
@@ -98,7 +107,7 @@ std::string apply_option_value(std::string_view option, std::string_view value, 
     } else if (const std::optional<ReportFormat> format = parse_report_format(value)) {
         options.report_format = *format;
     } else {
-        return "unknown " + std::string(option) + " '" + std::string(value) + "' (use console or json)";
+        return "unknown " + std::string(option) + " '" + std::string(value) + "' (use console, json, or junit)";
     }
     return {};
 }
@@ -231,16 +240,19 @@ std::string format_usage_text(std::string_view program_name) {
            "      --version          Show the version and the cycle-counter implementation, then exit.\n"
            "      --list             List the selected test names without running them.\n"
            "      --filter TEXT      Run only tests whose name contains TEXT.\n"
-           "      --format FORMAT    Result format: console (default) or json.\n"
+           "      --format FORMAT    Result format on stdout: console (default), json, or junit.\n"
            "      --reporter FORMAT  Same as --format.\n"
            "      --json             Same as --format json.\n"
+           "      --json-file PATH   Also write a JSON report to PATH.\n"
+           "      --junit-file PATH  Also write a JUnit XML report to PATH.\n"
            "      --tag TAG          Script tests: select tests carrying TAG (repeatable).\n"
            "      --exclude-tag TAG  Script tests: leave out tests carrying TAG (repeatable).\n"
            "      --timeout MS       Script tests: default per-test timeout in milliseconds.\n"
            "\n"
            "Exit codes: 0 all selected tests passed, 1 a test failed, 2 usage error,\n"
            "            3 requested feature not implemented yet (e.g. JavaScript test scripts),\n"
-           "            4 a test script could not be read, compiled, or loaded.\n";
+           "            4 a test script could not be read, compiled, or loaded,\n"
+           "            5 a report file could not be written. Codes 2-5 win over 1.\n";
 }
 
 std::string format_command_help_text(std::string_view program_name, std::string_view command_name) {
@@ -249,8 +261,11 @@ std::string format_command_help_text(std::string_view program_name, std::string_
         "\n"
         "Options:\n"
         "      --filter TEXT      Select only tests whose name contains TEXT.\n"
-        "      --reporter FORMAT  Result format: console (default) or json. --format is an alias.\n"
+        "      --reporter FORMAT  Result format on stdout: console (default), json, or junit.\n"
+        "                         --format is an alias.\n"
         "      --json             Same as --reporter json.\n"
+        "      --json-file PATH   Also write a JSON report to PATH (run only).\n"
+        "      --junit-file PATH  Also write a JUnit XML report to PATH (run only).\n"
         "      --tag TAG          Select only script tests carrying TAG (repeatable; any tag matches).\n"
         "      --exclude-tag TAG  Leave out script tests carrying TAG (repeatable; wins over --tag).\n"
         "      --timeout MS       Default per-test timeout for script tests, in milliseconds.\n"

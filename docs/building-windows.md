@@ -70,6 +70,7 @@ resets, or discards changes.
 | `prk_lua_reports_syntax_error`, `prk_lua_reports_missing_file` | Broken or missing scripts exit 4 with `file:line:` or `cannot open file`. |
 | `prk_lua_stops_infinite_loop` | The instruction budget stops an endless loop. |
 | `prk_lua_timeout_option` | `--timeout 200` stops an endless loop with a wall-clock timeout (#12). |
+| `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow the contract in docs/exit-codes.md (#21). |
 | `proofrunkit_license_rtf_generation` | The installer license RTF is generated correctly from `LICENSE` (#58). |
 
 Run the self-test directly for per-test output: `build\windows-msvc-x64-debug\tests\selftest\Debug\proofrunkit_selftest.exe`

@@ -18,7 +18,7 @@
 namespace prk {
 
 /** @brief Output format for test results. */
-enum class ReportFormat { Console, Json };
+enum class ReportFormat { Console, Json, Junit };
 
 /** @brief Subcommand selected on the command line. */
 enum class CliCommand {
@@ -36,7 +36,9 @@ struct CommandLineOptions {
     std::string help_topic;                              ///< `help CMD` / `CMD --help` topic; empty = general
     bool show_version = false;                           ///< --version / `version`
     bool list_tests = false;                             ///< --list / `list`: print selected test names, run nothing
-    ReportFormat report_format = ReportFormat::Console;  ///< --format / --reporter console|json, or --json
+    ReportFormat report_format = ReportFormat::Console;  ///< --format / --reporter console|json|junit, or --json
+    std::string json_file;                               ///< --json-file PATH: also write a JSON report there
+    std::string junit_file;                              ///< --junit-file PATH: also write a JUnit XML report there
     std::string name_filter;                             ///< --filter TEXT: run tests whose name contains TEXT
     std::vector<std::string> script_paths;               ///< Positional test scripts (Lua/JS engines: #9, #11)
     std::vector<std::string> include_tags;               ///< --tag TAG (repeatable): script tests with any of these

@@ -37,6 +37,8 @@ PrkStatus register_command_line_tests(PrkRegistry& registry);
 PrkStatus register_cycle_counter_tests(PrkRegistry& registry);
 /** @brief Registers sandboxed Lua engine tests (#9). @return PRK_STATUS_OK or the first error. */
 PrkStatus register_lua_engine_tests(PrkRegistry& registry);
+/** @brief Registers the JUnit XML and report-file tests (#21). */
+PrkStatus register_junit_reporting_tests(PrkRegistry& registry);
 /** @brief Registers the Lua test-authoring API tests (#12). */
 PrkStatus register_lua_test_api_tests(PrkRegistry& registry);
 /** @brief Registers test-script loading tests (#9). @return PRK_STATUS_OK or the first error. */

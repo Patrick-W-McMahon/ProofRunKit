@@ -1,11 +1,12 @@
 /**
  * @file prk_msvc_toolchain.c
- * @brief MSVC discovery (#14): vswhere for the Visual Studio folder, then vcvarsall.bat for the environment and
- *        the cl.exe / lib.exe paths. See prk_msvc_toolchain.h for the exact cmd.exe command lines.
+ * @brief MSVC discovery (#14): vswhere (run directly) for the Visual Studio folder, then vcvarsall.bat in cmd.exe
+ *        for the environment, from which the cl.exe / lib.exe paths follow. See prk_msvc_toolchain.h.
  *
  * Runs only through the injected PrkProcessRunner; the parsers are pure and unit-tested on every platform.
  * Script input reaches cmd.exe only as an architecture from a fixed list.
  */
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,10 +14,8 @@
 #include "prk_c_driver_internal.h"
 #include "proofrunkit/prk_msvc_toolchain.h"
 
-/** @brief Marker echoed before the `where cl.exe` output. */
-#define PRK_VCVARS_WHERE_MARKER "::prk-where::"
-/** @brief Marker echoed before the `set` output. */
-#define PRK_VCVARS_ENVIRONMENT_MARKER "::prk-environment::"
+/** @brief Used when %ProgramFiles(x86)% is not set (a 32-bit Windows, or a test host). */
+#define PRK_DEFAULT_PROGRAM_FILES_X86 "C:\\Program Files (x86)"
 
 const char* prk_get_native_msvc_architecture(void) {
 #if defined(_M_ARM64) || defined(__aarch64__)
@@ -85,12 +84,17 @@ int prk_parse_vswhere_output(const char* text, size_t length, char* out_path, si
     return 0;
 }
 
+void prk_build_vswhere_path(const char* program_files_x86, char* out_path, size_t capacity) {
+    const char* const folder =
+        program_files_x86 != NULL && program_files_x86[0] != '\0' ? program_files_x86 : PRK_DEFAULT_PROGRAM_FILES_X86;
+    (void)snprintf(out_path, capacity, "%s\\Microsoft Visual Studio\\Installer\\vswhere.exe", folder);
+}
+
 PrkStatus prk_build_vcvars_arguments(const char* installation_path, const char* architecture,
                                      PrkArgumentList* out_arguments) {
-    static const char* const tail[] = {">nul",   "&&", "echo", PRK_VCVARS_WHERE_MARKER,       "&&", "where",
-                                       "cl.exe", "&&", "echo", PRK_VCVARS_ENVIRONMENT_MARKER, "&&", "set"};
     memset(out_arguments, 0, sizeof *out_arguments);
-    static const char* const head[] = {"/d", "/c", "chcp", "65001", ">nul", "&&", "call"};
+    /* /u: cmd's own output (the `set` listing) is UTF-16LE, so any environment text survives unchanged. */
+    static const char* const head[] = {"/d", "/u", "/c", "call"};
     for (size_t index = 0; index < sizeof head / sizeof head[0]; ++index) {
         prk_append_argument(out_arguments, "", head[index]);
     }
@@ -98,6 +102,7 @@ PrkStatus prk_build_vcvars_arguments(const char* installation_path, const char* 
     (void)snprintf(script, sizeof script, "%s\\VC\\Auxiliary\\Build\\vcvarsall.bat", installation_path);
     prk_append_argument(out_arguments, "", script);
     prk_append_argument(out_arguments, "", architecture);
+    static const char* const tail[] = {">nul", "&&", "set"};
     for (size_t index = 0; index < sizeof tail / sizeof tail[0]; ++index) {
         prk_append_argument(out_arguments, "", tail[index]);
     }
@@ -126,51 +131,80 @@ static int add_environment_entry(PrkMsvcToolchain* toolchain, const char* start,
     return 0;
 }
 
-/** @brief Sets lib_path to lib.exe next to cl_path. */
-static void set_lib_path(PrkMsvcToolchain* toolchain) {
-    const char* const slash = strrchr(toolchain->cl_path, '\\');
-    const size_t folder_length = slash != NULL ? (size_t)(slash - toolchain->cl_path) + 1 : 0;
-    (void)snprintf(toolchain->lib_path, sizeof toolchain->lib_path, "%.*s%s", (int)folder_length, toolchain->cl_path,
-                   "lib.exe");
+/** @brief Returns the value of @p name (case-insensitive, as on Windows) in the toolchain environment, or NULL. */
+static const char* find_environment_value(const PrkMsvcToolchain* toolchain, const char* name) {
+    const size_t name_length = strlen(name);
+    for (size_t index = 0; index < toolchain->environment_count; ++index) {
+        const char* const entry = toolchain->environment[index];
+        size_t position = 0;
+        while (position < name_length && entry[position] != '\0' &&
+               tolower((unsigned char)entry[position]) == tolower((unsigned char)name[position])) {
+            ++position;
+        }
+        if (position == name_length && entry[position] == '=') {
+            return entry + position + 1;
+        }
+    }
+    return NULL;
+}
+
+/** @brief Sets cl_path and lib_path from VCToolsInstallDir and the VSCMD host/target architectures. @return 1 if set.
+ */
+static int set_tool_paths(PrkMsvcToolchain* toolchain) {
+    const char* const tools = find_environment_value(toolchain, "VCToolsInstallDir");
+    const char* const host = find_environment_value(toolchain, "VSCMD_ARG_HOST_ARCH");
+    const char* const target = find_environment_value(toolchain, "VSCMD_ARG_TGT_ARCH");
+    if (tools == NULL || host == NULL || target == NULL || tools[0] == '\0') {
+        return 0;
+    }
+    const size_t length = strlen(tools);
+    const char* const separator = tools[length - 1] == '\\' ? "" : "\\";
+    const int written = snprintf(toolchain->cl_path, sizeof toolchain->cl_path, "%s%sbin\\Host%s\\%s\\cl.exe", tools,
+                                 separator, host, target);
+    if (written < 0 || (size_t)written >= sizeof toolchain->cl_path) {
+        toolchain->cl_path[0] = '\0';
+        return 0;
+    }
+    (void)snprintf(toolchain->lib_path, sizeof toolchain->lib_path, "%.*slib.exe", written - 6, toolchain->cl_path);
+    return 1;
 }
 
 PrkStatus prk_parse_vcvars_output(const char* text, size_t length, PrkMsvcToolchain* out_toolchain) {
-    enum { BEFORE, WHERE, ENVIRONMENT } section = BEFORE;
-    const char* cursor = text != NULL ? text : "";
-    const char* const end = cursor + (text != NULL ? length : 0);
+    char* decoded = NULL;
+    size_t decoded_length = 0;
+    if (prk_decode_utf16le_if_wide(text, length, &decoded, &decoded_length) != PRK_STATUS_OK) {
+        return PRK_STATUS_OUT_OF_MEMORY;
+    }
+    const char* cursor = decoded != NULL ? decoded : (text != NULL ? text : "");
+    const char* const end = cursor + (decoded != NULL ? decoded_length : (text != NULL ? length : 0));
     const char* start = NULL;
     size_t line_length = 0;
-    while (read_next_line(&cursor, end, &start, &line_length)) {
-        if (line_length == strlen(PRK_VCVARS_WHERE_MARKER) &&
-            memcmp(start, PRK_VCVARS_WHERE_MARKER, line_length) == 0) {
-            section = WHERE;
-        } else if (line_length == strlen(PRK_VCVARS_ENVIRONMENT_MARKER) &&
-                   memcmp(start, PRK_VCVARS_ENVIRONMENT_MARKER, line_length) == 0) {
-            section = ENVIRONMENT;
-        } else if (section == WHERE && out_toolchain->cl_path[0] == '\0' && line_length > 0) {
-            (void)copy_line(start, line_length, out_toolchain->cl_path, sizeof out_toolchain->cl_path);
-        } else if (section == ENVIRONMENT && line_length > 1 && start[0] != '=' &&
-                   memchr(start, '=', line_length) != NULL &&
-                   add_environment_entry(out_toolchain, start, line_length) != 0) {
-            return PRK_STATUS_OUT_OF_MEMORY;
+    PrkStatus status = PRK_STATUS_OK;
+    while (status == PRK_STATUS_OK && read_next_line(&cursor, end, &start, &line_length)) {
+        if (line_length > 1 && start[0] != '=' && memchr(start, '=', line_length) != NULL &&
+            add_environment_entry(out_toolchain, start, line_length) != 0) {
+            status = PRK_STATUS_OUT_OF_MEMORY;
         }
     }
-    out_toolchain->is_found = out_toolchain->cl_path[0] != '\0' && out_toolchain->environment_count > 0;
-    if (out_toolchain->is_found) {
-        set_lib_path(out_toolchain);
-    } else {
+    free(decoded);
+    if (status != PRK_STATUS_OK) {
+        return status;
+    }
+    out_toolchain->is_found = set_tool_paths(out_toolchain);
+    if (!out_toolchain->is_found) {
         (void)snprintf(out_toolchain->error_message, sizeof out_toolchain->error_message,
-                       "vcvarsall.bat %s ran but cl.exe was not found", out_toolchain->architecture);
+                       "vcvarsall.bat %s ran but did not set VCToolsInstallDir and VSCMD_ARG_HOST_ARCH/TGT_ARCH",
+                       out_toolchain->architecture);
     }
     return PRK_STATUS_OK;
 }
 
-/** @brief Runs cmd.exe with @p arguments. */
-static PrkStatus run_cmd(const PrkProcessRunner* runner, const char* const* arguments, size_t count,
-                         PrkProcessResult* out_result) {
+/** @brief Runs @p program with @p arguments and the parent environment. */
+static PrkStatus run_discovery_step(const PrkProcessRunner* runner, const char* program, const char* const* arguments,
+                                    size_t count, PrkProcessResult* out_result) {
     PrkProcessRequest request;
     memset(&request, 0, sizeof request);
-    request.executable = "cmd.exe";
+    request.executable = program;
     request.arguments = arguments;
     request.argument_count = count;
     request.is_environment_inherited = 1;
@@ -190,24 +224,17 @@ static void describe_failed_step(const char* step, const PrkProcessResult* resul
     }
 }
 
-/** @brief Step 1: vswhere. @return PRK_STATUS_OK (found or not) or an error status. */
+/** @brief Step 1: vswhere, run directly from %ProgramFiles(x86)%. @return PRK_STATUS_OK (found or not) or an error. */
 static PrkStatus find_installation(const PrkProcessRunner* runner, PrkMsvcToolchain* toolchain) {
-    static const char* const arguments[] = {"/d",
-                                            "/c",
-                                            "call",
-                                            "%ProgramFiles(x86)%\\Microsoft Visual Studio\\Installer\\vswhere.exe",
-                                            "-latest",
-                                            "-products",
-                                            "*",
-                                            "-requires",
-                                            "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-                                            "-property",
-                                            "installationPath",
-                                            "-utf8",
-                                            "-nologo"};
+    static const char* const arguments[] = {
+        "-latest",   "-products",        "*",     "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+        "-property", "installationPath", "-utf8", "-nologo"};
+    char program[1100];
+    prk_build_vswhere_path(getenv("ProgramFiles(x86)"), program, sizeof program);
     PrkProcessResult result;
     memset(&result, 0, sizeof result);
-    const PrkStatus status = run_cmd(runner, arguments, sizeof arguments / sizeof arguments[0], &result);
+    const PrkStatus status =
+        run_discovery_step(runner, program, arguments, sizeof arguments / sizeof arguments[0], &result);
     if (status != PRK_STATUS_OK) {
         return status;
     }
@@ -231,7 +258,7 @@ static PrkStatus load_vcvars(const PrkProcessRunner* runner, PrkMsvcToolchain* t
     }
     PrkProcessResult result;
     memset(&result, 0, sizeof result);
-    status = run_cmd(runner, (const char* const*)arguments.items, arguments.count, &result);
+    status = run_discovery_step(runner, "cmd.exe", (const char* const*)arguments.items, arguments.count, &result);
     prk_free_argument_list(&arguments);
     if (status != PRK_STATUS_OK) {
         return status;

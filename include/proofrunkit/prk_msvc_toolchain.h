@@ -4,11 +4,13 @@
  *        vcvarsall.bat for an architecture, and captures the environment and the paths of cl.exe and lib.exe,
  *        so cl can be used without a Developer Command Prompt.
  *
- * Both steps run cmd.exe through an injected PrkProcessRunner (#13):
- *   cmd.exe /d /c call "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products *
+ * Both steps run through an injected PrkProcessRunner (#13):
+ *   1. "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products *
  *       -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath -utf8 -nologo
- *   cmd.exe /d /c chcp 65001 >nul && call "<installation>\VC\Auxiliary\Build\vcvarsall.bat" <arch> >nul
- *       && echo ::prk-where:: && where cl.exe && echo ::prk-environment:: && set
+ *      (run directly; the folder comes from the environment, default C:\Program Files (x86)).
+ *   2. cmd.exe /d /u /c call "<installation>\VC\Auxiliary\Build\vcvarsall.bat" <arch> >nul && set
+ *      (the UTF-16LE `set` listing is the environment; cl.exe is
+ *      %VCToolsInstallDir%bin\Host%VSCMD_ARG_HOST_ARCH%\%VSCMD_ARG_TGT_ARCH%\cl.exe, lib.exe beside it).
  * Nothing reaches cmd.exe from a script except an architecture from a fixed list; an installation path with
  * '"', '%', or a line break is rejected. Discovery takes a few seconds, so callers keep one PrkMsvcToolchain
  * as a cache (the script host does).
@@ -60,7 +62,7 @@ int prk_is_msvc_architecture_allowed(const char* architecture);
  * @param out_toolchain Receives the toolchain (a documented mutator); is_found = 0 with error_message set when
  *        Visual Studio, the C++ workload, or cl.exe is missing (a result, not an error status).
  * @return PRK_STATUS_OK, PRK_STATUS_INVALID_ARGUMENT (bad runner or architecture), or PRK_STATUS_OUT_OF_MEMORY.
- *         Side effects: runs cmd.exe twice.
+ *         Side effects: runs vswhere.exe, then cmd.exe.
  */
 PrkStatus prk_discover_msvc_toolchain(const PrkProcessRunner* runner, const char* architecture,
                                       PrkMsvcToolchain* out_toolchain);

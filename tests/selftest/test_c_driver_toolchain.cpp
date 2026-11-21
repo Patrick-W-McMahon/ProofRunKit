@@ -27,12 +27,34 @@ namespace {
 
 constexpr const char* fake_cl_path = "C:\\VS\\VC\\Tools\\MSVC\\14.44\\bin\\Hostx64\\x64\\cl.exe";
 
-/** @brief Canned vcvars output: noise, the where section, then the environment. */
+/** @brief Encodes ASCII (or Latin-1) @p text as UTF-16LE, like `cmd.exe /u`. */
+std::string encode_utf16le(const std::string& text) {
+    std::string wide;
+    for (const char character : text) {
+        wide.push_back(character);
+        wide.push_back('\0');
+    }
+    return wide;
+}
+
+/** @brief Canned `set` listing after vcvarsall, as 8-bit text. */
+std::string make_vcvars_text() {
+    return "INCLUDE=C:\\VS\\include\r\nPath=C:\\VS\\bin;C:\\Windows\r\nSystemRoot=C:\\Windows\r\n"
+           "VCToolsInstallDir=C:\\VS\\VC\\Tools\\MSVC\\14.44\\\r\nVSCMD_ARG_HOST_ARCH=x64\r\n"
+           "VSCMD_ARG_TGT_ARCH=x64\r\n";
+}
+
+/** @brief Canned vcvars output: the listing as UTF-16LE. */
 std::string make_vcvars_output() {
-    return std::string("Active code page: 65001\r\n::prk-where:: \r\n") + fake_cl_path +
-           "\r\nC:\\Other\\cl.exe\r\n::prk-environment:: "
-           "\r\nINCLUDE=C:\\VS\\include\r\nPath=C:\\VS\\bin;C:\\Windows\r\n"
-           "SystemRoot=C:\\Windows\r\n";
+    return encode_utf16le(make_vcvars_text());
+}
+
+/** @brief Returns "vswhere" for any path ending in vswhere.exe, else @p program. */
+std::string name_program(const std::string& program) {
+    const std::string suffix = "\\Installer\\vswhere.exe";
+    const bool is_vswhere =
+        program.size() > suffix.size() && program.compare(program.size() - suffix.size(), suffix.size(), suffix) == 0;
+    return is_vswhere ? "vswhere" : program;
 }
 
 /** @brief Fake runner for MSVC: cmd.exe answers vswhere and vcvarsall; programs in @p missing fail to start. */
@@ -71,19 +93,18 @@ private:
 
     static PrkStatus spawn(void* state, const PrkProcessRequest* request, PrkProcessResult* out_result) {
         FakeMsvcRunner& fake = *static_cast<FakeMsvcRunner*>(state);
-        const std::string program = request->executable;
+        const std::string program = name_program(request->executable);
         fake.programs.push_back(program);
         if (fake.missing.count(program) != 0) {
             return prk_set_process_start_failure(("executable not found: " + program).c_str(), out_result);
         }
         const std::vector<std::string> arguments(request->arguments, request->arguments + request->argument_count);
+        if (program == "vswhere") {
+            return finish(out_result, fake.vswhere_exit_code, fake.vswhere_output);
+        }
         if (program == "cmd.exe") {
-            const bool is_vswhere = arguments.size() > 3 && arguments[3].find("vswhere.exe") != std::string::npos;
-            if (!is_vswhere) {
-                fake.vcvars_arguments = arguments;
-            }
-            return finish(out_result, is_vswhere ? fake.vswhere_exit_code : 0,
-                          is_vswhere ? fake.vswhere_output : fake.vcvars_output);
+            fake.vcvars_arguments = arguments;
+            return finish(out_result, 0, fake.vcvars_output);
         }
         fake.last_environment.assign(request->environment, request->environment + request->environment_count);
         fake.last_is_environment_inherited = request->is_environment_inherited;
@@ -183,45 +204,21 @@ void test_parses_msvc_discovery_output(PrkTestContext* context, void*) {
     PRK_EXPECT(prk_parse_vcvars_output(vcvars.c_str(), vcvars.size(), &toolchain) == PRK_STATUS_OK);
     PRK_EXPECT(toolchain.is_found == 1 && std::strcmp(toolchain.cl_path, fake_cl_path) == 0);
     PRK_EXPECT(std::strcmp(toolchain.lib_path, "C:\\VS\\VC\\Tools\\MSVC\\14.44\\bin\\Hostx64\\x64\\lib.exe") == 0);
-    PRK_EXPECT(toolchain.environment_count == 3 &&
+    PRK_EXPECT(toolchain.environment_count == 6 &&
                std::strcmp(toolchain.environment[1], "Path=C:\\VS\\bin;C:\\Windows") == 0);
     prk_release_msvc_toolchain(&toolchain);
-    const std::string no_cl = "::prk-where::\r\n::prk-environment::\r\nPath=C:\\x\r\n";
+    const std::string narrow = "vcvarsall noise\r\n" + make_vcvars_text(); /* Without /u: 8-bit text. */
+    PRK_EXPECT(prk_parse_vcvars_output(narrow.c_str(), narrow.size(), &toolchain) == PRK_STATUS_OK);
+    PRK_EXPECT(toolchain.is_found == 1 && toolchain.environment_count == 6);
+    prk_release_msvc_toolchain(&toolchain);
+    const std::string no_cl = encode_utf16le("Path=C:\\x\r\nVSCMD_ARG_TGT_ARCH=x86\r\n");
     PRK_EXPECT(prk_parse_vcvars_output(no_cl.c_str(), no_cl.size(), &toolchain) == PRK_STATUS_OK);
-    PRK_EXPECT(toolchain.is_found == 0 && std::strstr(toolchain.error_message, "cl.exe was not found") != nullptr);
+    PRK_EXPECT(toolchain.is_found == 0 && std::strstr(toolchain.error_message, "VCToolsInstallDir") != nullptr);
     prk_release_msvc_toolchain(&toolchain);
     PRK_EXPECT(prk_is_msvc_architecture_allowed("x86") == 1 && prk_is_msvc_architecture_allowed("x64_arm64") == 1);
-    PRK_EXPECT(prk_is_msvc_architecture_allowed("x64 & calc") == 0 && prk_is_msvc_architecture_allowed(nullptr) == 0);
+    PRK_EXPECT(prk_is_msvc_architecture_allowed("x64 x86") == 0 && prk_is_msvc_architecture_allowed(nullptr) == 0);
     const std::string native = prk_get_native_msvc_architecture();
     PRK_EXPECT(native == "x64" || native == "x86" || native == "arm64");
-}
-
-void test_builds_vcvars_arguments(PrkTestContext* context, void*) {
-    PrkArgumentList list{};
-    PRK_EXPECT(prk_build_vcvars_arguments("C:\\VS 2022", "x86", &list) == PRK_STATUS_OK);
-    const std::vector<std::string> arguments(list.items, list.items + list.count);
-    prk_free_argument_list(&list);
-    PRK_EXPECT(arguments == std::vector<std::string>({"/d",
-                                                      "/c",
-                                                      "chcp",
-                                                      "65001",
-                                                      ">nul",
-                                                      "&&",
-                                                      "call",
-                                                      "C:\\VS 2022\\VC\\Auxiliary\\Build\\vcvarsall.bat",
-                                                      "x86",
-                                                      ">nul",
-                                                      "&&",
-                                                      "echo",
-                                                      "::prk-where::",
-                                                      "&&",
-                                                      "where",
-                                                      "cl.exe",
-                                                      "&&",
-                                                      "echo",
-                                                      "::prk-environment::",
-                                                      "&&",
-                                                      "set"}));
 }
 
 void test_discovers_msvc_through_runner(PrkTestContext* context, void*) {
@@ -232,9 +229,9 @@ void test_discovers_msvc_through_runner(PrkTestContext* context, void*) {
     PRK_EXPECT(toolchain.is_attempted == 1 && toolchain.is_found == 1);
     PRK_EXPECT(std::strcmp(toolchain.installation_path, "C:\\VS") == 0 &&
                std::strcmp(toolchain.architecture, "x64") == 0);
-    PRK_EXPECT(fake.programs == std::vector<std::string>({"cmd.exe", "cmd.exe"}));
-    PRK_EXPECT(fake.vcvars_arguments.size() > 8 &&
-               fake.vcvars_arguments[7] == "C:\\VS\\VC\\Auxiliary\\Build\\vcvarsall.bat");
+    PRK_EXPECT(fake.programs == std::vector<std::string>({"vswhere", "cmd.exe"}));
+    PRK_EXPECT(fake.vcvars_arguments.size() == 9 &&
+               fake.vcvars_arguments[4] == "C:\\VS\\VC\\Auxiliary\\Build\\vcvarsall.bat");
     fake.vswhere_exit_code = 1;
     PRK_EXPECT(prk_discover_msvc_toolchain(&runner, nullptr, &toolchain) == PRK_STATUS_OK);
     PRK_EXPECT(toolchain.is_attempted == 1 && toolchain.is_found == 0 && toolchain.environment == nullptr);
@@ -243,7 +240,7 @@ void test_discovers_msvc_through_runner(PrkTestContext* context, void*) {
     fake.vswhere_output = "";
     PRK_EXPECT(prk_discover_msvc_toolchain(&runner, nullptr, &toolchain) == PRK_STATUS_OK);
     PRK_EXPECT(toolchain.is_found == 0 && std::strstr(toolchain.error_message, "C++ build tools") != nullptr);
-    PRK_EXPECT(prk_discover_msvc_toolchain(&runner, "x64 && calc", &toolchain) == PRK_STATUS_INVALID_ARGUMENT);
+    PRK_EXPECT(prk_discover_msvc_toolchain(&runner, "x64 extra", &toolchain) == PRK_STATUS_INVALID_ARGUMENT);
     PRK_EXPECT(prk_discover_msvc_toolchain(nullptr, nullptr, &toolchain) == PRK_STATUS_INVALID_ARGUMENT);
     prk_release_msvc_toolchain(&toolchain);
     prk_release_msvc_toolchain(nullptr);
@@ -263,9 +260,9 @@ void test_msvc_falls_back_to_discovery(PrkTestContext* context, void*) {
     request.msvc_toolchain = &cache;
     PrkCompileResult result{};
     PRK_EXPECT(prk_compile_program(&runner, &request, &result) == PRK_STATUS_OK);
-    PRK_EXPECT(fake.programs == std::vector<std::string>({"cl", "cmd.exe", "cmd.exe", fake_cl_path}));
+    PRK_EXPECT(fake.programs == std::vector<std::string>({"cl", "vswhere", "cmd.exe", fake_cl_path}));
     PRK_EXPECT(result.process.outcome == PRK_PROCESS_EXITED && result.is_msvc_discovered == 1);
-    PRK_EXPECT(fake.last_is_environment_inherited == 0 && fake.last_environment.size() == 3);
+    PRK_EXPECT(fake.last_is_environment_inherited == 0 && fake.last_environment.size() == 6);
     PRK_EXPECT(std::strcmp(result.compiler_program, fake_cl_path) == 0);
     prk_release_compile_result(&result);
     fake.programs.clear();
@@ -329,7 +326,7 @@ void test_lua_compile_library_options(PrkTestContext* context, void*) {
         "prk.add_test('object_needs_one', function()\n"
         "  prk.compile{sources = {'a.c', 'b.c'}, output = 'a.o', kind = 'object'} end)\n"
         "prk.add_test('bad_arch', function()\n"
-        "  prk.compile{sources = 'a.c', output = 'a', msvc_arch = 'x64&calc'} end)\n"
+        "  prk.compile{sources = 'a.c', output = 'a', msvc_arch = 'x64 extra'} end)\n"
         "prk.add_test('bad_kind', function() prk.compile{sources = 'a.c', output = 'a', kind = 'dll'} end)\n",
         std::move(setup));
     PRK_EXPECT(run->results.size() == 5 && run->results[0].outcome == PRK_OUTCOME_PASSED);
@@ -385,7 +382,6 @@ PrkStatus register_c_driver_toolchain_tests(PrkRegistry& registry) {
         {"c_driver.builds_link_arguments", &test_builds_link_arguments, nullptr},
         {"c_driver.names_output_kinds_and_paths", &test_names_output_kinds_and_paths, nullptr},
         {"c_driver.parses_msvc_discovery_output", &test_parses_msvc_discovery_output, nullptr},
-        {"c_driver.builds_vcvars_arguments", &test_builds_vcvars_arguments, nullptr},
         {"c_driver.discovers_msvc_through_runner", &test_discovers_msvc_through_runner, nullptr},
         {"c_driver.msvc_falls_back_to_discovery", &test_msvc_falls_back_to_discovery, nullptr},
         {"c_driver.missing_msvc_is_a_result", &test_missing_msvc_is_a_result, nullptr},

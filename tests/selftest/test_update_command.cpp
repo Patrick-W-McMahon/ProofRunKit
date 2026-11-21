@@ -203,7 +203,8 @@ UpdateRun run_cli(std::vector<std::string_view> arguments, const UpdateServices*
                                              ReportFileWriter{},
                                              output,
                                              errors,
-                                             services};
+                                             services,
+                                             nullptr};
     const int exit_code = run_command_line("prk", arguments, environment);
     return UpdateRun{exit_code, output.str(), errors.str()};
 }

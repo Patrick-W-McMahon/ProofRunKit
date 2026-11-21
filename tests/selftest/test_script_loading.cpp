@@ -65,6 +65,7 @@ CapturedScriptRun run_scripts_through_command_line(std::vector<std::string_view>
                                              ReportFileWriter{},
                                              output,
                                              errors,
+                                             nullptr,
                                              nullptr};
     const int exit_code = run_command_line("prk", arguments, environment);
     return CapturedScriptRun{exit_code, output.str(), errors.str()};

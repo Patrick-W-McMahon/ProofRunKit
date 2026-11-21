@@ -14,6 +14,7 @@
 #include "command_line.hpp"
 #include "junit_reporter.hpp"
 #include "reporters.hpp"
+#include "suite/test_command.hpp"
 
 namespace prk {
 
@@ -56,52 +57,6 @@ bool write_report_file(std::string_view program_name, const std::string& path, c
     }
     environment.errors << program_name << ": cannot write report '" << path << "': " << problem << '\n';
     return false;
-}
-
-/** @brief Runs the selected tests with the stdout reporter plus any report files; returns the exit code. */
-int run_selected_tests(std::string_view program_name, const CommandLineOptions& options, const PrkRegistry& registry,
-                       const CommandLineEnvironment& environment) {
-    const PrkRunOptions run_options{options.name_filter.c_str(), environment.clock};
-    const SecondsClock seconds_clock = make_report_seconds_clock(environment);
-    ConsoleReporter console_reporter(environment.output);
-    JsonReporter json_reporter(environment.output);
-    JUnitReporter junit_reporter(environment.output, seconds_clock);
-    std::ostringstream json_file_text;
-    std::ostringstream junit_file_text;
-    JsonReporter json_file_reporter(json_file_text);
-    JUnitReporter junit_file_reporter(junit_file_text, seconds_clock);
-    ReporterFanOut reporters;
-    switch (options.report_format) {
-        case ReportFormat::Console:
-            reporters.add_reporter(console_reporter.make_c_reporter());
-            break;
-        case ReportFormat::Json:
-            reporters.add_reporter(json_reporter.make_c_reporter());
-            break;
-        case ReportFormat::Junit:
-            reporters.add_reporter(junit_reporter.make_c_reporter());
-            break;
-    }
-    if (!options.json_file.empty()) {
-        reporters.add_reporter(json_file_reporter.make_c_reporter());
-    }
-    if (!options.junit_file.empty()) {
-        reporters.add_reporter(junit_file_reporter.make_c_reporter());
-    }
-    const PrkReporter reporter = reporters.make_c_reporter();
-    PrkRunSummary summary{};
-    const PrkStatus status = prk_run_test_cases(&registry, &run_options, &reporter, &summary);
-    bool are_reports_written = true;
-    if (!options.json_file.empty()) {
-        are_reports_written &= write_report_file(program_name, options.json_file, json_file_text.str(), environment);
-    }
-    if (!options.junit_file.empty()) {
-        are_reports_written &= write_report_file(program_name, options.junit_file, junit_file_text.str(), environment);
-    }
-    if (!are_reports_written) {
-        return kExitReportError;
-    }
-    return status == PRK_STATUS_OK && summary.failed == 0 ? kExitAllPassed : kExitTestFailed;
 }
 
 /** @brief Lists or runs @p registry according to @p options. */
@@ -175,6 +130,51 @@ int run_update(std::string_view program_name, const CommandLineOptions& options,
 
 }  // namespace
 
+int run_selected_tests(std::string_view program_name, const CommandLineOptions& options, const PrkRegistry& registry,
+                       const CommandLineEnvironment& environment) {
+    const PrkRunOptions run_options{options.name_filter.c_str(), environment.clock};
+    const SecondsClock seconds_clock = make_report_seconds_clock(environment);
+    ConsoleReporter console_reporter(environment.output);
+    JsonReporter json_reporter(environment.output);
+    JUnitReporter junit_reporter(environment.output, seconds_clock);
+    std::ostringstream json_file_text;
+    std::ostringstream junit_file_text;
+    JsonReporter json_file_reporter(json_file_text);
+    JUnitReporter junit_file_reporter(junit_file_text, seconds_clock);
+    ReporterFanOut reporters;
+    switch (options.report_format) {
+        case ReportFormat::Console:
+            reporters.add_reporter(console_reporter.make_c_reporter());
+            break;
+        case ReportFormat::Json:
+            reporters.add_reporter(json_reporter.make_c_reporter());
+            break;
+        case ReportFormat::Junit:
+            reporters.add_reporter(junit_reporter.make_c_reporter());
+            break;
+    }
+    if (!options.json_file.empty()) {
+        reporters.add_reporter(json_file_reporter.make_c_reporter());
+    }
+    if (!options.junit_file.empty()) {
+        reporters.add_reporter(junit_file_reporter.make_c_reporter());
+    }
+    const PrkReporter reporter = reporters.make_c_reporter();
+    PrkRunSummary summary{};
+    const PrkStatus status = prk_run_test_cases(&registry, &run_options, &reporter, &summary);
+    bool are_reports_written = true;
+    if (!options.json_file.empty()) {
+        are_reports_written &= write_report_file(program_name, options.json_file, json_file_text.str(), environment);
+    }
+    if (!options.junit_file.empty()) {
+        are_reports_written &= write_report_file(program_name, options.junit_file, junit_file_text.str(), environment);
+    }
+    if (!are_reports_written) {
+        return kExitReportError;
+    }
+    return status == PRK_STATUS_OK && summary.failed == 0 ? kExitAllPassed : kExitTestFailed;
+}
+
 int run_command_line(std::string_view program_name, std::span<const std::string_view> arguments,
                      const CommandLineEnvironment& environment) {
     const CommandLineParseResult parsed = parse_command_line(arguments);
@@ -199,6 +199,9 @@ int run_command_line(std::string_view program_name, std::span<const std::string_
     }
     if (options.command == CliCommand::Update) {
         return run_update(program_name, options, environment);
+    }
+    if (options.command == CliCommand::Test) {
+        return run_test_command(program_name, options, environment);
     }
     if (options.list_tests && (!options.json_file.empty() || !options.junit_file.empty())) {
         environment.errors << program_name << ": --json-file and --junit-file apply to runs, not listings\n";

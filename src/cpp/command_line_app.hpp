@@ -10,10 +10,15 @@
 #include <string>
 #include <string_view>
 
+#include "command_line.hpp"
 #include "proofrunkit/prk.h"
 #include "script_host.hpp"
 #include "script_loading.hpp"
 #include "update/update_command.hpp"
+
+namespace prk {
+struct TestSuiteServices;
+}  // namespace prk
 
 namespace prk {
 
@@ -52,6 +57,7 @@ struct CommandLineEnvironment {
     std::ostream& errors;                   ///< Usage errors, script load errors, and JSON-mode print().
     const UpdateServices* update_services;  ///< Release lookup and installer for -version / -update (#75); nullptr =
                                             ///< offline (no network: the self-test, CTest, PRK_OFFLINE=1).
+    const TestSuiteServices* test_suite_services;  ///< Processes and files for `prk test` (#82); nullptr = none.
 };
 
 /**
@@ -68,6 +74,16 @@ struct CommandLineEnvironment {
  */
 [[nodiscard]] int run_command_line(std::string_view program_name, std::span<const std::string_view> arguments,
                                    const CommandLineEnvironment& environment);
+
+/**
+ * @brief Runs every test in @p registry with the stdout reporter selected by @p options plus any report files.
+ *        Also used by `prk test` (#82) to report its combined results.
+ * @param program_name Name shown in errors. @param options Report format and report files.
+ * @param registry Tests to run. @param environment Clock, streams, and report writer.
+ * @return kExitAllPassed, kExitTestFailed, or kExitReportError.
+ */
+[[nodiscard]] int run_selected_tests(std::string_view program_name, const CommandLineOptions& options,
+                                     const PrkRegistry& registry, const CommandLineEnvironment& environment);
 
 /**
  * @brief Returns a clock that reads prk_read_cycle_counter(), the Assembly hot path where available.

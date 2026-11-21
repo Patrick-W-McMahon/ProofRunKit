@@ -92,7 +92,14 @@ add_library(prk_frontend STATIC
     src/cpp/script_loading.cpp
     src/cpp/update/json_reader.cpp
     src/cpp/update/release_info.cpp
-    src/cpp/update/update_command.cpp)
+    src/cpp/update/update_command.cpp
+    src/cpp/suite/test_command.cpp
+    src/cpp/suite/test_command_line.cpp
+    src/cpp/suite/test_config.cpp
+    src/cpp/suite/test_entry_runner.cpp
+    src/cpp/suite/test_suite.cpp
+    src/cpp/suite/test_suite_system.cpp
+    src/cpp/suite/test_variables.cpp)
 target_include_directories(prk_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(prk_frontend PUBLIC prk_core prk_script prk_process)
 prk_apply_project_warnings(prk_frontend)

@@ -59,6 +59,12 @@ PrkStatus register_asm_driver_tests(PrkRegistry& registry);
 PrkStatus register_release_info_tests(PrkRegistry& registry);
 /** @brief Registers the prk -update command tests (#75). @return PRK_STATUS_OK or the first registration error. */
 PrkStatus register_update_command_tests(PrkRegistry& registry);
+
+/** @brief Registers the `prk test` configuration, variable, and command-line tests (#82). */
+PrkStatus register_suite_config_tests(PrkRegistry& registry);
+
+/** @brief Registers the `prk test` runner tests with fake processes and files (#82). */
+PrkStatus register_suite_runner_tests(PrkRegistry& registry);
 /** @brief Registers test-script loading tests (#9). @return PRK_STATUS_OK or the first error. */
 PrkStatus register_script_loading_tests(PrkRegistry& registry);
 

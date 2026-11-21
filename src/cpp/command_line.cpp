@@ -10,6 +10,8 @@
 #include <optional>
 #include <utility>
 
+#include "suite/test_command_line.hpp"
+
 namespace prk {
 
 namespace {
@@ -54,6 +56,9 @@ std::optional<CliCommand> find_command(std::string_view word) {
     }
     if (word == "help") {
         return CliCommand::Help;
+    }
+    if (word == "test") {
+        return CliCommand::Test;
     }
     return std::nullopt;
 }
@@ -252,6 +257,8 @@ CommandLineParseResult parse_command_line(std::span<const std::string_view> argu
                     return parse_version_command(rest);
                 case CliCommand::Update:
                     return parse_update_command(rest);
+                case CliCommand::Test:
+                    return parse_suite_command(rest);
                 case CliCommand::Run:
                 case CliCommand::List:
                     return parse_test_command(*command, arguments[0], rest);
@@ -271,6 +278,7 @@ std::string format_usage_text(std::string_view program_name) {
            "Commands:\n"
            "  run [scripts...]   Run tests (the built-in checks when no scripts are given).\n"
            "  list [scripts...]  List the selected test names without running them.\n"
+           "  test               Run the project's tests from prk.tests.json (see help test).\n"
            "  version            Show the version and engines, and check GitHub for a newer release\n"
            "                     (-version and -v work too; add -offline to skip the check).\n"
            "  -update            Download, verify, and install the latest Windows x64 release\n"
@@ -343,7 +351,10 @@ std::string format_command_help_text(std::string_view program_name, std::string_
     }
     if (command_name == "help") {
         return "Usage: " + name + " help [command]\n\n" +
-               "Shows general help, or help for run, list, version, update, or help.\n";
+               "Shows general help, or help for run, list, test, version, update, or help.\n";
+    }
+    if (command_name == "test") {
+        return format_suite_help_text(program_name);
     }
     return {};
 }

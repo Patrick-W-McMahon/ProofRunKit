@@ -19,7 +19,9 @@ add_executable(proofrunkit_selftest
     test_registry.cpp
     test_reporting.cpp
     test_runner.cpp
-    test_script_loading.cpp)
+    test_script_loading.cpp
+    test_suite_config.cpp
+    test_suite_runner.cpp)
 target_link_libraries(proofrunkit_selftest PRIVATE prk_frontend)
 prk_apply_project_warnings(proofrunkit_selftest)
 prk_add_windows_resources(proofrunkit_selftest)

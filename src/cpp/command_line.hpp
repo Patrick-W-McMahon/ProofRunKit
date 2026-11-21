@@ -3,8 +3,8 @@
  * @brief Pure parsing of the `prk` / `proofrunkit` command line into an immutable options value.
  *
  * Two forms are accepted (#60):
- *   - subcommands: `prk run|list|version|help ...`, plus `prk -update` / `--update` / `update` and
- *     `prk -version` / `-v` (#75)
+ *   - subcommands: `prk run|list|test|version|help ...`, plus `prk -update` / `--update` / `update` and
+ *     `prk -version` / `-v` (#75); `prk test` (#82) is parsed in suite/test_command_line.cpp
  *   - the original flag form: `proofrunkit [--list] [--filter TEXT] [--format FORMAT] [scripts...]`
  * Both forms produce the same CommandLineOptions. Nothing here performs IO.
  */
@@ -29,6 +29,7 @@ enum class CliCommand {
     Version,  ///< `prk version`
     Help,     ///< `prk help [command]`
     Update,   ///< `prk -update` / `--update` / `update` (#75)
+    Test,     ///< `prk test`: run the project's prk.tests.json (#82)
 };
 
 /** @brief Options parsed from the command line. */
@@ -50,6 +51,9 @@ struct CommandLineOptions {
     bool is_update_check_only = false;   ///< -update -check / --check: report only (#75)
     bool is_update_assumed_yes = false;  ///< -update -yes / --yes: install without asking (#75)
     bool is_update_dry_run = false;      ///< -update -dry-run / --dry-run: download and verify only (#75)
+    std::string suite_config_path;       ///< test --config FILE; "" = prk.tests.json in the current folder (#82)
+    std::string suite_build_dir;         ///< test --build-dir DIR: the ${build_dir} variable (#82)
+    std::vector<std::string> suite_variables;  ///< test --var NAME=VALUE (repeatable) (#82)
 };
 
 /** @brief Result of parsing: either options or a usage error message. */

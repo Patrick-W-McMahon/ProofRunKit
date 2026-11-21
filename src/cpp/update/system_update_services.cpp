@@ -3,6 +3,7 @@
  * @brief The real UpdateServices (#75): WinHTTP, %TEMP%, a binary file writer, msiexec, and stdin answers.
  */
 #include <array>
+#include <cstdlib>
 #include <fstream>
 
 #include "proofrunkit/prk_process.h"
@@ -26,12 +27,16 @@ std::string write_binary_file(const std::string& path, const std::string& bytes)
     return file ? std::string() : "cannot write " + path;
 }
 
-/** @brief Returns %TEMP% (or %TMP%), or "". */
+/** @brief Returns %TEMP% (or %TMP%) at any length (#78), or "". */
 std::string find_temporary_directory() {
-    std::array<char, 1024> value{};
     for (const char* const name : {"TEMP", "TMP"}) {
-        if (prk_read_environment_variable(name, value.data(), value.size()) && value[0] != '\0') {
-            return value.data();
+        char* value = nullptr;
+        if (prk_duplicate_environment_variable(name, &value) != 0) {
+            std::string directory(value);
+            std::free(value);
+            if (!directory.empty()) {
+                return directory;
+            }
         }
     }
     return {};

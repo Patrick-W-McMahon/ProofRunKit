@@ -118,3 +118,9 @@ The design goal is that antivirus products see one known file, not a new one per
 WiX v4 MSI packages per architecture: x64 to `%ProgramFiles%\ProofRunKit` and x86 to `%ProgramFiles(x86)%\ProofRunKit`,
 each with an optional system PATH entry and an Add/Remove Programs entry
 ([docs/installer-windows-x64.md](installer-windows-x64.md), [docs/installer-windows-x86.md](installer-windows-x86.md)).
+
+`prk -update` ([#75](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/75), [update.md](update.md)) reads the
+latest GitHub release with WinHTTP, downloads the x64 MSI and its `.sha256`, verifies the SHA-256, and starts
+`msiexec /passive` so `MajorUpgrade` replaces the installed version; `prk -version` reports whether a newer release
+exists. The network and installer code sit in `prk_update_system`, linked only into the shipped executable; the
+command logic in `src/cpp/update/` is driven through injected `UpdateServices` and unit-tested with fakes.

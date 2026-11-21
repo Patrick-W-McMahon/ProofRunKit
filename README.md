@@ -87,6 +87,8 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 
 - [x] Per-machine WiX v4 MSI installers: x64 to `%ProgramFiles%\ProofRunKit` and x86 to `%ProgramFiles(x86)%\ProofRunKit`, with optional PATH and Add/Remove Programs entries ([#36](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/36), [#37](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/37), [#38](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/38), [#40](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/40)) — Done
 
+- [x] `prk -update` downloads, verifies (SHA-256), and installs the latest x64 release; `prk -version` reports whether one is newer ([#75](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/75), [docs/update.md](docs/update.md)) — Done
+
 ### Platforms
 
 - [x] Windows (x64 and x86) as the first tested host ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Done
@@ -170,7 +172,9 @@ prk run --json          # run tests and report JSON
 prk run --junit-file out\results.xml tests\math_test.lua   # also write JUnit XML (docs/report-formats.md)
 prk list --filter kit.  # list test names
 prk help run            # help for one command
-prk --version
+prk -version            # version, engines, and whether a newer release exists (-offline skips the check)
+prk -update -check      # is there a newer release?
+prk -update             # download, verify (SHA-256), and install the latest x64 MSI (docs/update.md)
 ```
 
 See [docs/building-windows.md](docs/building-windows.md) for prerequisites, the 32-bit presets, and options, and [docs/installer-windows-x64.md](docs/installer-windows-x64.md) and [docs/installer-windows-x86.md](docs/installer-windows-x86.md) for building the MSI installers. The design is described in [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

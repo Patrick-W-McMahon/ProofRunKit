@@ -156,6 +156,13 @@ cmake --build --preset windows-msvc-x64-release --target package-msi
 `cmake --build --preset windows-msvc-x64-msi` is equivalent to the last command
 (it also depends on `proofrunkit`, so it will build the executable if needed).
 
+## Checksum and releases (`prk -update`)
+
+`build-msi-x64.ps1` also writes `ProofRunKit-<version>-win-x64.msi.sha256` (`<sha256>  <file name>`, ASCII) next to
+the MSI, and `verify-msi-x64.ps1` checks it. **Every GitHub release must attach the MSI and its `.sha256`**
+(names as built, or `ProofRunKit-x64-<version>.msi` + `.sha256`); `prk -update` refuses an MSI without a matching
+checksum. See [update.md](update.md#publishing-a-release-what-prk--update-needs).
+
 ## Verifying without installing
 
 ```powershell

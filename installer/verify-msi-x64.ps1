@@ -332,6 +332,16 @@ if ($null -ne $summary) { [void][System.Runtime.InteropServices.Marshal]::Releas
 if ($null -ne $database) { [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($database) }
 if ($null -ne $installer) { [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($installer) }
 
+# Checksum for `prk -update` (#75): build-msi-x64.ps1 writes "<sha256>  <name>" next to the MSI.
+$checksumPath = "$MsiPath.sha256"
+if (Test-Path -LiteralPath $checksumPath) {
+    $expected = (([System.IO.File]::ReadAllText($checksumPath)).Trim() -split '\s+')[0].ToLowerInvariant()
+    $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $MsiPath).Hash.ToLowerInvariant()
+    Assert-True 'MSI matches its .sha256 (prk -update, #75)' ($expected -eq $actual) "expected $expected, got $actual"
+} else {
+    Write-Host "== WARNING: $checksumPath is missing; a release needs it for prk -update (#75)." -ForegroundColor Yellow
+}
+
 if ($failures.Count -gt 0) {
     Write-Host "FAILED: $($failures.Count) check(s) did not pass:" -ForegroundColor Red
     foreach ($item in $failures) { Write-Host " - $item" }

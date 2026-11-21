@@ -31,12 +31,15 @@ int main(int argc, char** argv) {
     }
     const std::string_view program_name = prk::select_program_name(argc > 0 ? argv[0] : "");
     const std::vector<std::string_view> arguments(argv + (argc > 0 ? 1 : 0), argv + argc);
+    const prk::UpdateServices update_services = prk::make_system_update_services(std::cin);
+    const bool is_offline = prk::is_offline_requested_by_environment();
     const prk::CommandLineEnvironment environment{*registry,
                                                   prk::make_cycle_counter_clock(),
                                                   &prk::read_script_file_from_disk,
                                                   prk::make_disk_script_host_services(),
                                                   &prk::write_report_file_to_disk,
                                                   std::cout,
-                                                  std::cerr};
+                                                  std::cerr,
+                                                  is_offline ? nullptr : &update_services};
     return prk::run_command_line(program_name, arguments, environment);
 }

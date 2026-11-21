@@ -13,6 +13,8 @@ add_executable(proofrunkit_selftest
     test_c_driver_toolchain.cpp
     test_msvc_discovery_text.cpp
     test_asm_driver.cpp
+    test_release_info.cpp
+    test_update_command.cpp
     test_junit_reporting.cpp
     test_registry.cpp
     test_reporting.cpp
@@ -49,6 +51,11 @@ add_test(NAME prk_version COMMAND "${_prk_short_exe}" --version)
 set_tests_properties(prk_version PROPERTIES PASS_REGULAR_EXPRESSION "ProofRunKit ${PROJECT_VERSION}")
 add_test(NAME prk_version_subcommand COMMAND "${_prk_short_exe}" version)
 set_tests_properties(prk_version_subcommand PROPERTIES PASS_REGULAR_EXPRESSION "ProofRunKit ${PROJECT_VERSION}")
+# -version / -update (#75), offline: the version line alone, and -update refusing without the network.
+add_test(NAME prk_version_single_dash COMMAND "${_prk_short_exe}" -v -offline)
+set_tests_properties(prk_version_single_dash PROPERTIES PASS_REGULAR_EXPRESSION "^ProofRunKit ${PROJECT_VERSION} [^\n]*\n$")
+add_test(NAME prk_update_needs_network COMMAND "${_prk_short_exe}" -update -check)
+set_tests_properties(prk_update_needs_network PROPERTIES PASS_REGULAR_EXPRESSION "updates need the network")
 add_test(NAME prk_help_run COMMAND "${_prk_short_exe}" help run)
 set_tests_properties(prk_help_run PROPERTIES PASS_REGULAR_EXPRESSION "Usage: prk run")
 add_test(NAME prk_list COMMAND "${_prk_short_exe}" list)
@@ -163,3 +170,7 @@ set_tests_properties(prk_self_reports_builtin PROPERTIES WORKING_DIRECTORY "${_p
 add_test(NAME prk_self_reports_test COMMAND "${_prk_short_exe}" run "${_prk_self}/reports_test.lua")
 set_tests_properties(prk_self_reports_test PROPERTIES WORKING_DIRECTORY "${_prk_self_reports_dir}"
                      FIXTURES_REQUIRED prk_self_reports)
+
+# No network in CTest (#75): `prk -version` would otherwise look up the latest GitHub release.
+get_property(_prk_all_tests DIRECTORY PROPERTY TESTS)
+set_property(TEST ${_prk_all_tests} APPEND PROPERTY ENVIRONMENT "PRK_OFFLINE=1")

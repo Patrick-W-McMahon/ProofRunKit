@@ -193,7 +193,7 @@ See [docs/building-windows.md](docs/building-windows.md) for prerequisites, the 
 
 The project is not complete until ProofRunKit has replaced at least one real existing test suite end to end ([#26](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/26)). Suites will be migrated one project at a time. Existing test tools remain in place as a fallback until the maintainer approves removal ([#27](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/27)).
 
-The first planned suite migration is Trading Agent's doctest suite ([#28](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/28)). The full list, including installers and remaining documentation, is in the [issue tracker](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
+The first planned suite migration is an existing doctest C++ suite ([#28](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/28)). The full list, including installers and remaining documentation, is in the [issue tracker](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
 
 ## Contributing
 

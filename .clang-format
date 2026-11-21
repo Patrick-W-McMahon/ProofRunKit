@@ -1,5 +1,5 @@
 # Shared C/C++ format for Patrick W. McMahon's developing-bot repos.
-# Matches the existing SkyNet style so that repo does not reformat wholesale.
+# Google-based style with 4-space indents and a 120-column limit, kept stable so this repo does not reformat wholesale.
 BasedOnStyle: Google
 IndentWidth: 4
 ColumnLimit: 120

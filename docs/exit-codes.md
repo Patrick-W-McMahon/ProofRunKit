@@ -9,7 +9,7 @@ Scripts and CI can rely on them. The self-tests and the `prk_reports_and_exit_co
 | 1 | test failed | At least one selected test failed. |
 | 2 | usage error | The command line was invalid: an unknown option or command, a missing or bad option value, an unsupported script extension, `--tag` / `--exclude-tag` / `--timeout` without scripts, or report files with `list`. |
 | 3 | not implemented | Reserved for a requested feature that has not landed yet. No shipped feature returns it: JavaScript test scripts, its first use, run since [#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11). |
-| 4 | script error | A test script could not be read, compiled, or loaded (missing file, syntax error, error in top-level code, duplicate test name, bad test options). No tests are run. |
+| 4 | script error | A test script could not be read, compiled, or loaded (missing file, syntax error, error in top-level code, duplicate test name, bad test options), or `prk test` found an invalid `prk.tests.json`. No tests are run. |
 | 5 | report error | A `--json-file` or `--junit-file` report could not be written. The tests did run. |
 | 6 | update failed | `prk -update` could not finish: no release, network error, missing x64 MSI or `.sha256`, checksum mismatch, or an unsupported platform ([update.md](update.md)). `prk -version` never returns it. |
 

@@ -48,6 +48,7 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 - [x] Short `prk` command with `run`, `list`, `version`, and `help` subcommands, installed on PATH as the same binary ([#60](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/60)) — Done
 - [x] Assembly hot paths with a mandatory portable C fallback, for x64 and x86 ([#8](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/8), [#39](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/39)) — Done
 - [x] Process-spawn and sandbox layer on Windows ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)) — Done ([docs/process-spawn.md](docs/process-spawn.md))
+- [x] `prk test`: a checked-in `prk.tests.json` runs a whole project's tests with one combined summary and report ([#82](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/82)) — Done ([docs/test-config.md](docs/test-config.md))
 - [x] Windows build and `proofrunkit_selftest` via CTest ([#23](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/23)) — Done
 
 ### Test authoring (Lua 5.4 and QuickJS-ng)
@@ -182,6 +183,7 @@ prk run --json          # run tests and report JSON
 prk run --junit-file out\results.xml tests\math_test.lua   # also write JUnit XML (docs/report-formats.md)
 prk list --filter kit.  # list test names
 prk help run            # help for one command
+prk test --build-dir build\windows-msvc-x64-debug   # run the project's prk.tests.json (docs/test-config.md)
 prk -version            # version, engines, and whether a newer release exists (-offline skips the check)
 prk -update -check      # is there a newer release?
 prk -update             # download, verify (SHA-256), and install the latest x64 MSI (docs/update.md)

@@ -176,9 +176,15 @@ CapturedRun run_with_sample_registry(std::vector<std::string_view> arguments) {
     std::ostringstream output;
     std::ostringstream errors;
     const auto read_no_files = [](const std::string&) { return ScriptFileContent{false, {}, "cannot open file"}; };
-    const CommandLineEnvironment environment{
-        *registry, PrkClock{nullptr, nullptr}, read_no_files, ScriptHostServices{}, ReportFileWriter{}, output, errors,
-        nullptr};
+    const CommandLineEnvironment environment{*registry,
+                                             PrkClock{nullptr, nullptr},
+                                             read_no_files,
+                                             ScriptHostServices{},
+                                             ReportFileWriter{},
+                                             output,
+                                             errors,
+                                             nullptr,
+                                             nullptr};
     const int exit_code = run_command_line("prk", arguments, environment);
     return CapturedRun{exit_code, output.str(), errors.str()};
 }

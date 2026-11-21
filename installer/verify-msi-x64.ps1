@@ -124,7 +124,8 @@ function Get-MsiTableRows([object]$Database, [string]$Sql, [int]$Columns) {
         }
         Close-MsiView $view
     )
-    return $rows
+    # Comma operator: keep a one-row result from being unrolled into its cells.
+    return ,$rows
 }
 
 function Normalize-Guid([string]$Value) {

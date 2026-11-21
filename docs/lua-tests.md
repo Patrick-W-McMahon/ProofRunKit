@@ -190,7 +190,24 @@ in the engine-neutral test plan (`src/script/prk_test_plan.c`), so both engines 
 
 ## Self-hosted tests
 
-[`tests/lua/prk_lua_api_test.lua`](../tests/lua/prk_lua_api_test.lua) is ProofRunKit testing its own Lua API and
-sandbox through the shipped executable (a first step of
-[#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55)). CTest runs it, plus samples under
-`tests/lua/samples/` that prove failures, syntax errors, missing files, and endless loops are reported correctly.
+ProofRunKit tests itself with its own Lua platform
+([#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55)). CTest runs these scripts through the shipped `prk`
+executable on every build:
+
+| Script | CTest | Covers |
+| --- | --- | --- |
+| [`tests/lua/prk_lua_api_test.lua`](../tests/lua/prk_lua_api_test.lua) | `prk_lua_api_selftest` | Versions, skips, and the sandbox (no `io`/`os`/`package`/`debug`, text-only `load`, safe libraries). |
+| [`tests/lua/self/assertions_test.lua`](../tests/lua/self/assertions_test.lua) | `prk_self_assertions_test` | Every `prk.expect_*` assertion, passing and failing, including exact failure messages, `file:line:` locations, and catchable error objects. |
+| [`tests/lua/self/suites_and_hooks_test.lua`](../tests/lua/self/suites_and_hooks_test.lua) | `prk_self_suites_and_hooks_test` | Suites, the order of the four hooks, shared fixtures, and registration-only-while-loading rules. |
+| [`tests/lua/self/timing_and_files_test.lua`](../tests/lua/self/timing_and_files_test.lua) | `prk_self_timing_and_files_test` | The clock, `measure_elapsed_ms`, file checks against the source tree, and refusal of paths outside the working directory. |
+| [`tests/lua/self/tags_test.lua`](../tests/lua/self/tags_test.lua) | `prk_self_tags_test` | `--tag` / `--exclude-tag` selection, tag inheritance, the skip option, and hooks of unselected suites not running. |
+| [`tests/lua/self/reports_test.lua`](../tests/lua/self/reports_test.lua) | `prk_self_reports_test` (after `prk_self_reports_fixture` and `prk_self_reports_builtin`) | The runner and reporters, end to end. The fixture runs write JSON and JUnit files with `--filter`, `--exclude-tag`, `--json-file`, and `--junit-file`. The script then checks totals, order, outcomes, name mapping, escaping, and the built-in cycle-counter checks. |
+
+Samples under `tests/lua/samples/` show that failures, syntax errors, missing files, endless loops (instruction budget
+and `--timeout`) are reported correctly.
+
+The C++ harness `proofrunkit_selftest` stays in place as the fallback (#27). Some of its cases cover the C ABI
+directly (registry growth and duplicate names, invalid arguments, the memory limit, parser edge cases), and a script
+can only reach that behavior through process spawn
+([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)). The harness can only be retired once the
+self-hosted suite covers every case, is green on Windows x64 and x86, and Patrick approves.

@@ -12,6 +12,7 @@
  *   prk.read_clock_ms(), prk.measure_elapsed_ms(fn, ...)
  *   prk.is_file_present(path), prk.read_text_file(path), prk.expect_file_present / expect_file_contains
  *   prk.run_process{...}, prk.expect_exit_code(result, code)   process spawn (#13; prk_lua_process.c)
+ *   prk.compile{...}                                            C/C++ compiler driver (#14; prk_lua_compile.c)
  *   prk.version, prk.lua_version
  *
  * Failures and skips are error objects (tables with the metatables prk.AssertionError and prk.Skip
@@ -466,7 +467,7 @@ static const char* const prk_lua_assertion_prelude[] = {
     "end\n"
     "function prk.expect_exit_code(result, expected, message)\n"
     "  if type(result) ~= 'table' or result.outcome == nil then\n"
-    "    error('prk.expect_exit_code: result must come from prk.run_process', 2)\n"
+    "    error('prk.expect_exit_code: result must come from prk.run_process or prk.compile', 2)\n"
     "  end\n"
     "  if result.outcome ~= 'exited' or result.exit_code ~= expected then\n"
     "    fail(detail(message, 'unexpected process result', 'expected exit code ' .. tostring(expected) .. ', got ' ..\n"
@@ -546,6 +547,7 @@ int prk_open_lua_test_api(lua_State* state) {
     lua_pushliteral(state, LUA_RELEASE);
     lua_setfield(state, -2, "lua_version");
     (void)prk_add_lua_process_api(state);
+    (void)prk_add_lua_compile_api(state);
 
     PrkLuaPreludeReader reader = {0};
     if (lua_load(state, &prk_read_lua_prelude_piece, &reader, "=prk", "t") != LUA_OK) {

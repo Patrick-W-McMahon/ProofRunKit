@@ -57,7 +57,7 @@ resets, or discards changes.
 
 | Test | Checks |
 | --- | --- |
-| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, the Lua and QuickJS-ng engines and sandboxes, script loading, process spawn (with the `prk_spawn_child` helper), and the MASM cycle counter vs. its C fallback. |
+| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, the Lua and QuickJS-ng engines and sandboxes, script loading, process spawn (with the `prk_spawn_child` helper), the C/C++ compiler driver, and the MASM cycle counter vs. its C fallback. |
 | `proofrunkit_version` | `proofrunkit --version` prints the version and `asm-masm-x64`. |
 | `proofrunkit_builtin_checks` | `proofrunkit` with no scripts runs its built-in environment checks. |
 | `proofrunkit_rejects_unknown_option` | Bad options produce a usage error. |
@@ -75,6 +75,7 @@ resets, or discards changes.
 | `prk_js_stops_infinite_loop`, `prk_js_timeout_option` | The uncatchable instruction budget and `--timeout` stop an endless loop that tries `try`/`catch`. |
 | `prk_mixed_lua_and_js_list` | One `prk list` loads a Lua and a JavaScript script together. |
 | `prk_self_process_test`, `prk_js_process_test` | Lua and JavaScript scripts start `prk` itself with `prk.run_process` / `prk.runProcess` (run in prk's folder). |
+| `prk_self_compile_test`, `prk_js_compile_test` | `prk.compile` builds and runs the samples in `tests/drivers/c` with the compiler on `PATH` (`cl` in a Developer Prompt); each test skips when there is none. |
 | `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow the contract in docs/exit-codes.md (#21). |
 | `prk_self_assertions_test` | Self-hosted (#55): every `prk.expect_*` assertion, run by `prk` on `tests/lua/self/assertions_test.lua`. |
 | `prk_self_suites_and_hooks_test` | Self-hosted: suites and hook order. |

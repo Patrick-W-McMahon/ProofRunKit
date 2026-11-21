@@ -47,6 +47,7 @@ hooks, selection, and execution order are the same engine-neutral code, so both 
 | `prk.readClockMs()`, `prk.measureElapsedMs(fn, ...args)` | Monotonic clock in milliseconds. |
 | `prk.isFilePresent(path)`, `prk.readTextFile(path)` | Read-only, relative paths inside the working directory. |
 | `prk.runProcess({program, args, cwd, env, inheritEnv, stdin, timeoutMs, outputLimit})` | Starts a program (no shell) and returns `{ok, outcome, exitCode, signal, stdout, stderr, stdoutTruncated, stderrTruncated, elapsedMs, error}`. Same rules as `prk.run_process` in [lua-tests.md](lua-tests.md#processes): a missing program or a timeout is returned, not thrown, and the timeout never outlasts the test. |
+| `prk.compile({sources, output, language, compiler, program, std, includes, defines, flags, werror, cwd, timeoutMs})` | Compiles C or C++ with gcc, clang, or `cl` and returns the `prk.runProcess` fields plus `diagnostics`, `errors`, `warnings`, `output`, and `command`. See [c-cpp-driver.md](c-cpp-driver.md). |
 | `prk.expectExitCode(result, code [, message])` | Fails with the exit code (or why the program did not run) and its stderr. |
 | `print(...)`, `console.log(...)` | Write a line to the console (to stderr when stdout carries a JSON/JUnit report or a listing). |
 | `prk.version`, `prk.jsEngine` | `"0.1.0"`, `"QuickJS-ng 0.18.0"`. |

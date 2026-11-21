@@ -138,8 +138,7 @@ static void prk_set_lua_bytes_field(lua_State* state, const char* key, const cha
     lua_setfield(state, -2, key);
 }
 
-/** @brief Pushes the Lua result table for @p result. */
-static void prk_push_lua_process_result(lua_State* state, const PrkProcessResult* result) {
+void prk_push_lua_process_result(lua_State* state, const PrkProcessResult* result) {
     lua_createtable(state, 0, 10);
     lua_pushboolean(state, result->outcome == PRK_PROCESS_EXITED && result->exit_code == 0);
     lua_setfield(state, -2, "ok");

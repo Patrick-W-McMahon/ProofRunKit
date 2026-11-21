@@ -1,0 +1,30 @@
+// Self-hosted (#55): the C/C++ compiler driver from JavaScript (#14), twin of tests/lua/self/compile_test.lua.in.
+// Every test skips when no C compiler is on PATH (for MSVC: a Developer Prompt).
+
+const samples = '@PRK_C_DRIVER_SAMPLES@';
+
+function compileOrSkip(options) {
+    const result = prk.compile(options);
+    if (result.outcome === 'failed to start') {
+        prk.skipTest(String(result.error));
+    }
+    return result;
+}
+
+prk.addTest('self.compile_js.c_program_builds_and_runs', () => {
+    const result = compileOrSkip({sources: [samples + '/hello.c'], output: './prk_js_hello_c', werror: true});
+    prk.expectExitCode(result, 0);
+    prk.expectEqual(result.warnings, 0);
+    const run = prk.runProcess({program: result.output});
+    prk.expectExitCode(run, 0);
+    prk.expectTrue(run.stdout.startsWith('hello from C'));
+});
+
+prk.addTest('self.compile_js.errors_are_parsed', () => {
+    const result = compileOrSkip({sources: samples + '/broken.c', output: './prk_js_broken'});
+    prk.expectFalse(result.ok);
+    const first = result.diagnostics.find((diagnostic) => diagnostic.severity === 'error');
+    prk.expectTrue(first !== undefined);
+    prk.expectEqual(first.line, 2);
+    prk.expectTrue(first.file.endsWith('broken.c'));
+});

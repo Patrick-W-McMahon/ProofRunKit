@@ -47,6 +47,8 @@ PrkStatus register_js_engine_tests(PrkRegistry& registry);
 PrkStatus register_process_spawn_tests(PrkRegistry& registry);
 /** @brief Registers script process-API tests (#12). @return PRK_STATUS_OK or the first registration error. */
 PrkStatus register_script_process_api_tests(PrkRegistry& registry);
+/** @brief Registers C/C++ compiler-driver tests (#14). @return PRK_STATUS_OK or the first registration error. */
+PrkStatus register_c_driver_tests(PrkRegistry& registry);
 /** @brief Registers test-script loading tests (#9). @return PRK_STATUS_OK or the first error. */
 PrkStatus register_script_loading_tests(PrkRegistry& registry);
 

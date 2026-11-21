@@ -79,7 +79,7 @@ function Normalize-Guid([string]$Value) {
 
 function Assert-Equal([string]$Label, [string]$Actual, [string]$Expected) {
     if ($Actual -ne $Expected) {
-        $script:failures.Add("$Label: expected '$Expected', got '$Actual'")
+        $script:failures.Add("${Label}: expected '$Expected', got '$Actual'")
         Write-Host "FAIL  $Label" -ForegroundColor Red
         Write-Host "      expected: $Expected"
         Write-Host "      actual:   $Actual"
@@ -90,7 +90,7 @@ function Assert-Equal([string]$Label, [string]$Actual, [string]$Expected) {
 
 function Assert-True([string]$Label, [bool]$Condition, [string]$Detail) {
     if (-not $Condition) {
-        $script:failures.Add("$Label: $Detail")
+        $script:failures.Add("${Label}: $Detail")
         Write-Host "FAIL  $Label  ($Detail)" -ForegroundColor Red
     } else {
         Write-Host "OK    $Label  ($Detail)" -ForegroundColor Green

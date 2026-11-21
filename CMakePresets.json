@@ -25,6 +25,28 @@
       "cacheVariables": { "CMAKE_CONFIGURATION_TYPES": "Release", "PRK_REPRODUCIBLE_BUILD": "ON" }
     },
     {
+      "name": "windows-msvc-x86-base",
+      "hidden": true,
+      "displayName": "Windows MSVC x86 (base)",
+      "description": "Visual Studio 2026 (v18) generator, 32-bit MSVC toolset (Win32), MASM hot paths (ml.exe).",
+      "generator": "Visual Studio 18 2026",
+      "architecture": { "value": "Win32", "strategy": "set" },
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "windows-msvc-x86-debug",
+      "inherits": "windows-msvc-x86-base",
+      "displayName": "Windows MSVC x86 Debug",
+      "cacheVariables": { "CMAKE_CONFIGURATION_TYPES": "Debug" }
+    },
+    {
+      "name": "windows-msvc-x86-release",
+      "inherits": "windows-msvc-x86-base",
+      "displayName": "Windows MSVC x86 Release",
+      "cacheVariables": { "CMAKE_CONFIGURATION_TYPES": "Release", "PRK_REPRODUCIBLE_BUILD": "ON" }
+    },
+    {
       "name": "unix-base",
       "hidden": true,
       "binaryDir": "${sourceDir}/build/${presetName}"
@@ -62,6 +84,9 @@
     { "name": "windows-msvc-x64-debug", "configurePreset": "windows-msvc-x64-debug", "configuration": "Debug" },
     { "name": "windows-msvc-x64-release", "configurePreset": "windows-msvc-x64-release", "configuration": "Release" },
     { "name": "windows-msvc-x64-msi", "configurePreset": "windows-msvc-x64-release", "configuration": "Release", "targets": ["package-msi"] },
+    { "name": "windows-msvc-x86-debug", "configurePreset": "windows-msvc-x86-debug", "configuration": "Debug" },
+    { "name": "windows-msvc-x86-release", "configurePreset": "windows-msvc-x86-release", "configuration": "Release" },
+    { "name": "windows-msvc-x86-msi", "configurePreset": "windows-msvc-x86-release", "configuration": "Release", "targets": ["package-msi"] },
     { "name": "linux-debug", "configurePreset": "linux-debug" },
     { "name": "linux-release", "configurePreset": "linux-release" },
     { "name": "macos-debug", "configurePreset": "macos-debug" },
@@ -77,6 +102,18 @@
     {
       "name": "windows-msvc-x64-release",
       "configurePreset": "windows-msvc-x64-release",
+      "configuration": "Release",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "windows-msvc-x86-debug",
+      "configurePreset": "windows-msvc-x86-debug",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "windows-msvc-x86-release",
+      "configurePreset": "windows-msvc-x86-release",
       "configuration": "Release",
       "output": { "outputOnFailure": true }
     }

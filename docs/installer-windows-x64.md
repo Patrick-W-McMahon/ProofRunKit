@@ -1,8 +1,9 @@
 # Windows x64 installer (MSI)
 
 This page records the installer-technology choice (#40), the code-signing decision
-(#41), and how to build and inspect the 64-bit MSI (#37). It does not cover the
-32-bit installer (#38) or the x86 presets (#39).
+(#41), and how to build and inspect the 64-bit MSI (#37). The 32-bit installer and
+Win32 presets are documented in [installer-windows-x86.md](installer-windows-x86.md)
+(#38, #39).
 
 There are no GitHub Actions workflows; the MSI is built locally from the
 `windows-msvc-x64-release` preset.
@@ -55,8 +56,7 @@ anything is purchased.
 ## UpgradeCode
 
 The x64 product line uses this UpgradeCode. **Do not change it.** Newer versions
-that share it replace older ones via `MajorUpgrade`. The 32-bit installer (#38)
-must use a different UpgradeCode when it is added.
+that share it replace older ones via `MajorUpgrade`. The 32-bit installer (#38) uses a different UpgradeCode: `{A31020BF-969A-4139-9FA1-82E044AC31F5}`.
 
 ```
 {FB358981-835D-421D-8634-BA130FE100A2}

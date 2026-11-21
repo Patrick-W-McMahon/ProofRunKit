@@ -66,6 +66,9 @@ void test_implementation_name_matches_selection(PrkTestContext* context, void*) 
 #if defined(_MSC_VER) && defined(_M_X64) && !defined(PRK_EXPECT_C_FALLBACK)
     PRK_EXPECT(std::strcmp(name, "asm-masm-x64") == 0);
 #endif
+#if defined(_MSC_VER) && defined(_M_IX86) && !defined(PRK_EXPECT_C_FALLBACK)
+    PRK_EXPECT(std::strcmp(name, "asm-masm-x86") == 0);
+#endif
 }
 
 void test_assembly_is_in_use(PrkTestContext* context, void*) {

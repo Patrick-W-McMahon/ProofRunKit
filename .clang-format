@@ -1,0 +1,13 @@
+# Shared C/C++ format for Patrick W. McMahon's developing-bot repos.
+# Matches the existing SkyNet style so that repo does not reformat wholesale.
+BasedOnStyle: Google
+IndentWidth: 4
+ColumnLimit: 120
+AccessModifierOffset: -4
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+DerivePointerAlignment: false
+PointerAlignment: Left
+IncludeBlocks: Preserve
+SortIncludes: CaseSensitive

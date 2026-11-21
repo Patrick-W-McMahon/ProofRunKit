@@ -1,0 +1,1 @@
+{ "schema_version": 1, "tests": [ { "name": "x", "colour": "red", "run": "pass_fixture.js" } ] }

@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "setup": [ { "name": "broken", "command": ["${prk}", "--bogus"] } ],
+  "tests": [ { "name": "never", "run": "pass_fixture.js" } ]
+}

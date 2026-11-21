@@ -266,6 +266,9 @@ on every build:
 | [`tests/lua/self/sandbox_test.lua`](../tests/lua/self/sandbox_test.lua) | `self.sandbox` | Ambient access hidden, text-only `load`, the memory limit as a catchable failure, `add_test` only while loading, versions. |
 | [`tests/lua/self/process_options_test.lua`](../tests/lua/self/process_options_test.lua) | `self.process_options` | `prk.run_process` options with the `prk_spawn_child` helper: `env`, `inherit_env = false`, `cwd`, exact `stdin`, the timeout kill, and `output_limit`. |
 | [`tests/js/self/cli_test.js.in`](../tests/js/self/cli_test.js.in) | `self.cli` | The command line and runner by running `./prk`: help, usage errors, exit codes, the version line, order and counts, filters, JSON escapes, script problems, report errors, the Lua memory limit. |
+| [`tests/js/self/process_options_test.js`](../tests/js/self/process_options_test.js) | `js.process_options` | JavaScript twin of the process options test, plus rejected `prk.runProcess` options. |
+| [`tests/js/self/reporting_cli_test.js.in`](../tests/js/self/reporting_cli_test.js.in) | `self.reporting_cli` | Console lines, JUnit on stdout, the original flag form, and `prk test` itself on the fixture configs in `tests/js/self/fixtures/suite` (combined summary, JSON, `--list`, setup failure, config errors). |
+| `proofrunkit_selftest` (C++) | `cpp.selftest` | The internal-only C/C++ cases, read from the harness's JSON report so each appears in the combined summary ([self-hosting.md](self-hosting.md)). |
 
 Samples under `tests/lua/samples/` show that failures, syntax errors, missing files, endless loops (instruction budget
 and `--timeout`) are reported correctly.

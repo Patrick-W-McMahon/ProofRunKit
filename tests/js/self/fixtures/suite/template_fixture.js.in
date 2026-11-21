@@ -1,0 +1,2 @@
+// Template fixture (#84): prk test replaces the variable below before running this file.
+prk.addTest('fixture.template', () => prk.expectEqual('${greeting}', 'hi'));

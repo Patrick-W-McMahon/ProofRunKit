@@ -59,10 +59,15 @@
     { "name": "self.process", "run": "tests/lua/self/process_test.lua", "cwd": "${tool_dir}" },
     { "name": "js.process", "run": "tests/js/process_test.js", "cwd": "${tool_dir}" },
     { "name": "self.process_options", "run": "tests/lua/self/process_options_test.lua", "cwd": "${selftest_dir}", "skip_unless": "${selftest_dir}/prk_spawn_child${exe}" },
+    { "name": "js.process_options", "run": "tests/js/self/process_options_test.js", "cwd": "${selftest_dir}", "skip_unless": "${selftest_dir}/prk_spawn_child${exe}" },
     { "name": "self.cli", "run": "tests/js/self/cli_test.js.in", "template": true, "cwd": "${tool_dir}" },
+    { "name": "self.reporting_cli", "run": "tests/js/self/reporting_cli_test.js.in", "template": true, "cwd": "${tool_dir}" },
     { "name": "self.compile", "run": "tests/lua/self/compile_test.lua.in", "template": true, "cwd": "${work_dir}/compile", "make_dirs": "${work_dir}/compile" },
     { "name": "js.compile", "run": "tests/js/compile_test.js.in", "template": true, "cwd": "${work_dir}/compile-js", "make_dirs": "${work_dir}/compile-js" },
     { "name": "self.assemble", "run": "tests/lua/self/assemble_test.lua.in", "template": true, "cwd": "${work_dir}/assemble", "make_dirs": "${work_dir}/assemble" },
+    { "name": "cpp.selftest", "description": "Internal-only C/C++ cases (docs/self-hosting.md, #84), reported one by one through prk.",
+      "command": "${selftest_dir}/proofrunkit_selftest${exe}", "cwd": "${selftest_dir}", "report": "json", "timeout_ms": 900000,
+      "skip_unless": "${selftest_dir}/proofrunkit_selftest${exe}" },
     { "name": "js.assemble", "run": "tests/js/assemble_test.js.in", "template": true, "cwd": "${work_dir}/assemble-js", "make_dirs": "${work_dir}/assemble-js" }
   ]
 }

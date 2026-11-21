@@ -1,34 +1,53 @@
 # Self-hosted testing: coverage map
 
-Status: in progress ([#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55)). ProofRunKit tests itself
-with its own Lua and JavaScript test scripts, run by `prk` through CTest, alongside the C++ harness
-`proofrunkit_selftest`. **The C++ self-test stays**: retiring it needs the self-hosted suite to cover every case that
-can be expressed through scripts, a green run on Windows, and Patrick's explicit OK (#55, #27).
+Status: in progress ([#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55),
+[#84](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/84)). ProofRunKit tests itself with its own Lua and
+JavaScript test scripts, listed in [`prk.tests.json`](../prk.tests.json) and run by `prk test`
+([test-config.md](test-config.md)). **The C++ self-test stays**: retiring it needs Patrick's explicit OK (#55, #27).
 
-## Running the self-hosted suite
-
-Everything runs from CTest (`ctest --preset <preset>`); each script can also be run by hand:
+## Running everything through prk
 
 ```powershell
-prk run tests\lua\self\assertions_test.lua tests\lua\self\suites_and_hooks_test.lua tests\lua\self\tags_test.lua
-prk run tests\lua\self\sandbox_test.lua tests\js\self\sandbox_test.js tests\lua\prk_lua_api_test.lua tests\js\prk_js_api_test.js
+prk test --build-dir build\windows-msvc-x64-debug   # from the repository root: the whole suite, one summary
+prk test                                           # no build: tests the installed prk, skips build-only entries
 ```
 
-Scripts ending in `.in` (compile, assemble, CLI) get folder paths from CMake and run from the build tree. The
-command-line suite `tests/js/self/cli_test.js.in` runs `./prk` itself, with `-offline` / `PRK_OFFLINE=1`, so no
-test touches the network.
+CTest runs the same thing once (`prk_test_suite`), next to the C++ harness `proofrunkit_selftest`.
 
-A single `prk run tests/` entry point is not added yet: `prk run` takes script files, not folders, and several
-scripts need CMake-provided paths and fixture runs first. Folder discovery would be a CLI feature with its own issue.
+## Internal-only cases: approach (#84)
+
+Some cases test pure C/C++ internals: NULL-argument checks on the C ABI, injected clocks, fake process runners for
+MSVC discovery and compiler diagnostics, quoting and environment merging, SHA-256 and JSON helpers, and `prk -update`
+over fake HTTP. Scripts cannot reach them. There were two options:
+
+- **(a)** A hidden test-only builtin in the shipped `prk`, behind a debug flag.
+- **(b)** A small C++ unit binary that `prk test` runs as a `command` entry with `"report": "json"`.
+
+**Chosen: (b).** The `cpp.selftest` entry of `prk.tests.json` runs `proofrunkit_selftest --json-file ...`, so every
+internal case appears one by one in prk's combined summary, and `prk test` is the single entry point.
+- Option (a) would ship test-only code and fake services in the release binary. That goes against the stable,
+  minimal binary (#22, antivirus reputation), adds attack surface, and makes a debug flag part of the public
+  interface.
+- With (b), the C++ binary can shrink to only the internal cases once the script coverage is accepted.
+
+## What is left before the C++ self-test could be retired
+
+1. A green Windows x64 run of `prk test --build-dir ...` (CTest `prk_test_suite`) on Patrick's machine, including
+   the compile and assemble entries with MSVC.
+2. Decide on the 20 **Partly** cases below: accept the script part as enough, or add scripts. Most of the C++
+   remainder needs fakes (timeouts, failed starts, custom memory/instruction limits).
+3. Shrink `proofrunkit_selftest` to the **Internal only** cases (keep it as the `cpp.selftest` unit binary run by
+   `prk test`). Remove the duplicated script-reachable cases only after Patrick's explicit OK.
+4. Patrick's explicit OK to remove the old harness entry from CTest (step 4 of the migration protocol). Not done here.
 
 ## Summary
 
 | Status | C++ cases | Meaning |
 | --- | ---: | --- |
-| Self-hosted | 72 | A prk script (or a CTest that runs prk) checks the same behaviour. |
-| Partly | 24 | The observable behaviour is checked through prk; part of the case (limits, fakes, exact internals) is C++ only. |
-| Internal only | 52 | Pure C/C++ internals, NULL-argument checks, fake runners, or injected services; not reachable from a script. |
-| **Total** | **148** | Every case in `proofrunkit_selftest --list`. |
+| Self-hosted | 89 | A prk script, or a `prk.tests.json` entry, checks the same behaviour. |
+| Partly | 20 | The observable behaviour is checked through prk; part of the case (limits, fakes, exact internals) is C++ only. |
+| Internal only | 52 | Pure internals, NULL checks, fakes, or injected services. They run through `prk test` as the `cpp.selftest` entry. |
+| **Total** | **161** | Every case in `proofrunkit_selftest --list`. |
 
 ## Case by case
 
@@ -50,21 +69,21 @@ scripts need CMake-provided paths and fixture runs first. Folder discovery would
 | `core.runner.name_selection_rules` | Self-hosted | tests/js/self/cli_test.js.in `runner.filter_selects_matching_names`; tests/lua/self/tags_test.lua |
 | `core.reporting.summary_adds_outcomes_without_mutating_input` | Partly | tests/js/self/cli_test.js.in (summary totals); immutability is a C API property. |
 | `core.reporting.outcome_and_status_names` | Partly | Outcome names are checked in every JSON report test; status names are C API only. |
-| `cli.reporting.console_lines` | Partly | Console lines are matched by the CTest regex tests (prk_lua_reports_failures, prk_lua_failure_message, ...). |
+| `cli.reporting.console_lines` | Self-hosted | tests/js/self/reporting_cli_test.js.in `reporting.console_lines` |
 | `cli.reporting.json_escaping` | Self-hosted | tests/js/self/cli_test.js.in `runner.json_escapes_round_trip`; tests/lua/self/reports_test.lua `messages_are_escaped` |
 | `cli.reporting.json_report_document` | Self-hosted | tests/lua/self/reports_test.lua `json.*`; tests/js/self/cli_test.js.in (JSON.parse of the whole document) |
-| `cli.reporting.console_reporter_writes_through_core` | Partly | Console lines are matched by the CTest regex tests (prk_lua_reports_failures, prk_lua_failure_message, ...). |
+| `cli.reporting.console_reporter_writes_through_core` | Self-hosted | tests/js/self/reporting_cli_test.js.in `reporting.console_lines` |
 | `cli.reporting.json_reporter_writes_one_document` | Self-hosted | tests/lua/self/reports_test.lua `json.*`; tests/js/self/cli_test.js.in (JSON.parse of the whole document) |
 | `cli.parse.defaults_with_no_arguments` | Self-hosted | tests/js/self/cli_test.js.in `cli.no_arguments_runs_the_builtin_checks` |
-| `cli.parse.parses_flags_values_and_scripts` | Partly | Observed through runs in tests/js/self/cli_test.js.in, tags_test.lua, reports_test.lua, and the CTest timeout tests; the parsed-options struct itself is internal. |
+| `cli.parse.parses_flags_values_and_scripts` | Self-hosted | tests/js/self/reporting_cli_test.js.in `reporting.flag_form_options`; tests/js/self/cli_test.js.in |
 | `cli.parse.reports_usage_errors` | Self-hosted | tests/js/self/cli_test.js.in `cli.usage_errors_exit_2_with_usage_text` |
 | `cli.parse.usage_text_names_program_and_options` | Self-hosted | tests/js/self/cli_test.js.in `cli.help_texts` |
-| `cli.parse.run_subcommand` | Partly | Observed through runs in tests/js/self/cli_test.js.in, tags_test.lua, reports_test.lua, and the CTest timeout tests; the parsed-options struct itself is internal. |
+| `cli.parse.run_subcommand` | Self-hosted | Every `run` entry of prk.tests.json; tests/js/self/cli_test.js.in |
 | `cli.parse.list_version_and_help_subcommands` | Self-hosted | tests/js/self/cli_test.js.in `cli.help_texts`, `cli.version_line_in_every_spelling`, `runner.print_stays_off_json_and_list_output` |
 | `cli.parse.reports_subcommand_usage_errors` | Self-hosted | tests/js/self/cli_test.js.in `cli.usage_errors_exit_2_with_usage_text` |
-| `cli.parse.flag_form_accepts_json_and_reporter` | Partly | Observed through runs in tests/js/self/cli_test.js.in, tags_test.lua, reports_test.lua, and the CTest timeout tests; the parsed-options struct itself is internal. |
-| `cli.parse.tags_and_timeout` | Partly | Observed through runs in tests/js/self/cli_test.js.in, tags_test.lua, reports_test.lua, and the CTest timeout tests; the parsed-options struct itself is internal. |
-| `cli.parse.report_options` | Partly | Observed through runs in tests/js/self/cli_test.js.in, tags_test.lua, reports_test.lua, and the CTest timeout tests; the parsed-options struct itself is internal. |
+| `cli.parse.flag_form_accepts_json_and_reporter` | Self-hosted | tests/js/self/reporting_cli_test.js.in `reporting.flag_form_options`, `reporting.junit_on_stdout` |
+| `cli.parse.tags_and_timeout` | Self-hosted | prk.tests.json `self.tags`, `lua.timeout_option`, `js.timeout_option`; tests/js/self/reporting_cli_test.js.in `reporting.flag_form_options` |
+| `cli.parse.report_options` | Self-hosted | tests/lua/self/reports_test.lua (setup steps write --json-file / --junit-file); tests/js/self/reporting_cli_test.js.in |
 | `cli.help.command_help_text` | Self-hosted | tests/js/self/cli_test.js.in `cli.help_texts` |
 | `cli.name.selects_program_name_from_invoked_path` | Self-hosted | tests/js/self/cli_test.js.in `cli.program_name_follows_the_invoked_file` |
 | `cli.app.exit_codes` | Self-hosted | tests/js/self/cli_test.js.in (exit codes 0, 1, 2, 4, 5, 6; JSON on stdout, errors on stderr) |
@@ -78,24 +97,24 @@ scripts need CMake-provided paths and fixture runs first. Folder discovery would
 | `hotpath.cycle_counter.implementation_name_matches_selection` | Self-hosted | tests/js/self/cli_test.js.in `cli.version_line_in_every_spelling` (implementation name in the version line) |
 | `hotpath.cycle_counter.assembly_is_in_use` | Internal only | Calls the Assembly hot path and its C fallback directly; scripts only see elapsed times (timing_and_files_test.lua `timing.*` covers the clock). |
 | `lua.engine.registers_and_runs_tests` | Self-hosted | Every Lua script in tests/lua |
-| `lua.engine.lua_errors_fail_with_traceback` | Partly | CTest prk_lua_failure_message; assertions_test.lua `messages_name_the_calling_line` |
-| `lua.engine.reports_syntax_and_load_errors` | Self-hosted | CTest prk_lua_reports_syntax_error, prk_lua_reports_missing_file |
+| `lua.engine.lua_errors_fail_with_traceback` | Partly | prk.tests.json `lua.sample_failure`; assertions_test.lua `messages_name_the_calling_line` |
+| `lua.engine.reports_syntax_and_load_errors` | Self-hosted | prk.tests.json `lua.sample_syntax_error`, `lua.sample_missing_file` |
 | `lua.sandbox.rejects_precompiled_bytecode` | Self-hosted | tests/lua/self/sandbox_test.lua `loads_text_but_not_bytecode` |
 | `lua.sandbox.hides_ambient_access` | Self-hosted | tests/lua/self/sandbox_test.lua `hides_ambient_access`; tests/lua/prk_lua_api_test.lua |
-| `lua.sandbox.enforces_instruction_limit` | Partly | CTest prk_lua_stops_infinite_loop (default limit); the custom limit sizes are C API only. |
+| `lua.sandbox.enforces_instruction_limit` | Partly | prk.tests.json `lua.sample_infinite_loop` (default limit); the custom limit sizes are C API only. |
 | `lua.sandbox.enforces_memory_limit` | Self-hosted | tests/lua/self/sandbox_test.lua `memory_limit_is_a_catchable_failure`; tests/js/self/cli_test.js.in `runner.lua_memory_limit_fails_only_that_test` |
 | `lua.sandbox.print_goes_to_output_callback` | Self-hosted | tests/js/self/cli_test.js.in `runner.print_stays_off_json_and_list_output` |
 | `lua.api.add_test_only_while_loading` | Self-hosted | tests/lua/self/sandbox_test.lua `add_test_only_while_loading` |
 | `lua.engine.rejects_invalid_arguments` | Internal only | NULL arguments to the C loading API. |
 | `lua.engine.reports_versions` | Self-hosted | tests/lua/self/sandbox_test.lua `reports_versions`; tests/lua/prk_lua_api_test.lua |
-| `scripts.detects_script_language` | Self-hosted | tests/js/self/cli_test.js.in `runner.script_problems_exit_4_or_2` (.txt is a usage error); CTest prk_mixed_lua_and_js_list |
-| `scripts.loads_scripts_into_one_registry` | Self-hosted | CTest prk_mixed_lua_and_js_list; prk_self_sandbox_test (one Lua and one JS script in one run) |
-| `scripts.runs_lua_scripts_from_command_line` | Self-hosted | Every CTest prk run of a script |
-| `scripts.runs_js_scripts_from_command_line` | Self-hosted | Every CTest prk run of a script |
+| `scripts.detects_script_language` | Self-hosted | tests/js/self/cli_test.js.in `runner.script_problems_exit_4_or_2` (.txt is a usage error); prk.tests.json `mixed.lua_and_js_list` |
+| `scripts.loads_scripts_into_one_registry` | Self-hosted | prk.tests.json `mixed.lua_and_js_list`; prk.tests.json `self.sandbox` (one Lua and one JS script in one run) |
+| `scripts.runs_lua_scripts_from_command_line` | Self-hosted | Every `run` entry of prk.tests.json |
+| `scripts.runs_js_scripts_from_command_line` | Self-hosted | Every `run` entry of prk.tests.json |
 | `scripts.json_and_list_keep_print_off_output` | Self-hosted | tests/js/self/cli_test.js.in `runner.print_stays_off_json_and_list_output` |
-| `scripts.reports_script_problems_with_exit_codes` | Self-hosted | tests/js/self/cli_test.js.in `runner.script_problems_exit_4_or_2`; CTest prk_lua_reports_* |
-| `scripts.reads_script_files_from_disk` | Self-hosted | Every CTest prk run of a script |
-| `scripts.tags_and_timeout_from_command_line` | Self-hosted | tests/lua/self/tags_test.lua; CTest prk_lua_timeout_option, prk_js_timeout_option |
+| `scripts.reports_script_problems_with_exit_codes` | Self-hosted | tests/js/self/cli_test.js.in `runner.script_problems_exit_4_or_2`; prk.tests.json `lua.sample_syntax_error`, `lua.sample_missing_file` |
+| `scripts.reads_script_files_from_disk` | Self-hosted | Every `run` entry of prk.tests.json |
+| `scripts.tags_and_timeout_from_command_line` | Self-hosted | tests/lua/self/tags_test.lua; prk.tests.json `lua.timeout_option`, `js.timeout_option` |
 | `scripts.host.data_path_policy` | Partly | tests/lua/self/timing_and_files_test.lua `files.refuses_paths_outside_the_working_directory`; exception containment is internal. |
 | `scripts.host.applies_policy_and_contains_exceptions` | Partly | tests/lua/self/timing_and_files_test.lua `files.refuses_paths_outside_the_working_directory`; exception containment is internal. |
 | `scripts.host.disk_services` | Self-hosted | tests/lua/self/timing_and_files_test.lua `files.*` |
@@ -106,7 +125,7 @@ scripts need CMake-provided paths and fixture runs first. Folder discovery would
 | `lua.api.hook_failures_fail_the_right_tests` | Self-hosted | tests/lua/self/suites_and_hooks_test.lua |
 | `lua.api.tags_and_name_filter_select_tests` | Self-hosted | tests/lua/self/tags_test.lua |
 | `lua.api.skip_option_and_registration_errors` | Self-hosted | tests/lua/self/tags_test.lua |
-| `lua.api.timeouts_stop_slow_tests` | Self-hosted | CTest prk_lua_timeout_option, prk_lua_stops_infinite_loop |
+| `lua.api.timeouts_stop_slow_tests` | Self-hosted | prk.tests.json `lua.timeout_option`, `lua.sample_infinite_loop` |
 | `lua.api.clock_and_timing` | Self-hosted | tests/lua/self/timing_and_files_test.lua `timing.*` |
 | `lua.api.file_checks_use_the_host` | Self-hosted | tests/lua/self/timing_and_files_test.lua `files.*` |
 | `lua.api.file_reads_respect_memory_limit` | Internal only | Needs a tiny memory limit, which only the C API can set. |
@@ -115,16 +134,16 @@ scripts need CMake-provided paths and fixture runs first. Folder discovery would
 | `cli.reporting.junit_document` | Self-hosted | tests/lua/self/reports_test.lua `junit.*` |
 | `cli.reporting.junit_reporter_times_tests_and_fans_out` | Self-hosted | tests/lua/self/reports_test.lua `junit.*` |
 | `cli.reporting.command_line_writes_report_files` | Self-hosted | tests/lua/self/reports_test.lua (fixture runs with --json-file / --junit-file) |
-| `cli.reporting.report_exit_codes` | Self-hosted | tests/js/self/cli_test.js.in `runner.report_file_errors_win_over_failures`; CTest prk_reports_and_exit_codes |
+| `cli.reporting.report_exit_codes` | Self-hosted | tests/js/self/cli_test.js.in `runner.report_file_errors_win_over_failures`; CTest `prk_reports_and_exit_codes` |
 | `js.reports_engine_version` | Self-hosted | tests/js/self/sandbox_test.js `reports_versions`; tests/js/prk_js_api_test.js |
 | `js.sandbox_has_no_ambient_access` | Self-hosted | tests/js/self/sandbox_test.js |
-| `js.budget_cannot_be_caught` | Partly | CTest prk_js_stops_infinite_loop, prk_js_timeout_option; custom limits are C API only. |
-| `js.timeout_and_memory_limits` | Partly | CTest prk_js_stops_infinite_loop, prk_js_timeout_option; custom limits are C API only. |
-| `js.assertions_and_locations` | Self-hosted | tests/js/prk_js_api_test.js; CTest prk_js_failure_message |
-| `js.async_tests` | Self-hosted | tests/js/prk_js_api_test.js; CTest prk_js_failure_message |
-| `js.suites_hooks_and_tags` | Self-hosted | tests/js/prk_js_api_test.js; CTest prk_js_failure_message |
+| `js.budget_cannot_be_caught` | Partly | prk.tests.json `js.sample_infinite_loop`, `js.timeout_option`; custom limits are C API only. |
+| `js.timeout_and_memory_limits` | Partly | prk.tests.json `js.sample_infinite_loop`, `js.timeout_option`; custom limits are C API only. |
+| `js.assertions_and_locations` | Self-hosted | tests/js/prk_js_api_test.js; prk.tests.json `js.sample_failure` |
+| `js.async_tests` | Self-hosted | tests/js/prk_js_api_test.js; prk.tests.json `js.sample_failure` |
+| `js.suites_hooks_and_tags` | Self-hosted | tests/js/prk_js_api_test.js; prk.tests.json `js.sample_failure` |
 | `js.rejects_bad_registration` | Self-hosted | tests/js/self/cli_test.js.in `runner.script_problems_exit_4_or_2` (duplicate name) |
-| `js.reads_only_granted_files` | Internal only | Needs a host with a custom file grant; no JS file test script yet. |
+| `js.reads_only_granted_files` | Self-hosted | tests/js/self/sandbox_test.js `reads_only_granted_files` |
 | `process.validates_requests` | Internal only | Pure C functions of the spawn layer. |
 | `process.merges_environment` | Internal only | Pure C functions of the spawn layer. |
 | `process.quotes_windows_arguments` | Internal only | Pure C functions of the spawn layer. |
@@ -137,9 +156,9 @@ scripts need CMake-provided paths and fixture runs first. Folder discovery would
 | `process.limits_captured_output` | Self-hosted | tests/lua/self/process_options_test.lua |
 | `process.reads_environment_variable` | Internal only | C helper of the spawn layer. |
 | `script_process.caps_timeout_to_the_test` | Internal only | Needs a fake runner to observe the request. |
-| `script_process.lua_passes_request` | Partly | tests/lua/self/process_test.lua `passes_arguments_exactly` |
+| `script_process.lua_passes_request` | Self-hosted | tests/lua/self/process_options_test.lua (env, inherit_env, cwd, stdin, timeout, output limit reach the spawn layer) |
 | `script_process.lua_failures_are_clear` | Internal only | Needs a fake runner to observe the request. |
-| `script_process.js_passes_request` | Partly | tests/lua/self/process_test.lua `passes_arguments_exactly` |
+| `script_process.js_passes_request` | Self-hosted | tests/js/self/process_options_test.js |
 | `script_process.js_timeout_is_capped_by_test` | Internal only | Needs a fake runner to observe the request. |
 | `script_process.scripts_spawn_real_processes` | Self-hosted | tests/lua/self/process_test.lua, tests/js/process_test.js, tests/js/self/cli_test.js.in |
 | `c_driver.parses_gcc_diagnostics` | Partly | compile_test (real warnings and errors from the compiler on PATH); other formats are fake-runner only. |
@@ -182,3 +201,16 @@ scripts need CMake-provided paths and fixture runs first. Folder discovery would
 | `update.refuses_unverified_update` | Internal only | Pure helpers and the command through fake HTTP; a real run needs the network, which tests never use. |
 | `update.reports_lookup_failures` | Internal only | Pure helpers and the command through fake HTTP; a real run needs the network, which tests never use. |
 | `update.version_reports_release` | Partly | tests/js/self/cli_test.js.in `cli.version_line_in_every_spelling` (offline line); the release line needs fake HTTP. |
+| `suite.parses_full_config` | Partly | prk.tests.json itself and the fixture configs in tests/js/self/fixtures/suite; the full schema matrix is C++ only. |
+| `suite.rejects_invalid_configs` | Partly | tests/js/self/reporting_cli_test.js.in `suite.config_and_usage_errors` (unknown key, exit 4); every error message is C++ only. |
+| `suite.expands_variables` | Partly | Every `${...}` in prk.tests.json and the template fixture; `$${` and malformed names are C++ only. |
+| `suite.resolves_variables` | Partly | prk.tests.json path lists (bin_dir, selftest_dir, tool_dir) and tests/js/self/reporting_cli_test.js.in (unset → skipped); cycles are C++ only. |
+| `suite.joins_paths` | Internal only | Pure path helper. |
+| `suite.parses_test_command` | Self-hosted | tests/js/self/reporting_cli_test.js.in `suite.json_report_and_list`, `suite.config_and_usage_errors`; prk.tests.json `smoke.prk_help_test` |
+| `suite.runs_script_entries` | Self-hosted | tests/js/self/reporting_cli_test.js.in `suite.runs_a_config_with_one_combined_summary`; every `run` entry of prk.tests.json |
+| `suite.checks_exit_codes_and_output` | Partly | Expected exit codes and regexes throughout prk.tests.json; timeouts and failed starts use fake processes in C++. |
+| `suite.skips_and_templates` | Self-hosted | tests/js/self/reporting_cli_test.js.in (needs_build skip, template fixture); prk.tests.json template entries |
+| `suite.reads_child_reports` | Self-hosted | Every `run` entry with exit 0 is read from its child JSON report. |
+| `suite.runs_setup_then_selected_tests` | Self-hosted | tests/js/self/reporting_cli_test.js.in `suite.setup_failure_stops_the_run`, `suite.json_report_and_list` |
+| `suite.runs_test_command` | Self-hosted | tests/js/self/reporting_cli_test.js.in `suite.*`; CTest `prk_test_suite` |
+| `suite.system_services` | Self-hosted | Every `prk test` run (CTest `prk_test_suite`, the nested runs in tests/js/self/reporting_cli_test.js.in). |

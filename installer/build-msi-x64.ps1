@@ -154,5 +154,13 @@ $built = Get-Item $msi -ErrorAction SilentlyContinue | Sort-Object LastWriteTime
 if (-not $built) { throw "The MSI was not found at $msi" }
 Write-Host "== MSI: $($built.FullName)"
 Write-Host "== size: $($built.Length) bytes"
+
+# Checksum for `prk -update` (#75): "<sha256>  <file name>" next to the MSI, ASCII, no BOM. Attach both files
+# to the GitHub release; prk refuses to install an MSI without its .sha256.
+$hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $built.FullName).Hash.ToLowerInvariant()
+$checksumPath = "$($built.FullName).sha256"
+[System.IO.File]::WriteAllText($checksumPath, "$hash  $($built.Name)`n", [System.Text.Encoding]::ASCII)
+Write-Host "== SHA-256: $hash"
+Write-Host "== checksum: $checksumPath"
 Write-Host '== Done: release configure, build, and package-msi succeeded.' -ForegroundColor Green
 Write-Host "   Verify without installing:  .\installer\verify-msi-x64.ps1 -MsiPath `"$($built.FullName)`""

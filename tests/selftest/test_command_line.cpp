@@ -84,7 +84,7 @@ void test_parses_list_version_and_help_subcommands(PrkTestContext* context, void
 void test_reports_subcommand_usage_errors(PrkTestContext* context, void*) {
     PRK_EXPECT(parse_arguments({"help", "bogus"}).error_message == "unknown command 'bogus' (see help)");
     PRK_EXPECT(parse_arguments({"help", "run", "list"}).error_message == "help takes at most one command name");
-    PRK_EXPECT(parse_arguments({"version", "x"}).error_message.find("version takes no arguments") == 0);
+    PRK_EXPECT(parse_arguments({"version", "x"}).error_message.find("version takes only -offline") == 0);
     PRK_EXPECT(parse_arguments({"run", "--list"}).error_message == "unknown option '--list'");
     PRK_EXPECT(parse_arguments({"run", "--version"}).error_message == "unknown option '--version'");
     PRK_EXPECT(parse_arguments({"run", "--reporter"}).error_message == "--reporter needs a value");
@@ -135,7 +135,7 @@ void test_command_help_text(PrkTestContext* context, void*) {
     PRK_EXPECT(run_help.find("--reporter FORMAT") != std::string::npos);
     PRK_EXPECT(run_help.find("--json") != std::string::npos);
     PRK_EXPECT(format_command_help_text("prk", "list").find("Usage: prk list") == 0);
-    PRK_EXPECT(format_command_help_text("prk", "version").find("Usage: prk version") == 0);
+    PRK_EXPECT(format_command_help_text("prk", "version").find("Usage: prk -version") == 0);
     PRK_EXPECT(format_command_help_text("prk", "help").find("Usage: prk help [command]") == 0);
     PRK_EXPECT(format_command_help_text("prk", "bogus").empty());
     const std::string usage = format_usage_text("prk");
@@ -177,7 +177,8 @@ CapturedRun run_with_sample_registry(std::vector<std::string_view> arguments) {
     std::ostringstream errors;
     const auto read_no_files = [](const std::string&) { return ScriptFileContent{false, {}, "cannot open file"}; };
     const CommandLineEnvironment environment{
-        *registry, PrkClock{nullptr, nullptr}, read_no_files, ScriptHostServices{}, ReportFileWriter{}, output, errors};
+        *registry, PrkClock{nullptr, nullptr}, read_no_files, ScriptHostServices{}, ReportFileWriter{}, output, errors,
+        nullptr};
     const int exit_code = run_command_line("prk", arguments, environment);
     return CapturedRun{exit_code, output.str(), errors.str()};
 }

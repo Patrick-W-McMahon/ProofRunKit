@@ -117,7 +117,7 @@ ReportRun run_with_report_files(std::vector<std::string_view> arguments) {
     };
     const auto no_scripts = [](const std::string&) { return ScriptFileContent{false, {}, "cannot open file"}; };
     const CommandLineEnvironment environment{
-        *registry, PrkClock{nullptr, nullptr}, no_scripts, ScriptHostServices{}, write_file, output, errors};
+        *registry, PrkClock{nullptr, nullptr}, no_scripts, ScriptHostServices{}, write_file, output, errors, nullptr};
     run.exit_code = run_command_line("prk", arguments, environment);
     run.output = output.str();
     run.errors = errors.str();

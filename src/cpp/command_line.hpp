@@ -3,7 +3,8 @@
  * @brief Pure parsing of the `prk` / `proofrunkit` command line into an immutable options value.
  *
  * Two forms are accepted (#60):
- *   - subcommands: `prk run|list|version|help ...`
+ *   - subcommands: `prk run|list|version|help ...`, plus `prk -update` / `--update` / `update` and
+ *     `prk -version` / `-v` (#75)
  *   - the original flag form: `proofrunkit [--list] [--filter TEXT] [--format FORMAT] [scripts...]`
  * Both forms produce the same CommandLineOptions. Nothing here performs IO.
  */
@@ -27,6 +28,7 @@ enum class CliCommand {
     List,     ///< `prk list`
     Version,  ///< `prk version`
     Help,     ///< `prk help [command]`
+    Update,   ///< `prk -update` / `--update` / `update` (#75)
 };
 
 /** @brief Options parsed from the command line. */
@@ -44,6 +46,10 @@ struct CommandLineOptions {
     std::vector<std::string> include_tags;               ///< --tag TAG (repeatable): script tests with any of these
     std::vector<std::string> exclude_tags;               ///< --exclude-tag TAG (repeatable): never these tags
     std::uint64_t default_timeout_ms = 0;                ///< --timeout MS: per-test default for scripts; 0 = none
+    bool is_offline = false;             ///< -offline / --offline: `version` does not look up the latest release (#75)
+    bool is_update_check_only = false;   ///< -update -check / --check: report only (#75)
+    bool is_update_assumed_yes = false;  ///< -update -yes / --yes: install without asking (#75)
+    bool is_update_dry_run = false;      ///< -update -dry-run / --dry-run: download and verify only (#75)
 };
 
 /** @brief Result of parsing: either options or a usage error message. */
@@ -55,7 +61,8 @@ struct CommandLineParseResult {
 /**
  * @brief Parses arguments (excluding the program name). Pure function.
  *
- * When the first argument is `run`, `list`, `version`, or `help`, the subcommand form is used.
+ * When the first argument is `run`, `list`, `version` (or `-version`, `-v`), `help`, or `update` (or `-update`,
+ * `--update`), the subcommand form is used.
  * Otherwise the original flag form is used, so existing `proofrunkit` command lines keep working.
  * To run a script literally named like a command, use a path such as `.\run`.
  *

@@ -30,6 +30,7 @@ add_library(prk_core STATIC
     src/core/prk_runner.c
     src/core/prk_summary.c
     src/core/prk_version.c
+    src/core/prk_sha256.c
     src/timing/prk_cycle_counter_fallback.c
     src/timing/prk_cycle_counter_info.c
     ${PRK_CYCLE_COUNTER_SOURCES})
@@ -88,14 +89,30 @@ add_library(prk_frontend STATIC
     src/cpp/junit_reporter.cpp
     src/cpp/reporters.cpp
     src/cpp/script_host.cpp
-    src/cpp/script_loading.cpp)
+    src/cpp/script_loading.cpp
+    src/cpp/update/json_reader.cpp
+    src/cpp/update/release_info.cpp
+    src/cpp/update/update_command.cpp)
 target_include_directories(prk_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(prk_frontend PUBLIC prk_core prk_script prk_process)
 prk_apply_project_warnings(prk_frontend)
 
+# The real update services (#75: WinHTTP, msiexec) are linked into the shipped executable only, so the
+# self-test binary holds no network or installer code and can never reach the network.
+set(_prk_update_system_sources src/cpp/update/system_update_services.cpp)
+if(WIN32)
+    list(APPEND _prk_update_system_sources src/cpp/update/system_update_windows.cpp)
+endif()
+add_library(prk_update_system STATIC ${_prk_update_system_sources})
+target_link_libraries(prk_update_system PUBLIC prk_frontend)
+if(WIN32)
+    target_link_libraries(prk_update_system PRIVATE winhttp)
+endif()
+prk_apply_project_warnings(prk_update_system)
+
 # ------------------------------------------------------------- the single proofrunkit executable
 add_executable(proofrunkit src/main.cpp)
-target_link_libraries(proofrunkit PRIVATE prk_frontend)
+target_link_libraries(proofrunkit PRIVATE prk_frontend prk_update_system)
 prk_apply_project_warnings(proofrunkit)
 include(ProofRunKitWindowsResources)
 prk_add_windows_resources(proofrunkit)

@@ -13,6 +13,7 @@
 #include "proofrunkit/prk.h"
 #include "script_host.hpp"
 #include "script_loading.hpp"
+#include "update/update_command.hpp"
 
 namespace prk {
 
@@ -24,7 +25,9 @@ enum ExitCode : int {
     kExitNotImplemented = 3,  ///< Reserved: a requested feature has not landed yet (unused since #11).
     kExitScriptError = 4,     ///< A test script could not be read, compiled, or loaded (#9).
     kExitReportError = 5,     ///< A requested report file could not be written (#21).
+    kExitUpdateFailed = 6,    ///< `prk -update` failed: no release, network, checksum, or platform (#75).
 };
+static_assert(kExitUpdateFailed == kUpdateFailedExitCode, "update exit codes must agree");
 
 /**
  * @brief Writes a whole report file. Returns an empty string on success, otherwise the reason it failed.
@@ -40,13 +43,15 @@ using ReportFileWriter = std::function<std::string(const std::string& path, cons
 
 /** @brief Injected dependencies of run_command_line(). */
 struct CommandLineEnvironment {
-    const PrkRegistry& builtin_registry;  ///< Tests run when no scripts are given (built-in checks).
-    PrkClock clock;                       ///< Clock used to time test bodies.
-    ScriptFileReader read_script_file;    ///< Reads test scripts named on the command line.
-    ScriptHostServices script_services;   ///< Clock and read-only files granted to test scripts (#12).
-    ReportFileWriter write_report_file;   ///< Writes --json-file / --junit-file reports (#21).
-    std::ostream& output;                 ///< Results, listings, help, version, and console-mode print().
-    std::ostream& errors;                 ///< Usage errors, script load errors, and JSON-mode print().
+    const PrkRegistry& builtin_registry;    ///< Tests run when no scripts are given (built-in checks).
+    PrkClock clock;                         ///< Clock used to time test bodies.
+    ScriptFileReader read_script_file;      ///< Reads test scripts named on the command line.
+    ScriptHostServices script_services;     ///< Clock and read-only files granted to test scripts (#12).
+    ReportFileWriter write_report_file;     ///< Writes --json-file / --junit-file reports (#21).
+    std::ostream& output;                   ///< Results, listings, help, version, and console-mode print().
+    std::ostream& errors;                   ///< Usage errors, script load errors, and JSON-mode print().
+    const UpdateServices* update_services;  ///< Release lookup and installer for -version / -update (#75); nullptr =
+                                            ///< offline (no network: the self-test, CTest, PRK_OFFLINE=1).
 };
 
 /**

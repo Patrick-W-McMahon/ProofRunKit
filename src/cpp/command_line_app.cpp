@@ -159,6 +159,20 @@ int list_or_run_script_tests(std::string_view program_name, const CommandLineOpt
     return list_or_run_tests(program_name, options, *loaded.registry, environment);
 }
 
+/** @brief Runs `prk -update` with the environment's services. */
+int run_update(std::string_view program_name, const CommandLineOptions& options,
+               const CommandLineEnvironment& environment) {
+    if (environment.update_services == nullptr) {
+        environment.errors << program_name << " -update: updates need the network (PRK_OFFLINE is set or this "
+                           << "host has no update services)\n";
+        return kExitUpdateFailed;
+    }
+    const UpdateOptions update_options{options.is_update_check_only, options.is_update_assumed_yes,
+                                       options.is_update_dry_run};
+    return run_update_command(program_name, update_options, *environment.update_services, environment.output,
+                              environment.errors);
+}
+
 }  // namespace
 
 int run_command_line(std::string_view program_name, std::span<const std::string_view> arguments,
@@ -178,7 +192,13 @@ int run_command_line(std::string_view program_name, std::span<const std::string_
         environment.output << "ProofRunKit " << prk_get_version_string()
                            << " (cycle counter: " << prk_get_cycle_counter_implementation_name() << ", "
                            << prk_get_lua_version_string() << ", " << prk_get_js_engine_version_string() << ")\n";
+        if (!options.is_offline && environment.update_services != nullptr) {
+            write_release_status(program_name, *environment.update_services, environment.output);
+        }
         return kExitAllPassed;
+    }
+    if (options.command == CliCommand::Update) {
+        return run_update(program_name, options, environment);
     }
     if (options.list_tests && (!options.json_file.empty() || !options.junit_file.empty())) {
         environment.errors << program_name << ": --json-file and --junit-file apply to runs, not listings\n";

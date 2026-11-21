@@ -33,6 +33,8 @@ PrkStatus register_all_selftests(PrkRegistry& registry) {
         &prk::selftest::register_c_driver_toolchain_tests,
         &prk::selftest::register_msvc_discovery_text_tests,
         &prk::selftest::register_asm_driver_tests,
+        &prk::selftest::register_release_info_tests,
+        &prk::selftest::register_update_command_tests,
     };
     for (const RegisterSuite register_suite : suites) {
         const PrkStatus status = register_suite(registry);
@@ -66,6 +68,7 @@ int main(int argc, char** argv) {
                                                   prk::make_disk_script_host_services(),
                                                   &prk::write_report_file_to_disk,
                                                   std::cout,
-                                                  std::cerr};
+                                                  std::cerr,
+                                                  nullptr};
     return prk::run_command_line("proofrunkit_selftest", arguments, environment);
 }

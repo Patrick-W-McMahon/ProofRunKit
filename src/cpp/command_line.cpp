@@ -46,8 +46,11 @@ std::optional<CliCommand> find_command(std::string_view word) {
     if (word == "list") {
         return CliCommand::List;
     }
-    if (word == "version") {
+    if (word == "version" || word == "-version" || word == "-v") {
         return CliCommand::Version;
+    }
+    if (word == "update" || word == "-update" || word == "--update") {
+        return CliCommand::Update;
     }
     if (word == "help") {
         return CliCommand::Help;
@@ -130,6 +133,8 @@ CommandLineParseResult parse_option_arguments(std::span<const std::string_view> 
             options.report_format = ReportFormat::Json;
         } else if (rules.allows_global_flags && argument == "--version") {
             options.show_version = true;
+        } else if (rules.allows_global_flags && (argument == "--offline" || argument == "-offline")) {
+            options.is_offline = true;
         } else if (rules.allows_global_flags && argument == "--list") {
             options.list_tests = true;
         } else if (is_option_with_value(argument)) {
@@ -158,25 +163,57 @@ CommandLineParseResult parse_help_command(std::span<const std::string_view> argu
         return make_parse_error("help takes at most one command name");
     }
     if (arguments.size() == 1) {
-        if (!find_command(arguments[0])) {
+        const std::optional<CliCommand> topic = find_command(arguments[0]);
+        if (!topic) {
             return make_parse_error("unknown command '" + std::string(arguments[0]) + "' (see help)");
         }
-        options.help_topic = std::string(arguments[0]);
+        options.help_topic = *topic == CliCommand::Update    ? "update"
+                             : *topic == CliCommand::Version ? "version"
+                                                             : std::string(arguments[0]);
     }
     return CommandLineParseResult{std::move(options), {}};
 }
 
-/** @brief Parses `version`, which accepts only --help. */
+/** @brief Parses `version` / `-version` / `-v`, which accept only -offline and --help. */
 CommandLineParseResult parse_version_command(std::span<const std::string_view> arguments) {
     CommandLineOptions options;
     options.command = CliCommand::Version;
     options.show_version = true;
     for (const std::string_view argument : arguments) {
+        if (argument == "--offline" || argument == "-offline") {
+            options.is_offline = true;
+            continue;
+        }
         if (argument != "--help" && argument != "-h") {
-            return make_parse_error("version takes no arguments (got '" + std::string(argument) + "')");
+            return make_parse_error("version takes only -offline (got '" + std::string(argument) + "')");
         }
         options.show_help = true;
         options.help_topic = "version";
+    }
+    return CommandLineParseResult{std::move(options), {}};
+}
+
+/** @brief Parses `-update` / `--update` / `update` and its -check, -yes, and -dry-run options (one or two dashes). */
+CommandLineParseResult parse_update_command(std::span<const std::string_view> arguments) {
+    CommandLineOptions options;
+    options.command = CliCommand::Update;
+    for (const std::string_view argument : arguments) {
+        const std::string_view word = argument.starts_with("--")  ? argument.substr(2)
+                                      : argument.starts_with("-") ? argument.substr(1)
+                                                                  : std::string_view();
+        if (word == "check") {
+            options.is_update_check_only = true;
+        } else if (word == "yes" || word == "y") {
+            options.is_update_assumed_yes = true;
+        } else if (word == "dry-run") {
+            options.is_update_dry_run = true;
+        } else if (word == "help" || word == "h") {
+            options.show_help = true;
+            options.help_topic = "update";
+        } else {
+            return make_parse_error("unknown update option '" + std::string(argument) +
+                                    "' (use -check, -yes, or -dry-run)");
+        }
     }
     return CommandLineParseResult{std::move(options), {}};
 }
@@ -213,6 +250,8 @@ CommandLineParseResult parse_command_line(std::span<const std::string_view> argu
                     return parse_help_command(rest);
                 case CliCommand::Version:
                     return parse_version_command(rest);
+                case CliCommand::Update:
+                    return parse_update_command(rest);
                 case CliCommand::Run:
                 case CliCommand::List:
                     return parse_test_command(*command, arguments[0], rest);
@@ -232,12 +271,16 @@ std::string format_usage_text(std::string_view program_name) {
            "Commands:\n"
            "  run [scripts...]   Run tests (the built-in checks when no scripts are given).\n"
            "  list [scripts...]  List the selected test names without running them.\n"
-           "  version            Show the version and the cycle-counter implementation.\n"
+           "  version            Show the version and engines, and check GitHub for a newer release\n"
+           "                     (-version and -v work too; add -offline to skip the check).\n"
+           "  -update            Download, verify, and install the latest Windows x64 release\n"
+           "                     (-update -check only reports; --update and update work too).\n"
            "  help [command]     Show this help, or help for one command.\n"
            "\n"
            "Options:\n"
            "  -h, --help             Show help and exit.\n"
-           "      --version          Show the version and the cycle-counter implementation, then exit.\n"
+           "      --version          Show the version and engines, check for a newer release, then exit.\n"
+           "      --offline          With --version: do not check for a newer release (or set PRK_OFFLINE=1).\n"
            "      --list             List the selected test names without running them.\n"
            "      --filter TEXT      Run only tests whose name contains TEXT.\n"
            "      --format FORMAT    Result format on stdout: console (default), json, or junit.\n"
@@ -252,7 +295,7 @@ std::string format_usage_text(std::string_view program_name) {
            "Exit codes: 0 all selected tests passed, 1 a test failed, 2 usage error,\n"
            "            3 reserved: a requested feature is not implemented yet,\n"
            "            4 a test script could not be read, compiled, or loaded,\n"
-           "            5 a report file could not be written. Codes 2-5 win over 1.\n";
+           "            5 a report file could not be written, 6 an update failed. Codes 2-6 win over 1.\n";
 }
 
 std::string format_command_help_text(std::string_view program_name, std::string_view command_name) {
@@ -282,12 +325,25 @@ std::string format_command_help_text(std::string_view program_name, std::string_
                "Prints the names of the selected tests, one per line, without running them.\n" + test_options;
     }
     if (command_name == "version") {
-        return "Usage: " + name + " version\n\n" +
-               "Prints the ProofRunKit version and the cycle-counter implementation.\n";
+        return "Usage: " + name + " -version [-offline]   (also -v, --version, version)\n\n" +
+               "Prints the ProofRunKit version, the cycle-counter implementation, and the script engines,\n"
+               "then looks up the latest GitHub release and says whether this build is up to date.\n"
+               "When the check fails it says so and still exits 0. -offline or PRK_OFFLINE=1 skips it.\n";
+    }
+    if (command_name == "update") {
+        return "Usage: " + name + " -update [-check] [-yes] [-dry-run]   (also --update, update)\n\n" +
+               "Looks up the latest GitHub release. When it is newer, downloads the x64 MSI to %TEMP%,\n"
+               "verifies its SHA-256 against the release's .sha256 file (and refuses without one), asks,\n"
+               "then starts msiexec /passive and exits so the installer can replace ProofRunKit.\n"
+               "\n"
+               "Options (one or two dashes):\n"
+               "  -check    Only report the current and latest versions.\n"
+               "  -yes      Install without asking.\n"
+               "  -dry-run  Download and verify, but do not start the installer.\n";
     }
     if (command_name == "help") {
         return "Usage: " + name + " help [command]\n\n" +
-               "Shows general help, or help for run, list, version, or help.\n";
+               "Shows general help, or help for run, list, version, update, or help.\n";
     }
     return {};
 }

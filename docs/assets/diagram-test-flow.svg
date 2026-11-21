@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
   <title id="title">How ProofRunKit runs tests (planned)</title>
-  <desc id="desc">Agents write Lua or JavaScript tests on disk. The single proofrunkit.exe loads and runs them and reports results. The executable does not change when tests change.</desc>
+  <desc id="desc">Authors write Lua or JavaScript tests on disk. The single proofrunkit.exe loads and runs them and reports results. The executable does not change when tests change.</desc>
   <defs>
     <pattern id="dotgrid" width="24" height="24" patternUnits="userSpaceOnUse">
       <circle cx="1" cy="1" r="0.9" fill="#3EE0C8" opacity="0.08"/>
@@ -28,10 +28,10 @@
     <rect x="0" y="0" width="1200" height="72" fill="#0A101A"/>
     <rect x="0" y="0" width="6" height="72" fill="#3EE0C8"/>
     <text x="28" y="34" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" text-anchor="start">How tests are run (planned)</text>
-    <text x="28" y="56" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start">Agents write Lua or JavaScript tests. One compiled executable loads them at runtime and reports results.</text>
+    <text x="28" y="56" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="start">Authors write Lua or JavaScript tests. One compiled executable loads them at runtime and reports results.</text>
     <rect x="36" y="160" width="190" height="132" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
-    <text x="131.0" y="211.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">Agents</text>
-    <text x="131.0" y="231.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Authors write</text>
+    <text x="131.0" y="211.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">Authors</text>
+    <text x="131.0" y="231.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Write tests in</text>
     <text x="131.0" y="251.0" fill="#A3B0C2" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" font-weight="400" text-anchor="middle">Lua or JS tests</text>
     <rect x="300" y="160" width="180" height="58" rx="14" ry="14" fill="#141C2E" stroke="#33415C" stroke-width="1.25"/>
     <text x="390.0" y="195.0" fill="#F4F7FB" font-family="Liberation Sans, DejaVu Sans, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">tests.lua</text>

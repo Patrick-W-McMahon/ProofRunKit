@@ -229,8 +229,10 @@ static PrkStatus find_installation(const PrkProcessRunner* runner, PrkMsvcToolch
     static const char* const arguments[] = {
         "-latest",   "-products",        "*",     "-requires", "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
         "-property", "installationPath", "-utf8", "-nologo"};
+    char program_files[1024];
     char program[1100];
-    prk_build_vswhere_path(getenv("ProgramFiles(x86)"), program, sizeof program);
+    const int is_set = prk_read_environment_variable("ProgramFiles(x86)", program_files, sizeof program_files);
+    prk_build_vswhere_path(is_set ? program_files : NULL, program, sizeof program);
     PrkProcessResult result;
     memset(&result, 0, sizeof result);
     const PrkStatus status =

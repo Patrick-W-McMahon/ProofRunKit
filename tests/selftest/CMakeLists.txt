@@ -27,6 +27,7 @@ endif()
 # Child program for the process-spawn tests (#13). Same directory as the self-test (also per config
 # with Visual Studio generators), which finds it next to its own executable.
 add_executable(prk_spawn_child prk_spawn_child.c)
+target_link_libraries(prk_spawn_child PRIVATE prk_process)
 prk_apply_project_warnings(prk_spawn_child)
 add_dependencies(proofrunkit_selftest prk_spawn_child)
 

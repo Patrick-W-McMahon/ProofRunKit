@@ -46,7 +46,8 @@ if(WIN32)
 else()
     set(_prk_process_adapter src/process/prk_process_posix.c)
 endif()
-add_library(prk_process STATIC src/process/prk_process.c ${_prk_process_adapter})
+add_library(prk_process STATIC src/process/prk_process.c src/process/prk_environment_variable.c
+    ${_prk_process_adapter})
 target_link_libraries(prk_process PUBLIC prk_core)
 prk_apply_project_warnings(prk_process)
 

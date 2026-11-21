@@ -1,0 +1,81 @@
+// Self-hosted (#84): console and JUnit output, the original flag form, and `prk test` itself, checked by running
+// prk. prk test (prk.tests.json) expands this template and runs it in the folder that holds prk. Covers the C++
+// cases cli.reporting.console_lines, cli.reporting.junit_*, cli.parse.* (flag form), and suite.* (end to end).
+
+const fixtures = '${self_fixtures}';
+const workDir = '${work_dir}/nested-prk-test';
+
+function runPrk(args, program = './prk') {
+    return prk.runProcess({program, args, env: {PRK_OFFLINE: '1'}, timeoutMs: 120000});
+}
+
+prk.describe('reporting', () => {
+    prk.addTest('console_lines', () => {
+        const result = runPrk(['run', fixtures + '/runner_fixture.js']);
+        prk.expectExitCode(result, 1);
+        prk.expectMatch(result.stdout, /^\[ PASS \] runner\.first \(\d+ ticks\)$/m);
+        prk.expectMatch(result.stdout, /^\[ FAIL \] runner\.second_fails \(\d+ ticks\): .*runner_fixture\.js:5: first failure/m);
+        prk.expectMatch(result.stdout, /^\[ SKIP \] runner\.third_skips \(\d+ ticks\): not today$/m);
+        prk.expectMatch(result.stdout, /^printed in a test$/m);
+        prk.expectMatch(result.stdout, /^5 tests: 2 passed, 2 failed, 1 skipped$/m);
+    });
+
+    prk.addTest('junit_on_stdout', () => {
+        const result = runPrk(['run', '--reporter', 'junit', fixtures + '/runner_fixture.js']);
+        prk.expectExitCode(result, 1);
+        prk.expectContains(result.stdout, '<testsuites name="proofrunkit" tests="5" failures="2" errors="0" skipped="1"');
+        prk.expectContains(result.stdout, '<testcase classname="runner" name="first"');
+        prk.expectContains(result.stdout, '<skipped message="not today"/>');
+        prk.expectContains(result.stdout, 'quote &quot; backslash \\ newline');
+        prk.expectFalse(result.stdout.includes('printed in a test'), 'print must not corrupt the XML');
+    });
+
+    prk.addTest('flag_form_options', () => {
+        const json = runPrk(['--format', 'json', '--filter', 'runner.f', fixtures + '/runner_fixture.js'], './proofrunkit');
+        prk.expectExitCode(json, 1);
+        const names = JSON.parse(json.stdout).tests.map((test) => test.name);
+        prk.expectDeepEqual(names, ['runner.first', 'runner.fourth_escapes', 'runner.fifth']);
+        const listed = runPrk(['--list', '--filter', 'kit.'], './proofrunkit');
+        prk.expectExitCode(listed, 0);
+        prk.expectMatch(listed.stdout, /^kit\./m);
+        prk.expectExitCode(runPrk(['--json', '--timeout', '5000', fixtures + '/runner_fixture.js']), 1);
+    });
+});
+
+prk.describe('suite', () => {
+    prk.addTest('runs_a_config_with_one_combined_summary', () => {
+        const result = runPrk(['test', '--config', fixtures + '/suite/prk.tests.json', '--var', 'work_dir=' + workDir]);
+        prk.expectExitCode(result, 0);
+        prk.expectMatch(result.stdout, /^\[ PASS \] pass\/fixture\.one/m);
+        prk.expectMatch(result.stdout, /^\[ PASS \] expected_failure \(/m);
+        prk.expectMatch(result.stdout, /^\[ SKIP \] needs_build \(\d+ ticks\): needs \$\{needs_build\}$/m);
+        prk.expectMatch(result.stdout, /^\[ PASS \] template\/fixture\.template/m);
+        prk.expectMatch(result.stdout, /^6 tests: 5 passed, 0 failed, 1 skipped$/m);
+    });
+
+    prk.addTest('json_report_and_list', () => {
+        const json = runPrk(['test', '--json', '--config', fixtures + '/suite/prk.tests.json', '--var', 'work_dir=' + workDir]);
+        prk.expectExitCode(json, 0);
+        const report = JSON.parse(json.stdout);
+        prk.expectDeepEqual(report.summary, {total: 6, passed: 5, failed: 0, skipped: 1});
+        const listed = runPrk(['test', '--list', '--filter', 'pa', '--config', fixtures + '/suite/prk.tests.json']);
+        prk.expectEqual(listed.stdout.replace(/\r/g, ''), 'pass\n');
+    });
+
+    prk.addTest('setup_failure_stops_the_run', () => {
+        const result = runPrk(['test', '--config', fixtures + '/suite/setup_fails.json', '--var', 'work_dir=' + workDir]);
+        prk.expectExitCode(result, 1);
+        prk.expectMatch(result.stdout, /^\[ FAIL \] setup\/broken .*exit code 2, expected 0/m);
+        prk.expectFalse(result.stdout.includes('never'), 'tests after a failed setup must not run');
+    });
+
+    prk.addTest('config_and_usage_errors', () => {
+        const invalid = runPrk(['test', '--config', fixtures + '/suite/invalid.json']);
+        prk.expectExitCode(invalid, 4);
+        prk.expectContains(invalid.stderr, "tests[0]: unknown key 'colour'");
+        const missing = runPrk(['test', '--config', fixtures + '/suite/no_such.json']);
+        prk.expectExitCode(missing, 2);
+        prk.expectContains(missing.stderr, 'cannot read');
+        prk.expectExitCode(runPrk(['test', '--var', 'novalue']), 2);
+    });
+});

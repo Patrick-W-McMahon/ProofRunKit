@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "description": "Fixture for tests/js/self/reporting_cli_test.js.in (#84): prk test run by prk itself.",
+  "variables": { "greeting": "hi", "needs_build": "${build_dir}/tool" },
+  "tests": [
+    { "name": "pass", "run": "pass_fixture.js" },
+    { "name": "expected_failure", "run": "../../../samples/failing_test.js", "expect_exit_code": 1, "expect_output": "deliberate failure" },
+    { "name": "needs_build", "command": "${needs_build}" },
+    { "name": "version", "command": ["${prk}", "-v", "-offline"], "expect_output": "^ProofRunKit " },
+    { "name": "template", "run": "template_fixture.js.in", "template": true }
+  ]
+}

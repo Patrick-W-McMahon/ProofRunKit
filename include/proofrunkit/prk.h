@@ -22,7 +22,8 @@ typedef enum PrkStatus {
     PRK_STATUS_OK = 0,               /**< The call succeeded. */
     PRK_STATUS_INVALID_ARGUMENT = 1, /**< A required pointer was NULL or a name was empty. */
     PRK_STATUS_OUT_OF_MEMORY = 2,    /**< An allocation failed; the registry is unchanged. */
-    PRK_STATUS_DUPLICATE_NAME = 3    /**< A test case with the same name is already registered. */
+    PRK_STATUS_DUPLICATE_NAME = 3,   /**< A test case with the same name is already registered. */
+    PRK_STATUS_SCRIPT_ERROR = 4      /**< A test script failed to compile or to run its top-level code (#9). */
 } PrkStatus;
 
 /** @brief Final outcome of one test case. */

@@ -42,16 +42,20 @@ GAS for Linux/macOS x86-64 and arm64. Every routine has a portable C fallback; C
 ([#21](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/21) extends this to JUnit XML and the exit-code
 contract).
 
-### Script test layer - Planned
+### Script test layer - Lua done, JavaScript planned
 
 Embedded interpreters load test scripts at run time and register their tests with the core through the same C ABI
 ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9),
 [#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11),
 [#12](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/12)). Interpreters are vendored as source under
 `third_party/`, pinned to a version, recorded in [NOTICE](../NOTICE), and linked statically into the single
-executable. Scripts run sandboxed: a memory-limited allocator, an instruction or time budget, and no ambient
-filesystem, process, or module-loading access. Capabilities such as process spawn and file checks are granted only
-through the test-authoring API.
+executable. Scripts run sandboxed: a memory-limited allocator, an instruction budget, and no ambient filesystem,
+process, or module-loading access. Capabilities such as process spawn and file checks are granted only through the
+test-authoring API.
+
+Lua 5.4.9 is in place: `src/script/` implements the sandbox and the `prk` table over the C ABI in
+`include/proofrunkit/prk_lua.h`, and `src/cpp/script_loading.cpp` reads script files (the only file IO) and loads
+each into its own Lua state. See [lua-tests.md](lua-tests.md).
 
 ### Drivers - Planned
 

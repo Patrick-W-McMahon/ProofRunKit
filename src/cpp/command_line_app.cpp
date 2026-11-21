@@ -1,6 +1,6 @@
 /**
  * @file command_line_app.cpp
- * @brief Implementation of prk::run_command_line (flag form and `prk` subcommands, #60).
+ * @brief Implementation of prk::run_command_line (flag form and `prk` subcommands, #60; Lua scripts, #9).
  */
 #include "command_line_app.hpp"
 
@@ -17,6 +17,11 @@ namespace {
 /** @brief Adapts prk_read_cycle_counter() to the PrkClock callback signature. */
 std::uint64_t read_cycle_counter_ticks(void* /*clock_state*/) {
     return prk_read_cycle_counter();
+}
+
+/** @brief PrkLuaOutput callback that writes script print() text to a std::ostream. */
+void write_script_text_to_stream(void* output_state, const char* text, std::size_t length) {
+    static_cast<std::ostream*>(output_state)->write(text, static_cast<std::streamsize>(length));
 }
 
 /** @brief Writes the selected test names, one per line. */
@@ -46,36 +51,82 @@ int run_selected_tests(const CommandLineOptions& options, const PrkRegistry& reg
     return summary.failed == 0 ? kExitAllPassed : kExitTestFailed;
 }
 
+/** @brief Lists or runs @p registry according to @p options. */
+int list_or_run_tests(const CommandLineOptions& options, const PrkRegistry& registry,
+                      const CommandLineEnvironment& environment) {
+    if (options.list_tests) {
+        write_selected_test_names(registry, options.name_filter, environment.output);
+        return kExitAllPassed;
+    }
+    return run_selected_tests(options, registry, environment.clock, environment.output);
+}
+
+/** @brief Writes "<program>: <problem>" lines for scripts that cannot run; returns the exit code or -1. */
+int report_script_problems(std::string_view program_name, const LoadedTestScripts& loaded, std::ostream& errors) {
+    if (!loaded.registry) {
+        errors << program_name << ": out of memory loading test scripts\n";
+        return kExitScriptError;
+    }
+    for (const std::string& path : loaded.unknown_type_scripts) {
+        errors << program_name << ": " << path << ": unsupported test script type (use .lua or .js)\n";
+    }
+    if (!loaded.unknown_type_scripts.empty()) {
+        return kExitUsageError;
+    }
+    for (const std::string& load_error : loaded.load_errors) {
+        errors << program_name << ": " << load_error << '\n';
+    }
+    if (!loaded.load_errors.empty()) {
+        return kExitScriptError;
+    }
+    for (const std::string& path : loaded.unsupported_scripts) {
+        errors << program_name << ": " << path
+               << ": JavaScript test scripts are not implemented yet (#11); Lua scripts (.lua) are supported.\n";
+    }
+    return loaded.unsupported_scripts.empty() ? -1 : kExitNotImplemented;
+}
+
+/** @brief Loads the scripts named in @p options, then lists or runs their tests. */
+int list_or_run_script_tests(std::string_view program_name, const CommandLineOptions& options,
+                             const CommandLineEnvironment& environment) {
+    // print() must not corrupt a JSON report or a test-name listing on the output stream.
+    const bool is_output_machine_read = options.report_format == ReportFormat::Json || options.list_tests;
+    std::ostream& print_stream = is_output_machine_read ? environment.errors : environment.output;
+    const PrkLuaOutput print_output{&write_script_text_to_stream, &print_stream};
+    const LoadedTestScripts loaded =
+        load_test_scripts(options.script_paths, environment.read_script_file, print_output, nullptr);
+    const int problem_exit_code = report_script_problems(program_name, loaded, environment.errors);
+    if (problem_exit_code >= 0) {
+        return problem_exit_code;
+    }
+    return list_or_run_tests(options, *loaded.registry, environment);
+}
+
 }  // namespace
 
 int run_command_line(std::string_view program_name, std::span<const std::string_view> arguments,
-                     const PrkRegistry& registry, const PrkClock& clock, std::ostream& output, std::ostream& errors) {
+                     const CommandLineEnvironment& environment) {
     const CommandLineParseResult parsed = parse_command_line(arguments);
     if (!parsed.error_message.empty()) {
-        errors << program_name << ": " << parsed.error_message << "\n\n" << format_usage_text(program_name);
+        environment.errors << program_name << ": " << parsed.error_message << "\n\n" << format_usage_text(program_name);
         return kExitUsageError;
     }
     const CommandLineOptions& options = parsed.options;
     if (options.show_help) {
-        output << (options.help_topic.empty() ? format_usage_text(program_name)
-                                              : format_command_help_text(program_name, options.help_topic));
+        environment.output << (options.help_topic.empty() ? format_usage_text(program_name)
+                                                          : format_command_help_text(program_name, options.help_topic));
         return kExitAllPassed;
     }
     if (options.show_version) {
-        output << "ProofRunKit " << prk_get_version_string()
-               << " (cycle counter: " << prk_get_cycle_counter_implementation_name() << ")\n";
+        environment.output << "ProofRunKit " << prk_get_version_string()
+                           << " (cycle counter: " << prk_get_cycle_counter_implementation_name() << ", "
+                           << prk_get_lua_version_string() << ")\n";
         return kExitAllPassed;
     }
     if (!options.script_paths.empty()) {
-        // Seam for the script engines: Lua 5.4 (#9) and QuickJS-ng (#11) will load these at runtime.
-        errors << program_name << ": running test scripts is not implemented yet (Lua: #9, JavaScript: #11).\n";
-        return kExitNotImplemented;
+        return list_or_run_script_tests(program_name, options, environment);
     }
-    if (options.list_tests) {
-        write_selected_test_names(registry, options.name_filter, output);
-        return kExitAllPassed;
-    }
-    return run_selected_tests(options, registry, clock, output);
+    return list_or_run_tests(options, environment.builtin_registry, environment);
 }
 
 PrkClock make_cycle_counter_clock() {

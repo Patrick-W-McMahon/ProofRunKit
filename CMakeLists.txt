@@ -39,14 +39,24 @@ target_compile_definitions(prk_core PRIVATE
     PRK_CYCLE_COUNTER_IMPLEMENTATION="${PRK_CYCLE_COUNTER_IMPLEMENTATION}")
 prk_apply_project_warnings(prk_core)
 
+# ------------------------------------------------------- embedded Lua 5.4 test-script engine (#9)
+include(ProofRunKitLua)
+add_library(prk_script STATIC
+    src/script/prk_lua_api.c
+    src/script/prk_lua_sandbox.c
+    src/script/prk_lua_script.c)
+target_link_libraries(prk_script PUBLIC prk_core PRIVATE prk_lua)
+prk_apply_project_warnings(prk_script)
+
 # ------------------------------------------------------------- front end (C++20 CLI + reporters)
 add_library(prk_frontend STATIC
     src/cpp/builtin_checks.cpp
     src/cpp/command_line.cpp
     src/cpp/command_line_app.cpp
-    src/cpp/reporters.cpp)
+    src/cpp/reporters.cpp
+    src/cpp/script_loading.cpp)
 target_include_directories(prk_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_link_libraries(prk_frontend PUBLIC prk_core)
+target_link_libraries(prk_frontend PUBLIC prk_core prk_script)
 prk_apply_project_warnings(prk_frontend)
 
 # ------------------------------------------------------------- the single proofrunkit executable

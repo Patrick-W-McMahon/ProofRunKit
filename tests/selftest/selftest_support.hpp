@@ -35,6 +35,10 @@ PrkStatus register_reporting_tests(PrkRegistry& registry);
 PrkStatus register_command_line_tests(PrkRegistry& registry);
 /** @brief Registers cycle-counter (Assembly vs C fallback) tests. @return PRK_STATUS_OK or the first error. */
 PrkStatus register_cycle_counter_tests(PrkRegistry& registry);
+/** @brief Registers sandboxed Lua engine tests (#9). @return PRK_STATUS_OK or the first error. */
+PrkStatus register_lua_engine_tests(PrkRegistry& registry);
+/** @brief Registers test-script loading tests (#9). @return PRK_STATUS_OK or the first error. */
+PrkStatus register_script_loading_tests(PrkRegistry& registry);
 
 /**
  * @brief Registers each test case in order, stopping at the first error.

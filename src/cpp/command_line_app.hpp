@@ -9,6 +9,7 @@
 #include <string_view>
 
 #include "proofrunkit/prk.h"
+#include "script_loading.hpp"
 
 namespace prk {
 
@@ -17,25 +18,33 @@ enum ExitCode : int {
     kExitAllPassed = 0,       ///< Every selected test passed (or nothing needed running).
     kExitTestFailed = 1,      ///< At least one selected test failed.
     kExitUsageError = 2,      ///< The command line was invalid.
-    kExitNotImplemented = 3,  ///< A requested feature (e.g. Lua/JS scripts) has not landed yet.
+    kExitNotImplemented = 3,  ///< A requested feature (e.g. JavaScript scripts, #11) has not landed yet.
+    kExitScriptError = 4,     ///< A test script could not be read, compiled, or loaded (#9).
+};
+
+/** @brief Injected dependencies of run_command_line(). */
+struct CommandLineEnvironment {
+    const PrkRegistry& builtin_registry;  ///< Tests run when no scripts are given (built-in checks).
+    PrkClock clock;                       ///< Clock used to time test bodies.
+    ScriptFileReader read_script_file;    ///< Reads test scripts named on the command line.
+    std::ostream& output;                 ///< Results, listings, help, version, and console-mode print().
+    std::ostream& errors;                 ///< Usage errors, script load errors, and JSON-mode print().
 };
 
 /**
- * @brief Parses @p arguments and lists or runs the tests in @p registry, writing to the given streams.
+ * @brief Parses @p arguments and lists or runs tests, writing to the environment's streams.
  *
- * All IO and the clock are injected, so tests can drive this with string streams and a fake clock.
+ * With script paths, only the tests those scripts register are listed or run; otherwise the
+ * built-in registry is used. All IO and the clock are injected, so tests can drive this with
+ * string streams, in-memory scripts, and a fake clock.
  *
  * @param program_name Name shown in usage text.
  * @param arguments Command-line arguments without the program name.
- * @param registry Test cases available to run.
- * @param clock Clock used to time test bodies.
- * @param output Stream for results, listings, help, and version text.
- * @param errors Stream for usage errors and not-implemented notices.
+ * @param environment Registry, clock, script reader, and streams.
  * @return One of the ExitCode values.
  */
 [[nodiscard]] int run_command_line(std::string_view program_name, std::span<const std::string_view> arguments,
-                                   const PrkRegistry& registry, const PrkClock& clock, std::ostream& output,
-                                   std::ostream& errors);
+                                   const CommandLineEnvironment& environment);
 
 /**
  * @brief Returns a clock that reads prk_read_cycle_counter(), the Assembly hot path where available.

@@ -31,6 +31,7 @@ int main(int argc, char** argv) {
     }
     const std::string_view program_name = prk::select_program_name(argc > 0 ? argv[0] : "");
     const std::vector<std::string_view> arguments(argv + (argc > 0 ? 1 : 0), argv + argc);
-    return prk::run_command_line(program_name, arguments, *registry, prk::make_cycle_counter_clock(), std::cout,
-                                 std::cerr);
+    const prk::CommandLineEnvironment environment{*registry, prk::make_cycle_counter_clock(),
+                                                  &prk::read_script_file_from_disk, std::cout, std::cerr};
+    return prk::run_command_line(program_name, arguments, environment);
 }

@@ -57,7 +57,7 @@ resets, or discards changes.
 
 | Test | Checks |
 | --- | --- |
-| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, the Lua and QuickJS-ng engines and sandboxes, script loading, and the MASM cycle counter vs. its C fallback. |
+| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, the Lua and QuickJS-ng engines and sandboxes, script loading, process spawn (with the `prk_spawn_child` helper), and the MASM cycle counter vs. its C fallback. |
 | `proofrunkit_version` | `proofrunkit --version` prints the version and `asm-masm-x64`. |
 | `proofrunkit_builtin_checks` | `proofrunkit` with no scripts runs its built-in environment checks. |
 | `proofrunkit_rejects_unknown_option` | Bad options produce a usage error. |

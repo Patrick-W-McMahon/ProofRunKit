@@ -39,6 +39,17 @@ target_compile_definitions(prk_core PRIVATE
     PRK_CYCLE_COUNTER_IMPLEMENTATION="${PRK_CYCLE_COUNTER_IMPLEMENTATION}")
 prk_apply_project_warnings(prk_core)
 
+# ------------------------------------------------------------- process-spawn layer (#13)
+# One operating-system adapter per build; the portable part is shared and unit-tested everywhere.
+if(WIN32)
+    set(_prk_process_adapter src/process/prk_process_windows.c)
+else()
+    set(_prk_process_adapter src/process/prk_process_posix.c)
+endif()
+add_library(prk_process STATIC src/process/prk_process.c ${_prk_process_adapter})
+target_link_libraries(prk_process PUBLIC prk_core)
+prk_apply_project_warnings(prk_process)
+
 # ------------------------------------------------------- embedded Lua 5.4 test-script engine (#9)
 include(ProofRunKitLua)
 include(ProofRunKitQuickJs)
@@ -63,7 +74,7 @@ add_library(prk_frontend STATIC
     src/cpp/script_host.cpp
     src/cpp/script_loading.cpp)
 target_include_directories(prk_frontend PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
-target_link_libraries(prk_frontend PUBLIC prk_core prk_script)
+target_link_libraries(prk_frontend PUBLIC prk_core prk_script prk_process)
 prk_apply_project_warnings(prk_frontend)
 
 # ------------------------------------------------------------- the single proofrunkit executable

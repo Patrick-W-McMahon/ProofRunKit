@@ -1,0 +1,145 @@
+// Self-hosted (#55): ProofRunKit's command line, runner, and JSON reporting, checked by running prk itself.
+// CTest configures this file (fixture folder below) and runs it in the folder that holds prk, so './prk' is the
+// build under test. Every prk call passes -offline or runs with PRK_OFFLINE=1: no network.
+// Covers the C++ cases cli.parse.*, cli.help.*, cli.name.*, cli.app.*, core.runner.* (through reports),
+// cli.reporting.json_*, scripts.* (exit codes, list, print), update.parses_update_and_version (CLI side), and
+// hotpath.cycle_counter.implementation_name_matches_selection; see docs/self-hosting.md.
+
+const fixtures = '@PRK_SELF_FIXTURES@';
+
+function runPrk(args, program = './prk') {
+    return prk.runProcess({program, args, env: {PRK_OFFLINE: '1'}, timeoutMs: 60000});
+}
+
+function runJson(args) {
+    const result = runPrk(['run', '--json', ...args]);
+    return {result, report: JSON.parse(result.stdout)};
+}
+
+prk.describe('cli', () => {
+    prk.addTest('no_arguments_runs_the_builtin_checks', () => {
+        const result = runPrk([]);
+        prk.expectExitCode(result, 0);
+        prk.expectMatch(result.stdout, /\d+ tests: \d+ passed, 0 failed/);
+    });
+
+    prk.addTest('usage_errors_exit_2_with_usage_text', () => {
+        const cases = [
+            [['--bogus'], "unknown option '--bogus'"],
+            [['--filter'], '--filter needs a value'],
+            [['--format', 'xml'], "unknown --format 'xml'"],
+            [['--timeout', '0'], 'invalid --timeout'],
+            [['run', '--list'], "unknown option '--list'"],
+            [['help', 'bogus'], "unknown command 'bogus'"],
+            [['version', 'x'], 'version takes only -offline'],
+            [['-update', '-force'], "unknown update option '-force'"],
+            [['--tag', 'x'], '--tag, --exclude-tag, and --timeout apply only to test scripts'],
+            [['list', '--json-file', 'x.json'], 'apply to runs, not listings'],
+        ];
+        for (const [args, message] of cases) {
+            const result = runPrk(args);
+            prk.expectEqual(result.exitCode, 2, args.join(' '));
+            prk.expectContains(result.stderr, message);
+        }
+        prk.expectContains(runPrk(['--bogus']).stderr, 'Usage: prk [options] [test scripts...]');
+    });
+
+    prk.addTest('help_texts', () => {
+        const general = runPrk(['--help']);
+        prk.expectExitCode(general, 0);
+        for (const part of ['Usage: prk', '-update', '--offline', '6 an update failed']) {
+            prk.expectContains(general.stdout, part);
+        }
+        const topics = {run: 'Usage: prk run', list: 'Usage: prk list', update: 'Usage: prk -update',
+                        '-update': 'Usage: prk -update', version: 'Usage: prk -version', help: 'Usage: prk help'};
+        for (const [topic, usage] of Object.entries(topics)) {
+            prk.expectTrue(runPrk(['help', topic]).stdout.startsWith(usage), topic);
+        }
+        prk.expectTrue(runPrk(['run', '--help']).stdout.startsWith('Usage: prk run'));
+    });
+
+    prk.addTest('program_name_follows_the_invoked_file', () => {
+        prk.expectTrue(runPrk(['--help'], './proofrunkit').stdout.startsWith('Usage: proofrunkit '));
+        prk.expectContains(runPrk(['--bogus'], './proofrunkit').stderr, 'proofrunkit: unknown option');
+    });
+
+    prk.addTest('version_line_in_every_spelling', () => {
+        const line = /^ProofRunKit \d+\.\d+\.\d+ \(cycle counter: ([a-z0-9_-]+), Lua 5\.4\.\d+, QuickJS-ng [\d.]+\)\r?\n$/;
+        for (const args of [['-version', '-offline'], ['-v', '-offline'], ['version', '--offline'],
+                            ['--version', '--offline'], ['--version']]) {
+            const result = runPrk(args);
+            prk.expectExitCode(result, 0);
+            prk.expectMatch(result.stdout, line);
+        }
+        const name = runPrk(['-v', '-offline']).stdout.match(line)[1];
+        prk.expectTrue(/^(asm-|c-fallback)/.test(name), name);
+    });
+
+    prk.addTest('update_without_network_exits_6', () => {
+        const result = runPrk(['-update', '-check']);
+        prk.expectEqual(result.exitCode, 6);
+        prk.expectContains(result.stderr, 'updates need the network');
+        prk.expectEqual(runPrk(['--update', '--check']).exitCode, 6);
+        prk.expectEqual(runPrk(['update', '-check']).exitCode, 6);
+    });
+});
+
+prk.describe('runner', () => {
+    prk.addTest('runs_in_order_and_counts_outcomes', () => {
+        const {result, report} = runJson([fixtures + '/runner_fixture.js']);
+        prk.expectExitCode(result, 1);
+        prk.expectEqual(report.schema_version, 1);
+        prk.expectEqual(report.tool, 'proofrunkit');
+        prk.expectDeepEqual(report.summary, {total: 5, passed: 2, failed: 2, skipped: 1});
+        prk.expectDeepEqual(report.tests.map((test) => test.name + '=' + test.outcome),
+                            ['runner.first=passed', 'runner.second_fails=failed', 'runner.third_skips=skipped',
+                             'runner.fourth_escapes=failed', 'runner.fifth=passed']);
+    });
+
+    prk.addTest('keeps_the_first_failure_message', () => {
+        const message = runJson([fixtures + '/runner_fixture.js']).report.tests[1].message;
+        prk.expectContains(message, 'first failure: expected 2, got 1');
+        prk.expectFalse(message.includes('second failure'));
+    });
+
+    prk.addTest('json_escapes_round_trip', () => {
+        const message = runJson([fixtures + '/runner_fixture.js']).report.tests[3].message;
+        prk.expectTrue(message.endsWith('quote " backslash \\ newline \n tab \t accent \u00e9 <x&y>'), message);
+    });
+
+    prk.addTest('filter_selects_matching_names', () => {
+        const {report} = runJson(['--filter', 'third', fixtures + '/runner_fixture.js']);
+        prk.expectDeepEqual(report.tests.map((test) => test.name), ['runner.third_skips']);
+        prk.expectEqual(runJson(['--filter', 'nothing-matches', fixtures + '/runner_fixture.js']).result.exitCode, 0);
+    });
+
+    prk.addTest('print_stays_off_json_and_list_output', () => {
+        const {result} = runJson([fixtures + '/runner_fixture.js']);
+        prk.expectContains(result.stderr, 'printed while loading');
+        prk.expectContains(result.stderr, 'printed in a test');
+        const listed = runPrk(['list', fixtures + '/runner_fixture.js']);
+        prk.expectExitCode(listed, 0);
+        prk.expectEqual(listed.stdout.replace(/\r/g, ''),
+                        'runner.first\nrunner.second_fails\nrunner.third_skips\nrunner.fourth_escapes\nrunner.fifth\n');
+    });
+
+    prk.addTest('script_problems_exit_4_or_2', () => {
+        const duplicate = runPrk(['run', fixtures + '/duplicate_fixture.js']);
+        prk.expectEqual(duplicate.exitCode, 4);
+        prk.expectContains(duplicate.stderr, "could not register test 'duplicate.name': duplicate name");
+        prk.expectEqual(runPrk(['run', fixtures + '/no_such_script.lua']).exitCode, 4);
+        prk.expectEqual(runPrk(['run', fixtures + '/runner_fixture.txt']).exitCode, 2);
+    });
+
+    prk.addTest('report_file_errors_win_over_failures', () => {
+        const result = runPrk(['run', '--json-file', fixtures + '/no_such_folder/r.json', fixtures + '/runner_fixture.js']);
+        prk.expectEqual(result.exitCode, 5);
+    });
+
+    prk.addTest('lua_memory_limit_fails_only_that_test', () => {
+        const {result, report} = runJson([fixtures + '/limits_fixture.lua']);
+        prk.expectExitCode(result, 1);
+        prk.expectMatch(report.tests[0].message, /^memory limit of \d+ bytes exceeded$/);
+        prk.expectEqual(report.tests[1].outcome, 'passed');
+    });
+});

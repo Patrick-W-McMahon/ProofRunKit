@@ -171,6 +171,16 @@ add_test(NAME prk_self_reports_test COMMAND "${_prk_short_exe}" run "${_prk_self
 set_tests_properties(prk_self_reports_test PROPERTIES WORKING_DIRECTORY "${_prk_self_reports_dir}"
                      FIXTURES_REQUIRED prk_self_reports)
 
+# Self-hosted suite (#55): sandbox twins, and the command line / runner / JSON reports checked by running prk.
+add_test(NAME prk_self_sandbox_test COMMAND "${_prk_short_exe}" run "${_prk_self}/sandbox_test.lua"
+                                            "${PROJECT_SOURCE_DIR}/tests/js/self/sandbox_test.js")
+set(PRK_SELF_FIXTURES "${PROJECT_SOURCE_DIR}/tests/js/self/fixtures")
+configure_file("${PROJECT_SOURCE_DIR}/tests/js/self/cli_test.js.in" "${CMAKE_CURRENT_BINARY_DIR}/cli_test.js" @ONLY)
+add_test(NAME prk_js_cli_test COMMAND "${_prk_short_exe}" run "${CMAKE_CURRENT_BINARY_DIR}/cli_test.js")
+set_tests_properties(prk_js_cli_test PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:proofrunkit>")
+add_test(NAME prk_self_process_options_test COMMAND "${_prk_short_exe}" run "${_prk_self}/process_options_test.lua")
+set_tests_properties(prk_self_process_options_test PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:prk_spawn_child>")
+
 # No network in CTest (#75): `prk -version` would otherwise look up the latest GitHub release.
 get_property(_prk_all_tests DIRECTORY PROPERTY TESTS)
 set_property(TEST ${_prk_all_tests} APPEND PROPERTY ENVIRONMENT "PRK_OFFLINE=1")

@@ -116,3 +116,7 @@ what is left out of it are described in
 (`prk_js_process_test`) starts `prk` itself with `prk.runProcess`, and `tests/js/samples/` covers a
 failing test, a syntax error, and an endless loop that tries to catch the interrupt. The C++ self-test suite `js.*`
 covers the sandbox, budgets, async tests, assertions, suites, tags, and files.
+
+Self-hosted (#55): `tests/js/self/sandbox_test.js` (`prk_self_sandbox_test`) checks the sandbox, the module loader,
+and versions; `tests/js/self/cli_test.js.in` (`prk_js_cli_test`) runs `./prk` to check the whole command line and
+runner. [`self-hosting.md`](self-hosting.md) maps every C++ case to its prk equivalent.

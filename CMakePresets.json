@@ -61,6 +61,7 @@
   "buildPresets": [
     { "name": "windows-msvc-x64-debug", "configurePreset": "windows-msvc-x64-debug", "configuration": "Debug" },
     { "name": "windows-msvc-x64-release", "configurePreset": "windows-msvc-x64-release", "configuration": "Release" },
+    { "name": "windows-msvc-x64-msi", "configurePreset": "windows-msvc-x64-release", "configuration": "Release", "targets": ["package-msi"] },
     { "name": "linux-debug", "configurePreset": "linux-debug" },
     { "name": "linux-release", "configurePreset": "linux-release" },
     { "name": "macos-debug", "configurePreset": "macos-debug" },

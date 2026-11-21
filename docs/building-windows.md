@@ -64,3 +64,16 @@ Example: `cmake --preset windows-msvc-x64-debug -DPRK_FORCE_C_FALLBACK=ON`.
 
 After a run on the Windows test host, record the OS build, Visual Studio and CMake versions, and the
 CTest pass/fail counts on #23 (see its acceptance criteria).
+
+## Packaging the x64 MSI (#37)
+
+The `windows-msvc-x64-release` preset feeds the WiX v4 installer. Prerequisites
+(the .NET SDK and WiX 4.0.6), silent-install flags, the UpgradeCode, and a
+read-only verification script are documented in [installer-windows-x64.md](installer-windows-x64.md).
+
+```powershell
+.\installer\build-msi-x64.ps1
+.\installer\verify-msi-x64.ps1
+```
+
+The 32-bit installer is a separate ticket (#38) and is not part of this pass.

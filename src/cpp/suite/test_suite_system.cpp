@@ -87,24 +87,24 @@ std::string make_absolute_normal_path(const std::string& path) {
     return text;
 }
 
-/** @brief Returns the absolute path of the running executable, or "prk" when it cannot be found. */
+/** @brief Returns the absolute path of the running executable, or "proofrunkit" (found on PATH) when it cannot be determined. */
 std::string find_running_executable() {
 #if defined(_WIN32)
     std::wstring path(32768, L'\0');
     const DWORD length = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
     if (length == 0 || length >= path.size()) {
-        return "prk";
+        return "proofrunkit";
     }
     path.resize(length);
     return format_file_path(std::filesystem::path(path));
 #elif defined(__APPLE__)
     char buffer[4096];
     std::uint32_t size = sizeof buffer;
-    return _NSGetExecutablePath(buffer, &size) == 0 ? make_absolute_normal_path(buffer) : std::string("prk");
+    return _NSGetExecutablePath(buffer, &size) == 0 ? make_absolute_normal_path(buffer) : std::string("proofrunkit");
 #else
     std::error_code error;
     const std::filesystem::path path = std::filesystem::read_symlink("/proc/self/exe", error);
-    return error ? std::string("prk") : format_file_path(path);
+    return error ? std::string("proofrunkit") : format_file_path(path);
 #endif
 }
 

@@ -90,7 +90,7 @@ the behaviour now.
 | `cli.parse.tags_and_timeout` | Self-hosted | prk.tests.json `self.tags`, `lua.timeout_option`, `js.timeout_option`; tests/js/self/reporting_cli_test.js.in `reporting.flag_form_options` |
 | `cli.parse.report_options` | Self-hosted | tests/lua/self/reports_test.lua (setup steps write --json-file / --junit-file); tests/js/self/reporting_cli_test.js.in |
 | `cli.help.command_help_text` | Self-hosted | tests/js/self/cli_test.js.in `cli.help_texts` |
-| `cli.name.selects_program_name_from_invoked_path` | Self-hosted | tests/js/self/cli_test.js.in `cli.program_name_follows_the_invoked_file` |
+| `cli.name.command_name_is_always_prk` | Self-hosted | tests/js/self/cli_test.js.in `cli.messages_always_name_the_prk_command`; prk.tests.json smoke.prk_cmd_shim_*; Windows CTest prk_cmd_shim |
 | `cli.app.exit_codes` | Self-hosted | tests/js/self/cli_test.js.in (exit codes 0, 1, 2, 4, 5, 6; JSON on stdout, errors on stderr) |
 | `cli.app.help_version_and_list` | Self-hosted | tests/js/self/cli_test.js.in `cli.help_texts`, `cli.version_line_in_every_spelling`, `runner.print_stays_off_json_and_list_output` |
 | `cli.app.writes_errors_and_json` | Self-hosted | tests/js/self/cli_test.js.in (exit codes 0, 1, 2, 4, 5, 6; JSON on stdout, errors on stderr) |

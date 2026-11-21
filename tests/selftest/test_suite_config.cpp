@@ -21,7 +21,7 @@ const char kFullConfig[] = R"({
   "description": "sample",
   "variables": {"bin": ["${build_dir}/Debug", "${build_dir}"], "greeting": "hi"},
   "defaults": {"env": {"PRK_OFFLINE": "1"}, "timeout_ms": 1000},
-  "runner": "${bin}/prk${exe}",
+  "runner": "${bin}/proofrunkit${exe}",
   "work_dir": "${build_dir}/work",
   "setup": [{"name": "fixture", "run": "a.lua", "expect_exit_code": 1, "report": "none"}],
   "tests": [
@@ -45,7 +45,7 @@ void test_parses_full_config(PrkTestContext* context, void*) {
                config->variables[0].is_path_list);
     PRK_EXPECT(config->variables[1].candidates == std::vector<std::string>{"hi"} && !config->variables[1].is_path_list);
     PRK_EXPECT(config->default_env.size() == 1 && config->default_timeout_ms == 1000);
-    PRK_EXPECT(config->runner == "${bin}/prk${exe}" && config->work_dir == "${build_dir}/work");
+    PRK_EXPECT(config->runner == "${bin}/proofrunkit${exe}" && config->work_dir == "${build_dir}/work");
     PRK_EXPECT(config->setup.size() == 1 && config->setup[0].expected_exit_code == 1);
     PRK_EXPECT(config->setup[0].is_report_read == false);
     const TestEntry& tags = config->tests.at(0);

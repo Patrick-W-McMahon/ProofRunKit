@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!-- Application manifest for ProofRunKit executables (#22 (d)): runs as the invoking user, never elevated. -->
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity type="win32" name="ProofRunKit.proofrunkit" version="0.1.0.0" processorArchitecture="*"/>
+  <assemblyIdentity type="win32" name="ProofRunKit.proofrunkit" version="0.1.1.0" processorArchitecture="*"/>
   <description>ProofRunKit test runner</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>

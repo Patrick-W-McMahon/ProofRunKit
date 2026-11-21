@@ -31,7 +31,7 @@ Test logic stays in Lua and JavaScript test scripts. The configuration only says
   "description": "free text",
   "variables": {
     "bin_dir": ["${build_dir}/Debug", "${build_dir}"],
-    "runner": ["${bin_dir}/prk${exe}", "${prk}"]
+    "runner": ["${bin_dir}/proofrunkit${exe}", "${prk}"]
   },
   "defaults": { "env": { "PRK_OFFLINE": "1" }, "timeout_ms": 600000 },
   "runner": "${runner}",
@@ -86,7 +86,7 @@ folder.
 
 | Variable | Value |
 | --- | --- |
-| `${prk}` | Absolute path of the running prk. |
+| `${prk}` | Absolute path of the running executable, `proofrunkit.exe` (also when started as `prk` through `prk.cmd`). |
 | `${prk_dir}` | Folder of the running prk (for example `C:/Program Files/ProofRunKit`). |
 | `${config_dir}` | Folder of `prk.tests.json`. |
 | `${build_dir}` | `--build-dir DIR`, made absolute. Unset without it. |

@@ -6,13 +6,13 @@ implemented parts; keep them in step with the tickets as they land.
 ## Overview
 
 <p align="center">
-  <img src="assets/architecture-overview.svg" alt="ProofRunKit architecture overview: Lua and JavaScript test scripts go into the single compiled prk executable, which loads them into sandboxed Lua 5.4 or QuickJS-ng engines, registers tests through the prk API into the C17 test plan and runner (with Assembly hot paths and a C fallback), shells out to MSVC, gcc, clang, MASM, GAS, or NASM through the process-spawn layer, and reports console, JSON, or JUnit XML results with an exit code. CMake presets build it, WiX packages the Windows x64 MSI, GitHub Releases publish it with a SHA-256 file, and prk -update installs new versions." width="100%">
+  <img src="assets/architecture-overview.svg" alt="ProofRunKit architecture overview: Lua and JavaScript test scripts go into the single compiled proofrunkit.exe (run as prk), which loads them into sandboxed Lua 5.4 or QuickJS-ng engines, registers tests through the prk API into the C17 test plan and runner (with Assembly hot paths and a C fallback), shells out to MSVC, gcc, clang, MASM, GAS, or NASM through the process-spawn layer, and reports console, JSON, or JUnit XML results with an exit code. CMake presets build it, WiX packages the Windows x64 MSI, GitHub Releases publish it with a SHA-256 file, and prk -update installs new versions." width="100%">
 </p>
 
 1. **Test scripts.** Tests are `.lua` (Lua 5.4.9) or `.js` / `.mjs` (QuickJS-ng 0.18.0) files. They are loaded at run
    time and never compiled into the executable.
-2. **`prk` CLI** (`src/cpp/`). Handles `run`, `list`, `-version` / `-v`, and `-update`, plus the selection, timeout,
-   and reporter options.
+2. **`prk` CLI** (`src/cpp/`). On Windows, `prk` is the `prk.cmd` shim that starts `proofrunkit.exe`. The CLI
+   handles `run`, `list`, `-version` / `-v`, and `-update`, plus the selection, timeout, and reporter options.
 3. **Script loading.** Picks the engine by file extension and gives each script its own engine state. A script that
    cannot be read or loaded stops the run with exit code 4.
 4. **`prk` API.** Sandboxed scripts register tests and reach assertions, suites and hooks, tags, timing, read-only
@@ -29,8 +29,9 @@ implemented parts; keep them in step with the tickets as they land.
    exit code follows [exit-codes.md](exit-codes.md).
 10. **CMake presets.** These build a deterministic release executable on Windows (Visual Studio 18 2026), Linux, and
     macOS.
-11. **WiX v4 MSI.** Installs `prk.exe` and `proofrunkit.exe` to `%ProgramFiles%\ProofRunKit`, with an optional PATH
-    entry.
+11. **WiX v4 MSI.** Installs the one executable, `proofrunkit.exe`, and the `prk.cmd` shim that makes `prk` work in
+    cmd and PowerShell to `%ProgramFiles%\ProofRunKit`, with an optional PATH entry
+    ([#93](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/93)).
 12. **GitHub Releases.** Publish `ProofRunKit-<ver>-win-x64.msi` with its `.sha256` file.
 13. **`prk -update`.** Downloads the latest MSI over WinHTTP, verifies its SHA-256, and runs `msiexec /passive`.
     `prk -v` reports whether you are up to date.

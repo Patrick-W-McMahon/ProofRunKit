@@ -56,17 +56,18 @@ resets, or discards changes.
 ## What CTest runs
 
 `prk test` is the way to test ProofRunKit. Everything, including the internal C++ cases, is listed once in
-[`prk.tests.json`](../prk.tests.json), and CTest runs it with a single `prk test` (#83, #96). CTest has four entries.
+[`prk.tests.json`](../prk.tests.json), and CTest runs it with a single `prk test` (#83, #96). CTest has four entries
+on Windows (three elsewhere).
 
 | Test | Checks |
 | --- | --- |
-| `prk_is_identical_copy` | `prk.exe` is byte-identical to `proofrunkit.exe` (#60). |
+| `prk_cmd_shim` | Windows: the `prk.cmd` shim runs `proofrunkit.exe` with arguments (including spaces), returns exit codes 0, 1, and 2 to cmd and PowerShell, and has no `prk.exe` beside it (#93). |
 | `proofrunkit_license_rtf_generation` | The installer license RTF is generated correctly from `LICENSE` (#58). |
 | `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow docs/exit-codes.md (#21). |
 | `prk_test_suite` | `prk test --build-dir <this build>`: every entry of `prk.tests.json`, as described below. |
 
 `prk.tests.json` covers:
-- **Smoke tests:** `proofrunkit` / `prk` version lines, built-in checks, usage errors, help, list, `-v -offline`, and `-update` without the network.
+- **Smoke tests:** `proofrunkit` version lines, the `prk.cmd` shim (Windows; skipped where it is missing), built-in checks, usage errors, help, list, `-v -offline`, and `-update` without the network.
 - **Lua and JS API scripts and samples:** failures with messages (exit 1), syntax errors and missing files (exit 4), endless loops stopped by the instruction budget and by `--timeout`, and mixed Lua + JS listings.
 - **The internal C++ cases** (`cpp.selftest`): `proofrunkit_selftest` keeps only what scripts cannot reach (C ABI argument checks, fake runners and services, injected clocks, the MASM cycle counter vs. its C fallback); `prk test` reads its JSON report so each case shows up in the combined summary. It has no CTest entry of its own (#96).
 - **The self-hosted suite** (`tests/lua/self`, `tests/js/self`): assertions, suites and hooks, timing and files, tags, sandbox, reports (after two setup runs that write the fixture reports), process spawn, process options with `prk_spawn_child`, the CLI suite, and the compiler and assembler drivers. The compile and assemble tests skip when no compiler or assembler is found.
@@ -74,7 +75,7 @@ resets, or discards changes.
 Run the same suite without CTest from the repository root, with the built or the installed `prk`:
 
 ```powershell
-build\windows-msvc-x64-debug\Debug\prk.exe test --build-dir build\windows-msvc-x64-debug
+build\windows-msvc-x64-debug\Debug\prk.cmd test --build-dir build\windows-msvc-x64-debug
 prk test --build-dir build\windows-msvc-x64-debug     # installed prk drives the run; the built prk is tested
 prk test                                               # no build: tests the installed prk, skips build-only entries
 ```
@@ -83,12 +84,14 @@ To debug one internal C++ case, `proofrunkit_selftest` still accepts `--list`, `
 (`build\windows-msvc-x64-debug\tests\selftest\Debug\proofrunkit_selftest.exe --filter c_driver.`); for testing, use
 `prk test`.
 
-## The `prk` command (#60)
+## The `prk` command (#60, #93)
 
-Every build places `prk.exe` next to `proofrunkit.exe`. It is a byte-identical copy of the same
-build output, not a second compiled program, so both names share one file hash and one antivirus
-reputation (#22). The MSIs install both names into the install folder, which the default
-`AddToPath` feature puts on the system PATH. Help and error messages use the name you typed.
+ProofRunKit builds and ships one executable, `proofrunkit.exe`. On Windows every build copies the
+text shim [`installer/windows/prk.cmd`](../installer/windows/prk.cmd) next to it (and removes any
+`prk.exe` left by older builds), and the MSIs install the shim beside the executable in the folder
+that the default `AddToPath` feature puts on the system PATH. Typing `prk` in cmd or PowerShell runs
+`prk.cmd`, which starts `proofrunkit.exe` from its own folder with every argument and returns its
+exit code. Help and error messages always name `prk`, whichever way it was started.
 
 | Command | What it does |
 | --- | --- |
@@ -97,8 +100,8 @@ reputation (#22). The MSIs install both names into the install folder, which the
 | `prk version` or `prk --version` | Print the version and the cycle-counter implementation. |
 | `prk help [command]` | General help, or help for `run`, `list`, `version`, or `help`. |
 
-The original flag form still works unchanged with either name, for example
-`proofrunkit --list --filter kit. --format json`. Because `run`, `list`, `version`, and `help` are
+The original flag form still works unchanged, for example
+`prk --list --filter kit. --format json`. Because `run`, `list`, `version`, and `help` are
 command words, a script with one of those names must be passed as a path (`.\run`).
 
 ## Options

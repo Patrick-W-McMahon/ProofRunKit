@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(ProofRunKit
-    VERSION 0.1.0
+    VERSION 0.1.1
     DESCRIPTION "Single high-performance test executable core in C/C++ with Assembly hot paths"
     LANGUAGES C CXX)
 
@@ -124,14 +124,18 @@ prk_apply_project_warnings(proofrunkit)
 include(ProofRunKitWindowsResources)
 prk_add_windows_resources(proofrunkit)
 
-# The short `prk` command (#60) is a byte-identical copy of the same build output, not a second
-# compiled program: one file hash for antivirus reputation (#22), and the MSIs install both names.
-set(PRK_SHORT_EXECUTABLE_NAME "prk${CMAKE_EXECUTABLE_SUFFIX}")
-add_custom_command(TARGET proofrunkit POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:proofrunkit>"
-            "$<TARGET_FILE_DIR:proofrunkit>/${PRK_SHORT_EXECUTABLE_NAME}"
-    COMMENT "Copying proofrunkit to ${PRK_SHORT_EXECUTABLE_NAME} (same binary, #60)"
-    VERBATIM)
+# The `prk` command (#93): ProofRunKit builds and ships one executable, proofrunkit. On Windows the
+# text shim installer/windows/prk.cmd runs it with every argument and its exit code; it is copied next
+# to the build output so `prk` works from the build folder too, and the MSIs install it beside the exe.
+set(PRK_COMMAND_SHIM "${PROJECT_SOURCE_DIR}/installer/windows/prk.cmd")
+if(WIN32)
+    add_custom_command(TARGET proofrunkit POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PRK_COMMAND_SHIM}" "$<TARGET_FILE_DIR:proofrunkit>/prk.cmd"
+        # A prk.exe left by builds before #93 would win over prk.cmd (PATHEXT lists .EXE first).
+        COMMAND ${CMAKE_COMMAND} -E rm -f "$<TARGET_FILE_DIR:proofrunkit>/prk.exe"
+        COMMENT "Copying the prk.cmd shim next to proofrunkit (#93)"
+        VERBATIM)
+endif()
 
 # ------------------------------------------------------------------------------- self-test (#23)
 if(PRK_BUILD_SELFTEST)

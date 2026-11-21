@@ -2,8 +2,8 @@
  * @file main.cpp
  * @brief Entry point of the single `proofrunkit` executable (the composition root).
  *
- * The same binary is also installed as `prk.exe` (#60); argv[0] only changes the name shown in
- * help and error messages.
+ * This is the only executable ProofRunKit ships (#93). The `prk` command runs it (on Windows through
+ * the `prk.cmd` shim), and help and error messages always name `prk`.
  *
  * Owns the process-wide pieces (registry, clock, standard streams) and hands them to the shared
  * command-line front end. Tests are loaded at runtime; none are compiled into this binary (#22).
@@ -22,15 +22,14 @@ int main(int argc, char** argv) {
     const std::unique_ptr<PrkRegistry, decltype(&prk_destroy_registry)> registry(prk_create_registry(),
                                                                                  &prk_destroy_registry);
     if (!registry) {
-        std::cerr << "proofrunkit: out of memory\n";
+        std::cerr << "prk: out of memory\n";
         return prk::kExitTestFailed;
     }
     const PrkStatus status = prk::register_builtin_checks(*registry);
     if (status != PRK_STATUS_OK) {
-        std::cerr << "proofrunkit: could not register built-in checks: " << prk_get_status_name(status) << '\n';
+        std::cerr << "prk: could not register built-in checks: " << prk_get_status_name(status) << '\n';
         return prk::kExitTestFailed;
     }
-    const std::string_view program_name = prk::select_program_name(argc > 0 ? argv[0] : "");
     const std::vector<std::string_view> arguments(argv + (argc > 0 ? 1 : 0), argv + argc);
     const prk::UpdateServices update_services = prk::make_system_update_services(std::cin);
     const bool is_offline = prk::is_offline_requested_by_environment();
@@ -44,5 +43,5 @@ int main(int argc, char** argv) {
                                                   std::cerr,
                                                   is_offline ? nullptr : &update_services,
                                                   &test_suite_services};
-    return prk::run_command_line(program_name, arguments, environment);
+    return prk::run_command_line(prk::kCommandName, arguments, environment);
 }

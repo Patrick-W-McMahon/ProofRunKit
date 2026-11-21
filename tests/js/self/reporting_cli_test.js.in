@@ -1,11 +1,11 @@
 // Self-hosted (#84): console and JUnit output, the original flag form, and `prk test` itself, checked by running
-// prk. prk test (prk.tests.json) expands this template and runs it in the folder that holds prk. Covers the C++
-// cases cli.reporting.console_lines, cli.reporting.junit_*, cli.parse.* (flag form), and suite.* (end to end).
+// prk. prk test (prk.tests.json) expands this template and runs it in the folder that holds proofrunkit. Covers
+// the C++ cases cli.reporting.console_lines, cli.reporting.junit_*, cli.parse.* (flag form), and suite.* (end to end).
 
 const fixtures = '${self_fixtures}';
 const workDir = '${work_dir}/nested-prk-test';
 
-function runPrk(args, program = './prk') {
+function runPrk(args, program = './proofrunkit') {
     return prk.runProcess({program, args, env: {PRK_OFFLINE: '1'}, timeoutMs: 120000});
 }
 

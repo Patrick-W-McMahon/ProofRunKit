@@ -4,10 +4,10 @@
 #
 # Usage:
 #   .\installer\verify-msi-x64.ps1
-#   .\installer\verify-msi-x64.ps1 -MsiPath path\to\ProofRunKit-0.1.0-win-x64.msi
+#   .\installer\verify-msi-x64.ps1 -MsiPath path\to\ProofRunKit-0.1.1-win-x64.msi
 #
 # Compatible with Windows PowerShell 5.1 and PowerShell 7.
-# Refs #37, Refs #40, Refs #51.
+# Refs #37, Refs #40, Refs #51, Refs #93.
 [CmdletBinding()]
 param(
     [string]$MsiPath = '',
@@ -219,7 +219,8 @@ if ($dirMap.ContainsKey('INSTALLFOLDER')) {
     Assert-Equal 'INSTALLFOLDER name' $leaf 'ProofRunKit'
 }
 
-# Payload: proofrunkit.exe, prk.exe (#60), LICENSE.txt and NOTICE.txt (#58), and no self-test or packer leftovers.
+# Payload: proofrunkit.exe (the only executable), the prk.cmd shim (#93), LICENSE.txt and NOTICE.txt (#58),
+# and no self-test or packer leftovers.
 $files = Get-MsiTableRows $database 'SELECT `File`, `Component_`, `FileName` FROM `File`' 3
 $fileNames = New-Object 'System.Collections.Generic.List[string]'
 foreach ($row in $files) {
@@ -230,7 +231,9 @@ foreach ($row in $files) {
     Write-Host "   File: $name  (component $($row[1]))"
 }
 Assert-True 'proofrunkit.exe is packaged' ($fileNames.Contains('proofrunkit.exe')) "files=$($fileNames -join ', ')"
-Assert-True 'prk.exe is packaged (#60)' ($fileNames.Contains('prk.exe')) "files=$($fileNames -join ', ')"
+Assert-True 'prk.cmd shim is packaged (#93)' ($fileNames.Contains('prk.cmd')) "files=$($fileNames -join ', ')"
+$executables = @($fileNames | Where-Object { $_ -match '\.exe$' })
+Assert-True 'proofrunkit.exe is the only executable (#93)' ($executables.Count -eq 1 -and $executables[0] -eq 'proofrunkit.exe') "executables=$($executables -join ', ')"
 Assert-True 'LICENSE.txt is packaged' ($fileNames.Contains('LICENSE.txt')) "files=$($fileNames -join ', ')"
 Assert-True 'NOTICE.txt is packaged' ($fileNames.Contains('NOTICE.txt')) "files=$($fileNames -join ', ')"
 $unexpected = @($fileNames | Where-Object { $_ -match 'selftest|\.pdb$|\.lib$' })
@@ -295,16 +298,19 @@ try {
         if ($null -ne $extractedExe) { $exeDetail = $extractedExe.FullName }
         if ($null -ne $extractedLic) { $licDetail = $extractedLic.FullName }
         Assert-True 'Extracted proofrunkit.exe' ($null -ne $extractedExe) $exeDetail
-        $extractedShort = Get-ChildItem -LiteralPath $extractRoot -Recurse -Filter 'prk.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-        $shortDetail = "not found under $extractRoot"
-        if ($null -ne $extractedShort) { $shortDetail = $extractedShort.FullName }
-        Assert-True 'Extracted prk.exe' ($null -ne $extractedShort) $shortDetail
-        if ($null -ne $extractedExe -and $null -ne $extractedShort) {
-            # prk.exe must be the same binary as proofrunkit.exe, not a separately built program (#60, #22).
-            $exeHash = (Get-FileHash -LiteralPath $extractedExe.FullName -Algorithm SHA256).Hash
-            $shortHash = (Get-FileHash -LiteralPath $extractedShort.FullName -Algorithm SHA256).Hash
-            Assert-Equal 'prk.exe SHA256 equals proofrunkit.exe' $shortHash $exeHash
+        $extractedShim = Get-ChildItem -LiteralPath $extractRoot -Recurse -Filter 'prk.cmd' -ErrorAction SilentlyContinue | Select-Object -First 1
+        $shimDetail = "not found under $extractRoot"
+        if ($null -ne $extractedShim) { $shimDetail = $extractedShim.FullName }
+        Assert-True 'Extracted prk.cmd' ($null -ne $extractedShim) $shimDetail
+        if ($null -ne $extractedShim) {
+            # The shim must run proofrunkit.exe from its own folder with every argument and keep the exit code (#93).
+            $shimText = [System.IO.File]::ReadAllText($extractedShim.FullName)
+            Assert-True 'prk.cmd runs proofrunkit.exe from its folder' ($shimText.Contains('%~dp0proofrunkit.exe')) $extractedShim.FullName
+            Assert-True 'prk.cmd forwards every argument' ($shimText.Contains('" %*')) $extractedShim.FullName
+            Assert-True 'prk.cmd returns the exit code' ($shimText.Contains('exit /b %ERRORLEVEL%')) $extractedShim.FullName
         }
+        $strayShort = Get-ChildItem -LiteralPath $extractRoot -Recurse -Filter 'prk.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+        Assert-True 'No prk.exe in the package (#93)' ($null -eq $strayShort) "found $($strayShort.FullName)"
         Assert-True 'Extracted LICENSE.txt' ($null -ne $extractedLic) $licDetail
         $extractedNotice = Get-ChildItem -LiteralPath $extractRoot -Recurse -Filter 'NOTICE.txt' -ErrorAction SilentlyContinue | Select-Object -First 1
         $noticeDetail = "not found under $extractRoot"

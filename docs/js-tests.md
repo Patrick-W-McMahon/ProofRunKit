@@ -51,7 +51,7 @@ hooks, selection, and execution order are the same engine-neutral code, so both 
 | `prk.assemble({source, output, assembler, program, includes, defines, flags, werror, format, msvcArch, cwd, timeoutMs})` | Assembles one source into an object file with `ml64` / `ml` (found with vswhere when not on PATH), GNU `as`, or NASM, and returns the `prk.compile` fields with `assembler` instead of `compiler`. See [asm-driver.md](asm-driver.md). |
 | `prk.expectExitCode(result, code [, message])` | Fails with the exit code (or why the program did not run) and its stderr. |
 | `print(...)`, `console.log(...)` | Write a line to the console (to stderr when stdout carries a JSON/JUnit report or a listing). |
-| `prk.version`, `prk.jsEngine` | `"0.1.0"`, `"QuickJS-ng 0.18.0"`. |
+| `prk.version`, `prk.jsEngine` | `"0.1.1"`, `"QuickJS-ng 0.18.0"`. |
 
 Registration functions may only be called while the script loads, not inside a test.
 
@@ -118,5 +118,5 @@ failing test, a syntax error, and an endless loop that tries to catch the interr
 covers the sandbox, budgets, async tests, assertions, suites, tags, and files.
 
 Self-hosted (#55): `tests/js/self/sandbox_test.js` (`self.sandbox`) checks the sandbox, the module loader,
-and versions; `tests/js/self/cli_test.js.in` (`self.cli`) runs `./prk` to check the whole command line and
+and versions; `tests/js/self/cli_test.js.in` (`self.cli`) runs `./proofrunkit` to check the whole command line and
 runner. [`self-hosting.md`](self-hosting.md) maps every C++ case to its prk equivalent.

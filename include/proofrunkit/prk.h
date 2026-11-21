@@ -251,7 +251,7 @@ int prk_is_cycle_counter_assembly(void);
 /* ---------------------------------------------------------------- version */
 
 /**
- * @brief Returns the ProofRunKit version, e.g. "0.1.0".
+ * @brief Returns the ProofRunKit version, e.g. "0.1.1".
  * @return A static string.
  */
 const char* prk_get_version_string(void);

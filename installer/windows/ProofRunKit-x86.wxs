@@ -70,12 +70,13 @@
               Name="proofrunkit.exe"
               KeyPath="yes" />
       </Component>
-      <!-- The short `prk` command (#60): the same build output installed under a second name, so
-           both names have one file hash. The install folder is on PATH via AddToPath. -->
-      <Component Id="PrkShortExe" Guid="*">
-        <File Id="PrkShortExeFile"
-              Source="$(var.PrkExePath)"
-              Name="prk.exe"
+      <!-- The `prk` command (#93): a text shim that runs proofrunkit.exe from this folder with every
+           argument and its exit code. One executable ships; the install folder is on PATH via AddToPath.
+           MajorUpgrade (afterInstallInitialize) removes the prk.exe copy that earlier packages installed. -->
+      <Component Id="PrkCmdShim" Guid="*">
+        <File Id="PrkCmdShimFile"
+              Source="$(var.PrkCmdShim)"
+              Name="prk.cmd"
               KeyPath="yes" />
       </Component>
       <Component Id="LicenseFile" Guid="*">

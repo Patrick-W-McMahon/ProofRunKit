@@ -1,13 +1,13 @@
 // Self-hosted (#55): ProofRunKit's command line, runner, and JSON reporting, checked by running prk itself.
-// prk test (prk.tests.json) expands this template (fixture folder below) and runs it in the folder that holds prk, so './prk' is the
-// build under test. Every prk call passes -offline or runs with PRK_OFFLINE=1: no network.
+// prk test (prk.tests.json) expands this template (fixture folder below) and runs it in the folder that holds
+// proofrunkit, so './proofrunkit' is the build under test. Every prk call passes -offline or runs with PRK_OFFLINE=1: no network.
 // Covers the C++ cases cli.parse.*, cli.help.*, cli.name.*, cli.app.*, core.runner.* (through reports),
 // cli.reporting.json_*, scripts.* (exit codes, list, print), update.parses_update_and_version (CLI side), and
 // hotpath.cycle_counter.implementation_name_matches_selection; see docs/self-hosting.md.
 
 const fixtures = '${self_fixtures}';
 
-function runPrk(args, program = './prk') {
+function runPrk(args, program = './proofrunkit') {
     return prk.runProcess({program, args, env: {PRK_OFFLINE: '1'}, timeoutMs: 60000});
 }
 
@@ -58,9 +58,9 @@ prk.describe('cli', () => {
         prk.expectTrue(runPrk(['run', '--help']).stdout.startsWith('Usage: prk run'));
     });
 
-    prk.addTest('program_name_follows_the_invoked_file', () => {
-        prk.expectTrue(runPrk(['--help'], './proofrunkit').stdout.startsWith('Usage: proofrunkit '));
-        prk.expectContains(runPrk(['--bogus'], './proofrunkit').stderr, 'proofrunkit: unknown option');
+    prk.addTest('messages_always_name_the_prk_command', () => {
+        prk.expectTrue(runPrk(['--help']).stdout.startsWith('Usage: prk '));
+        prk.expectContains(runPrk(['--bogus']).stderr, 'prk: unknown option');
     });
 
     prk.addTest('version_line_in_every_spelling', () => {

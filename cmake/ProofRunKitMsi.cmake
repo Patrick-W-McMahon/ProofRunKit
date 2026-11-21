@@ -17,6 +17,7 @@ set(_prk_license_txt "${PROJECT_SOURCE_DIR}/LICENSE")
 set(_prk_notice_txt "${PROJECT_SOURCE_DIR}/NOTICE")
 set(_prk_license_rtf "${_prk_msi_dir}/License.rtf")
 set(_prk_url_shortcut "${_prk_installer_dir}/ProofRunKit.url")
+set(_prk_cmd_shim "${_prk_installer_dir}/prk.cmd")
 include(ProofRunKitLicenseRtf)
 file(MAKE_DIRECTORY "${_prk_msi_dir}")
 prk_write_license_rtf("${_prk_license_txt}" "${_prk_license_rtf}")
@@ -68,6 +69,7 @@ function(prk_add_package_msi_target)
             "-DPRK_LICENSE_TXT=${_prk_license_txt}"
             "-DPRK_NOTICE_TXT=${_prk_notice_txt}"
             "-DPRK_URL_SHORTCUT=${_prk_url_shortcut}"
+            "-DPRK_CMD_SHIM=${_prk_cmd_shim}"
             "-DPRK_MSI_OUTPUT=${_prk_msi_output}"
             "-DPRK_INTERMEDIATE_DIR=${_prk_msi_intermediate}"
             -P "${_prk_build_msi_script}"
@@ -78,6 +80,7 @@ function(prk_add_package_msi_target)
             "${_prk_license_txt}"
             "${_prk_notice_txt}"
             "${_prk_url_shortcut}"
+            "${_prk_cmd_shim}"
             "${_prk_build_msi_script}"
         COMMENT "${_prk_msi_comment}"
         VERBATIM)

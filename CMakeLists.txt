@@ -22,15 +22,21 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(ProofRunKitWarnings)
+include(ProofRunKitCycleCounter)
 
 # --------------------------------------------------------------------------- core (C17 + Assembly)
 add_library(prk_core STATIC
     src/core/prk_registry.c
     src/core/prk_runner.c
     src/core/prk_summary.c
-    src/core/prk_version.c)
+    src/core/prk_version.c
+    src/timing/prk_cycle_counter_fallback.c
+    src/timing/prk_cycle_counter_info.c
+    ${PRK_CYCLE_COUNTER_SOURCES})
 target_include_directories(prk_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_compile_definitions(prk_core PRIVATE
-    PRK_VERSION_STRING="${PROJECT_VERSION}")
+    PRK_VERSION_STRING="${PROJECT_VERSION}"
+    PRK_CYCLE_COUNTER_IMPLEMENTATION="${PRK_CYCLE_COUNTER_IMPLEMENTATION}")
 prk_apply_project_warnings(prk_core)
 
+message(STATUS "ProofRunKit ${PROJECT_VERSION}: cycle counter = ${PRK_CYCLE_COUNTER_IMPLEMENTATION}")

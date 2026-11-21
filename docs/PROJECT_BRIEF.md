@@ -43,14 +43,17 @@ ProofRunKit is not an in-process compiler. It drives real toolchains and runtime
 
 ## Test kinds to wrap eventually
 
-| Project | Existing suite |
+ProofRunKit should eventually replace the custom test executables and existing suites in other projects. Those suites
+include, among others:
+
+| Kind | Existing suite |
 | --- | --- |
-| Trading Agent | ~60 doctest C++ cases |
-| Jarvis | 105 Vitest TypeScript tests |
-| Media Studio | 310 Vitest JavaScript tests |
-| Political Website | 29 `node:test` tests |
-| AI Designer Tools | 78 pytest tests |
-| SkyNet | ~105 cases in an in-house header-only C++ harness (project paused) |
+| C++ (doctest) | on the order of 60 cases in a custom test executable |
+| TypeScript (Vitest) | on the order of 100 tests |
+| JavaScript (Vitest) | on the order of 300 tests |
+| JavaScript (`node:test`) | on the order of 30 tests |
+| Python (pytest) | on the order of 80 tests |
+| C++ (in-house header-only harness) | on the order of 100 cases (one such project is paused) |
 
 ## Constraints
 
@@ -70,9 +73,9 @@ ProofRunKit is not an in-process compiler. It drives real toolchains and runtime
 
 ProofRunKit is **not done** until it has replaced at least one real, existing project test suite end to end, proving
 it can fully substitute that project's old custom test tool
-([#26](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/26)). The first candidate is Trading Agent's doctest
-suite ([#28](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/28)). SkyNet's header-only harness is excluded as
-the first candidate while SkyNet is paused. Changes inside another project's repository go through that project's own
+([#26](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/26)). The first candidate is a doctest C++ suite in
+another project ([#28](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/28)). A paused project's header-only
+harness is excluded as the first candidate. Changes inside another project's repository go through that project's own
 maintainers.
 
 ### Fallback safeguard
@@ -83,7 +86,7 @@ been confirmed, with the maintainer's explicit OK, to replace it entirely. Old t
 
 ### Migration protocol
 
-Projects migrate **one at a time**, Trading Agent first. Each migration has four gated steps, in order:
+Projects migrate **one at a time**. Each migration has four gated steps, in order:
 
 1. **Create** ProofRunKit test configs for the project.
 2. **Verify** they are fully operational and correct, matching the old suite's pass/fail case for case.
@@ -93,7 +96,7 @@ Projects migrate **one at a time**, Trading Agent first. Each migration has four
 Never skip verification, and never remove old tools before the new ones are proven. Migration tickets are sequential:
 each depends on the previous project's steps 1-3
 ([#28](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/28)-[#33](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/33)).
-SkyNet is blocked while paused and does not hold up the rest of the queue.
+A paused project is blocked and does not hold up the rest of the queue.
 
 ProofRunKit applies the same rule to itself: once script tests work, it tests itself with its own platform, and its
 C++ self-test stays as the fallback until its replacement is approved

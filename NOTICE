@@ -37,4 +37,35 @@ The ProofRunKit executable includes the following third-party components.
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-* QuickJS-ng (MIT License) - placeholder until vendored under third_party/ (#11).
+* QuickJS-ng 0.18.0 (https://github.com/quickjs-ng/quickjs)
+  Copyright (c) 2017-2026 Fabrice Bellard, (c) 2017-2024 Charlie Gordon,
+  (c) 2023-2026 Ben Noordhuis, (c) 2023-2026 Saul Ibarra Corretge.
+  Licensed under the MIT License; see third_party/quickjs-ng-0.18.0/LICENSE.
+  Vendored unmodified from https://github.com/quickjs-ng/quickjs/archive/refs/tags/v0.18.0.tar.gz
+  (SHA-256 28bcd89aa3683fd2a946537e5ce3f11cc46b5cbf3383c7561aaef3df5ff9f1dd).
+  Its license, reproduced as required:
+
+    The MIT License (MIT)
+
+    Copyright (c) 2017-2026 Fabrice Bellard
+    Copyright (c) 2017-2024 Charlie Gordon
+    Copyright (c) 2023-2026 Ben Noordhuis
+    Copyright (c) 2023-2026 Saúl Ibarra Corretgé
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.

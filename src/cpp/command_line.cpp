@@ -250,7 +250,7 @@ std::string format_usage_text(std::string_view program_name) {
            "      --timeout MS       Script tests: default per-test timeout in milliseconds.\n"
            "\n"
            "Exit codes: 0 all selected tests passed, 1 a test failed, 2 usage error,\n"
-           "            3 requested feature not implemented yet (e.g. JavaScript test scripts),\n"
+           "            3 reserved: a requested feature is not implemented yet,\n"
            "            4 a test script could not be read, compiled, or loaded,\n"
            "            5 a report file could not be written. Codes 2-5 win over 1.\n";
 }
@@ -272,7 +272,8 @@ std::string format_command_help_text(std::string_view program_name, std::string_
         "  -h, --help             Show this help.\n";
     if (command_name == "run") {
         return "Usage: " + name + " run [options] [test scripts...]\n\n" +
-               "Runs the tests registered by the given Lua scripts (.lua), or the built-in checks\n"
+               "Runs the tests registered by the given Lua (.lua) or JavaScript (.js, .mjs) scripts,\n"
+               "or the built-in checks\n"
                "when no scripts are given, and reports the results.\n" +
                test_options;
     }

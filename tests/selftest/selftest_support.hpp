@@ -41,6 +41,8 @@ PrkStatus register_lua_engine_tests(PrkRegistry& registry);
 PrkStatus register_junit_reporting_tests(PrkRegistry& registry);
 /** @brief Registers the Lua test-authoring API tests (#12). */
 PrkStatus register_lua_test_api_tests(PrkRegistry& registry);
+/** @brief Registers QuickJS-ng engine and JavaScript API tests (#11). @return PRK_STATUS_OK or the first error. */
+PrkStatus register_js_engine_tests(PrkRegistry& registry);
 /** @brief Registers test-script loading tests (#9). @return PRK_STATUS_OK or the first error. */
 PrkStatus register_script_loading_tests(PrkRegistry& registry);
 

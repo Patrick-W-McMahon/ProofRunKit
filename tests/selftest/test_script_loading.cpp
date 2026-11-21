@@ -31,6 +31,9 @@ const std::map<std::string, std::string>& get_sample_scripts() {
         {"tagged.lua",
          "prk.add_test('t.fast', function() end, {tags = {'fast'}})\n"
          "prk.add_test('t.slow', function() while true do end end, {tags = {'slow'}})\n"},
+        {"pass.js", "print('loaded pass.js');\nprk.addTest('js.pass', () => prk.expectTrue(1 < 2));\n"},
+        {"fail.js", "prk.addTest('js.fail', () => {\n  prk.expectEqual('a', 'b');\n});\n"},
+        {"broken.js", "prk.addTest(\n"},
     };
     return scripts;
 }
@@ -75,15 +78,16 @@ void test_detects_script_language(PrkTestContext* context, void*) {
 void test_loads_scripts_into_one_registry(PrkTestContext* context, void*) {
     const PrkScriptHost no_host{nullptr, nullptr, nullptr, nullptr, nullptr};
     const LoadedTestScripts loaded =
-        load_test_scripts({"pass.lua", "fail.lua", "x.js", "y.txt", "missing.lua", "broken.lua"}, &read_sample_script,
-                          no_host, nullptr, nullptr);
+        load_test_scripts({"pass.lua", "fail.lua", "pass.js", "y.txt", "missing.lua", "broken.lua", "broken.js"},
+                          &read_sample_script, no_host, nullptr, nullptr);
     PRK_EXPECT(loaded.registry != nullptr);
-    PRK_EXPECT(prk_count_test_cases(loaded.registry.get()) == 2);
-    PRK_EXPECT(loaded.unsupported_scripts == std::vector<std::string>({"x.js"}));
+    PRK_EXPECT(prk_count_test_cases(loaded.registry.get()) == 3);
+    PRK_EXPECT(loaded.lua_scripts.size() == 3 && loaded.js_scripts.size() == 2);
     PRK_EXPECT(loaded.unknown_type_scripts == std::vector<std::string>({"y.txt"}));
-    PRK_EXPECT(loaded.load_errors.size() == 2);
+    PRK_EXPECT(loaded.load_errors.size() == 3);
     PRK_EXPECT(loaded.load_errors[0] == "missing.lua: cannot open file");
     PRK_EXPECT(loaded.load_errors[1].find("broken.lua:2:") == 0);
+    PRK_EXPECT(loaded.load_errors[2].find("broken.js:") == 0);
 }
 
 void test_runs_lua_scripts_from_command_line(PrkTestContext* context, void*) {
@@ -95,6 +99,17 @@ void test_runs_lua_scripts_from_command_line(PrkTestContext* context, void*) {
     PRK_EXPECT(failing.output.find("fail.lua:1: values differ: expected \"b\", got \"a\"") != std::string::npos);
     const CapturedScriptRun filtered = run_scripts_through_command_line({"run", "--filter", "pass", "fail.lua"});
     PRK_EXPECT(filtered.exit_code == kExitAllPassed);
+}
+
+void test_runs_js_scripts_from_command_line(PrkTestContext* context, void*) {
+    const CapturedScriptRun passing = run_scripts_through_command_line({"run", "pass.js"});
+    PRK_EXPECT(passing.exit_code == kExitAllPassed);
+    PRK_EXPECT(passing.output.find("loaded pass.js\n[ PASS ] js.pass") == 0);
+    const CapturedScriptRun mixed = run_scripts_through_command_line({"pass.lua", "pass.js", "fail.js"});
+    PRK_EXPECT(mixed.exit_code == kExitTestFailed);
+    PRK_EXPECT(mixed.output.find("fail.js:2: values differ: expected \"b\", got \"a\"") != std::string::npos);
+    const CapturedScriptRun listing = run_scripts_through_command_line({"list", "pass.lua", "pass.js"});
+    PRK_EXPECT(listing.output == "script.pass\njs.pass\n");
 }
 
 void test_json_and_list_keep_print_off_output(PrkTestContext* context, void*) {
@@ -110,8 +125,8 @@ void test_reports_script_problems_with_exit_codes(PrkTestContext* context, void*
     PRK_EXPECT(missing.exit_code == kExitScriptError && missing.errors == "prk: missing.lua: cannot open file\n");
     const CapturedScriptRun broken = run_scripts_through_command_line({"run", "broken.lua"});
     PRK_EXPECT(broken.exit_code == kExitScriptError && broken.errors.find("prk: broken.lua:2:") == 0);
-    const CapturedScriptRun javascript = run_scripts_through_command_line({"run", "pass.lua", "x.js"});
-    PRK_EXPECT(javascript.exit_code == kExitNotImplemented);
+    const CapturedScriptRun javascript = run_scripts_through_command_line({"run", "pass.lua", "broken.js"});
+    PRK_EXPECT(javascript.exit_code == kExitScriptError && javascript.errors.find("prk: broken.js:") == 0);
     const CapturedScriptRun unknown = run_scripts_through_command_line({"run", "notes.txt"});
     PRK_EXPECT(unknown.exit_code == kExitUsageError);
     PRK_EXPECT(unknown.errors.find("unsupported test script type") != std::string::npos);
@@ -212,6 +227,7 @@ PrkStatus register_script_loading_tests(PrkRegistry& registry) {
         {"scripts.detects_script_language", &test_detects_script_language, nullptr},
         {"scripts.loads_scripts_into_one_registry", &test_loads_scripts_into_one_registry, nullptr},
         {"scripts.runs_lua_scripts_from_command_line", &test_runs_lua_scripts_from_command_line, nullptr},
+        {"scripts.runs_js_scripts_from_command_line", &test_runs_js_scripts_from_command_line, nullptr},
         {"scripts.json_and_list_keep_print_off_output", &test_json_and_list_keep_print_off_output, nullptr},
         {"scripts.reports_script_problems_with_exit_codes", &test_reports_script_problems_with_exit_codes, nullptr},
         {"scripts.reads_script_files_from_disk", &test_reads_script_files_from_disk, nullptr},

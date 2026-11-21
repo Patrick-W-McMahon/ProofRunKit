@@ -139,8 +139,8 @@ the test's hooks and body together. `--tag`, `--exclude-tag`, and `--timeout` ap
 
 ## Lua and JavaScript names
 
-The JavaScript engine ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)) will expose the same API,
-with camelCase names and option keys:
+The JavaScript engine ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11), see
+[js-tests.md](js-tests.md)) exposes the same API, with camelCase names and option keys:
 
 | Lua | JavaScript |
 | --- | --- |
@@ -148,7 +148,8 @@ with camelCase names and option keys:
 | `prk.describe(name, define, {tags=})` | `prk.describe(name, define, {tags})` |
 | `prk.before_all` / `after_all` / `before_each` / `after_each` | `prk.beforeAll` / `afterAll` / `beforeEach` / `afterEach` |
 | `prk.expect_true`, `prk.expect_equal`, `prk.expect_deep_equal`, ... | `prk.expectTrue`, `prk.expectEqual`, `prk.expectDeepEqual`, ... |
-| `prk.expect_error(action, pattern)` | `prk.expectError(action, regexp)` |
+| `prk.expect_nil`, `prk.expect_not_nil` | `prk.expectNullish`, `prk.expectNotNullish` |
+| `prk.expect_error(action, pattern)` | `prk.expectError(action, regexp or substring)` |
 | `prk.fail_test`, `prk.skip_test` | `prk.failTest`, `prk.skipTest` |
 | `prk.read_clock_ms`, `prk.measure_elapsed_ms` | `prk.readClockMs`, `prk.measureElapsedMs` |
 | `prk.is_file_present`, `prk.read_text_file` | `prk.isFilePresent`, `prk.readTextFile` |

@@ -21,7 +21,7 @@ enum ExitCode : int {
     kExitAllPassed = 0,       ///< Every selected test passed (or nothing needed running).
     kExitTestFailed = 1,      ///< At least one selected test failed.
     kExitUsageError = 2,      ///< The command line was invalid.
-    kExitNotImplemented = 3,  ///< A requested feature (e.g. JavaScript scripts, #11) has not landed yet.
+    kExitNotImplemented = 3,  ///< Reserved: a requested feature has not landed yet (unused since #11).
     kExitScriptError = 4,     ///< A test script could not be read, compiled, or loaded (#9).
     kExitReportError = 5,     ///< A requested report file could not be written (#21).
 };

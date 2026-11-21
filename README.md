@@ -12,7 +12,7 @@
 
 A single high-performance test executable, compiled once. Tests change; the binary does not.
 
-**Status: pre-alpha.** The core executable, Assembly hot paths, Windows x64 and x86 builds with a self-test, both Windows MSI installers, the `prk` command, and sandboxed Lua 5.4 test scripts are in the tree. JavaScript tests and language drivers are next. Features below are marked Done, In progress, or Planned; see the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
+**Status: pre-alpha.** The core executable, Assembly hot paths, Windows x64 and x86 builds with a self-test, both Windows MSI installers, the `prk` command, and sandboxed Lua 5.4 and JavaScript (QuickJS-ng) test scripts are in the tree. Language drivers are next. Features below are marked Done, In progress, or Planned; see the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
 
 ## Why ProofRunKit
 
@@ -43,8 +43,8 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 ### Test authoring (Lua 5.4 and QuickJS-ng)
 
 - [x] Embedded, sandboxed Lua 5.4 for kit-authored tests loaded at runtime ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9), [guide](docs/lua-tests.md)) — Done
-- [ ] Embedded QuickJS-ng for kit-authored JavaScript tests ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)) — Planned
-- [ ] Test-authoring API in Lua and JavaScript (assertions, process spawn, file checks, timing, fixtures) ([#12](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/12)) — In progress (Lua: assertions, suites, hooks, tags, timeouts, timing, and file checks done; process spawn waits for #13; JavaScript waits for #11)
+- [x] Embedded QuickJS-ng for kit-authored JavaScript tests ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)) — Done ([docs/js-tests.md](docs/js-tests.md))
+- [ ] Test-authoring API in Lua and JavaScript (assertions, process spawn, file checks, timing, fixtures) ([#12](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/12)) — In progress (Lua: assertions, suites, hooks, tags, timeouts, timing, and file checks done; JavaScript: the same API in camelCase; process spawn waits for #13)
 
 ### Compiled-language drivers
 
@@ -132,7 +132,7 @@ ProofRunKit is not an in-process compiler. For compiled languages it shells out 
 | Rust | `cargo build` / `cargo test` or `rustc`, then run artifacts | `rustc`, `cargo`, rustup (MSVC target on Windows) | Planned ([#45](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/45)) |
 | Go | `go build` / `go test -json`, then run artifacts | Go (`GOROOT` / `PATH`) | Planned ([#46](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/46)) |
 | Assembly | Assemble, link, execute, and check exit code and output | `ml64` / `ml` (Windows), GAS, NASM | Planned ([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16)) |
-| JavaScript | Kit-authored tests in QuickJS-ng; existing suites via Node.js | QuickJS-ng, Node.js, `node:test`, Vitest | Planned ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11), [#18](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/18)) |
+| JavaScript | Kit-authored tests in QuickJS-ng; existing suites via Node.js | QuickJS-ng, Node.js, `node:test`, Vitest | Kit-authored tests done ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)); Node.js planned ([#18](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/18)) |
 | TypeScript | Type-check with `tsc --noEmit`; run via Node.js type stripping or compiled JS; wrap Vitest | `tsc`, Node.js, Vitest | Planned ([#47](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/47)) |
 | Lua | Kit-authored tests loaded by the embedded, sandboxed interpreter | Lua 5.4.9 | Done ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9)) |
 | Python | Run files and wrap pytest | System Python, pytest | Planned ([#17](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/17)) |

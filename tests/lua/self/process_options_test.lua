@@ -26,13 +26,19 @@ prk.describe("process_options", function()
         prk.expect_equal(trim_line_end(result.stdout), "(unset)")
     end)
 
-    -- "../selftest" names the same folder another way, so "./prk_spawn_child" resolves the same whether
-    -- the platform looks it up from the old or the new working directory.
+    -- The folder comes from the child itself, so the test does not depend on the CMake generator (#79): the VS
+    -- generator runs it from tests/selftest/Debug, Ninja and Makefiles from tests/selftest.
     prk.add_test("runs_in_the_requested_directory", function()
-        local here = run_child{args = {"cwd"}}
-        local same = run_child{args = {"cwd"}, cwd = "../selftest"}
+        local here = trim_line_end(run_child{args = {"cwd"}}.stdout)
+        prk.expect_true(#here > 0, "the child should print its working directory")
+        local same = run_child{args = {"cwd"}, cwd = here}
         prk.expect_exit_code(same, 0)
-        prk.expect_equal(trim_line_end(same.stdout), trim_line_end(here.stdout))
+        prk.expect_equal(trim_line_end(same.stdout), here)
+        local parent = prk.run_process{program = here .. "/prk_spawn_child", args = {"cwd"}, cwd = ".."}
+        prk.expect_exit_code(parent, 0)
+        local parent_folder = trim_line_end(parent.stdout)
+        prk.expect_true(#parent_folder > 0 and #parent_folder < #here, "expected the parent folder: " .. parent_folder)
+        prk.expect_equal(here:sub(1, #parent_folder), parent_folder)
         local missing = run_child{args = {"cwd"}, cwd = "no_such_folder_prk"}
         prk.expect_false(missing.ok)
         prk.expect_equal(missing.outcome, "failed to start")

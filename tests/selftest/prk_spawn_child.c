@@ -89,9 +89,10 @@ int main(int argc, char** argv) {
         return atoi(argv[2]);
     }
     if (strcmp(mode, "env") == 0 && argc > 2) {
-        static char value[32768];
-        const int is_set = prk_read_environment_variable(argv[2], value, sizeof value);
+        char* value = NULL;
+        const int is_set = prk_duplicate_environment_variable(argv[2], &value);
         (void)printf("%s\n", is_set ? value : "(unset)");
+        free(value);
         return 0;
     }
     if (strcmp(mode, "cwd") == 0) {

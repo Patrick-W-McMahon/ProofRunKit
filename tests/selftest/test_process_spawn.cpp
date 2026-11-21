@@ -288,15 +288,40 @@ void test_limits_captured_output(PrkTestContext* context, void*) {
     PRK_EXPECT(flood->result.standard_error_length == 1000 && flood->result.is_standard_error_truncated == 1);
 }
 
+/** @brief Sets (or with nullptr removes) this process's variable @p name. @return true on success. */
+bool set_test_environment_variable(const char* name, const char* value) {
+#if defined(_WIN32)
+    return _putenv_s(name, value != nullptr ? value : "") == 0;
+#else
+    return value != nullptr ? setenv(name, value, 1) == 0 : unsetenv(name) == 0;
+#endif
+}
+
+/** @brief Fixed-buffer and heap reads of a known short and a known long (8000-byte) variable (#78). */
 void test_reads_environment_variable(PrkTestContext* context, void*) {
+    static const char kName[] = "PRK_SELFTEST_ENV_VALUE_78";
     std::array<char, 4096> value{};
-    PRK_EXPECT(prk_read_environment_variable("PATH", value.data(), value.size()) == 1 && value[0] != '\0');
+    PRK_EXPECT(set_test_environment_variable(kName, "short value"));
+    PRK_EXPECT(prk_read_environment_variable(kName, value.data(), value.size()) == 1);
+    PRK_EXPECT(std::string_view(value.data()) == "short value");
     std::array<char, 2> tiny{{'x', 'x'}};
-    PRK_EXPECT(prk_read_environment_variable("PATH", tiny.data(), tiny.size()) == 0 && tiny[0] == '\0');
-    PRK_EXPECT(prk_read_environment_variable("PRK_NO_SUCH_VARIABLE_4711", value.data(), value.size()) == 0);
-    PRK_EXPECT(value[0] == '\0');
+    PRK_EXPECT(prk_read_environment_variable(kName, tiny.data(), tiny.size()) == 0 && tiny[0] == '\0');
+
+    const std::string long_value(8000, 'p');
+    PRK_EXPECT(set_test_environment_variable(kName, long_value.c_str()));
+    PRK_EXPECT(prk_read_environment_variable(kName, value.data(), value.size()) == 0 && value[0] == '\0');
+    char* copy = nullptr;
+    PRK_EXPECT(prk_duplicate_environment_variable(kName, &copy) == 1 && copy != nullptr && copy == long_value);
+    std::free(copy);
+
+    PRK_EXPECT(set_test_environment_variable(kName, nullptr));
+    copy = reinterpret_cast<char*>(&tiny);
+    PRK_EXPECT(prk_duplicate_environment_variable(kName, &copy) == 0 && copy == nullptr);
+    PRK_EXPECT(prk_read_environment_variable(kName, value.data(), value.size()) == 0);
     PRK_EXPECT(prk_read_environment_variable("", value.data(), value.size()) == 0);
-    PRK_EXPECT(prk_read_environment_variable("PATH", nullptr, 0) == 0);
+    PRK_EXPECT(prk_read_environment_variable(kName, nullptr, 0) == 0);
+    PRK_EXPECT(prk_duplicate_environment_variable("", &copy) == 0 && copy == nullptr);
+    PRK_EXPECT(prk_duplicate_environment_variable(kName, nullptr) == 0);
 }
 
 }  // namespace

@@ -22,3 +22,8 @@ set_tests_properties(proofrunkit_version PROPERTIES PASS_REGULAR_EXPRESSION "Pro
 add_test(NAME proofrunkit_builtin_checks COMMAND proofrunkit)
 add_test(NAME proofrunkit_rejects_unknown_option COMMAND proofrunkit --no-such-option)
 set_tests_properties(proofrunkit_rejects_unknown_option PROPERTIES PASS_REGULAR_EXPRESSION "unknown option")
+
+# The installer license dialog RTF is generated from the repo-root LICENSE (#58).
+add_test(NAME proofrunkit_license_rtf_generation
+    COMMAND ${CMAKE_COMMAND} "-DPRK_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+            "-DPRK_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/license-rtf" -P "${PROJECT_SOURCE_DIR}/tests/cmake/CheckLicenseRtf.cmake")

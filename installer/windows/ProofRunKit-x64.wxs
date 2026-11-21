@@ -71,6 +71,13 @@
               Name="LICENSE.txt"
               KeyPath="yes" />
       </Component>
+      <!-- NOTICE ships beside LICENSE per Apache-2.0 section 4(d) (#58). -->
+      <Component Id="NoticeFile" Guid="*">
+        <File Id="NoticeTxt"
+              Source="$(var.PrkNoticeTxt)"
+              Name="NOTICE.txt"
+              KeyPath="yes" />
+      </Component>
     </ComponentGroup>
 
     <Component Id="StartMenuShortcuts" Directory="PrkStartMenuFolder" Guid="*">
@@ -111,7 +118,7 @@
     <Feature
         Id="ProductFeature"
         Title="ProofRunKit"
-        Description="The ProofRunKit command-line test runner and its license."
+        Description="The ProofRunKit command-line test runner, its license, and NOTICE."
         Level="1"
         AllowAdvertise="no"
         ConfigurableDirectory="INSTALLFOLDER"

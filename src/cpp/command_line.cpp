@@ -194,7 +194,8 @@ std::string format_usage_text(std::string_view program_name) {
            "      --json             Same as --format json.\n"
            "\n"
            "Exit codes: 0 all selected tests passed, 1 a test failed, 2 usage error,\n"
-           "            3 requested feature not implemented yet (e.g. Lua/JS test scripts).\n";
+           "            3 requested feature not implemented yet (e.g. JavaScript test scripts),\n"
+           "            4 a test script could not be read, compiled, or loaded.\n";
 }
 
 std::string format_command_help_text(std::string_view program_name, std::string_view command_name) {
@@ -208,8 +209,8 @@ std::string format_command_help_text(std::string_view program_name, std::string_
         "  -h, --help             Show this help.\n";
     if (command_name == "run") {
         return "Usage: " + name + " run [options] [test scripts...]\n\n" +
-               "Runs the tests registered by the given scripts, or the built-in checks when no\n"
-               "scripts are given, and reports the results.\n" +
+               "Runs the tests registered by the given Lua scripts (.lua), or the built-in checks\n"
+               "when no scripts are given, and reports the results.\n" +
                test_options;
     }
     if (command_name == "list") {

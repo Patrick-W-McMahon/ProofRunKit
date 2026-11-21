@@ -12,7 +12,7 @@
 
 A single high-performance test executable, compiled once. Tests change; the binary does not.
 
-**Status: pre-alpha.** The core executable, Assembly hot paths, Windows x64 and x86 builds with a self-test, and both Windows MSI installers are in the tree. Script tests and language drivers are next. Features below are marked Done, In progress, or Planned; see the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
+**Status: pre-alpha.** The core executable, Assembly hot paths, Windows x64 and x86 builds with a self-test, both Windows MSI installers, the `prk` command, and sandboxed Lua 5.4 test scripts are in the tree. JavaScript tests and language drivers are next. Features below are marked Done, In progress, or Planned; see the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
 
 ## Why ProofRunKit
 
@@ -42,9 +42,9 @@ Checked boxes are Done. Unchecked boxes are In progress or Planned, as marked.
 
 ### Test authoring (Lua 5.4 and QuickJS-ng)
 
-- [ ] Embedded Lua 5.4 for kit-authored tests loaded at runtime ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9)) — Planned
+- [x] Embedded, sandboxed Lua 5.4 for kit-authored tests loaded at runtime ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9), [guide](docs/lua-tests.md)) — Done
 - [ ] Embedded QuickJS-ng for kit-authored JavaScript tests ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)) — Planned
-- [ ] Test-authoring API in Lua and JavaScript (assertions, process spawn, file checks, timing, fixtures) ([#12](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/12)) — Planned
+- [ ] Test-authoring API in Lua and JavaScript (assertions, process spawn, file checks, timing, fixtures) ([#12](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/12)) — In progress (Lua registration, assertions, and skips done)
 
 ### Compiled-language drivers
 
@@ -134,11 +134,11 @@ ProofRunKit is not an in-process compiler. For compiled languages it shells out 
 | Assembly | Assemble, link, execute, and check exit code and output | `ml64` / `ml` (Windows), GAS, NASM | Planned ([#16](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/16)) |
 | JavaScript | Kit-authored tests in QuickJS-ng; existing suites via Node.js | QuickJS-ng, Node.js, `node:test`, Vitest | Planned ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11), [#18](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/18)) |
 | TypeScript | Type-check with `tsc --noEmit`; run via Node.js type stripping or compiled JS; wrap Vitest | `tsc`, Node.js, Vitest | Planned ([#47](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/47)) |
-| Lua | Kit-authored tests loaded by the embedded interpreter | Lua 5.4 | Planned ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9)) |
+| Lua | Kit-authored tests loaded by the embedded, sandboxed interpreter | Lua 5.4.9 | Done ([#9](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/9)) |
 | Python | Run files and wrap pytest | System Python, pytest | Planned ([#17](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/17)) |
 | HTML and CSS | Validation and structure checks; browser-driven checks later | Static checkers; Chrome | Planned ([#19](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/19), [#20](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/20)) |
 
-None of these drivers or runtimes are implemented yet.
+Lua test scripts run today; the compiler drivers and other runtimes are not implemented yet.
 
 ## Platform support
 
@@ -152,7 +152,7 @@ CMake presets for Linux and macOS may appear before those hosts are formally tes
 
 ## Getting started
 
-ProofRunKit is pre-alpha. Windows x64 and x86 builds, a self-test, and MSI installers are available; script tests are not wired up yet.
+ProofRunKit is pre-alpha. Windows x64 and x86 builds, a self-test, MSI installers, and Lua test scripts are available.
 
 Build and test from a Developer PowerShell for Visual Studio 2026:
 
@@ -165,6 +165,7 @@ ctest --preset windows-msvc-x64-debug --output-on-failure
 Every build and both installers provide the short `prk` command alongside `proofrunkit`:
 
 ```powershell
+prk run tests\math_test.lua   # run a Lua test script (see docs/lua-tests.md)
 prk run --json          # run tests and report JSON
 prk list --filter kit.  # list test names
 prk help run            # help for one command

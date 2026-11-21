@@ -34,6 +34,7 @@ void test_outcome_and_status_names(PrkTestContext* context, void*) {
     PRK_EXPECT(std::strcmp(prk_get_outcome_name(static_cast<PrkOutcome>(99)), "unknown") == 0);
     PRK_EXPECT(std::strcmp(prk_get_status_name(PRK_STATUS_OK), "ok") == 0);
     PRK_EXPECT(std::strcmp(prk_get_status_name(PRK_STATUS_DUPLICATE_NAME), "duplicate name") == 0);
+    PRK_EXPECT(std::strcmp(prk_get_status_name(PRK_STATUS_SCRIPT_ERROR), "script error") == 0);
     PRK_EXPECT(std::strcmp(prk_get_status_name(static_cast<PrkStatus>(99)), "unknown status") == 0);
 }
 

@@ -7,8 +7,8 @@ tools such as Norton treat as a new unknown file. This page records how the buil
 ## What is in place now
 
 - **Tests are never compiled into the binary.** `proofrunkit` contains the core, the CLI, and a
-  small set of built-in environment checks (`kit.*`). User tests will be loaded at runtime as Lua
-  (#9) or JavaScript (#11) scripts; until those land, passing a script path exits with code 3.
+  small set of built-in environment checks (`kit.*`). User tests are loaded at runtime as Lua
+  scripts (#9, [lua-tests.md](lua-tests.md)); JavaScript (#11) follows. Passing a `.js` script exits with code 3 until then.
 - **No self-modifying code, no packers, no self-extraction.** The build uses the plain MSVC
   toolchain output. Do not run UPX or any other packer on the executable.
 - **VERSIONINFO resource and application manifest** are embedded in every Windows executable

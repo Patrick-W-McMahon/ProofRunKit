@@ -57,7 +57,7 @@ resets, or discards changes.
 
 | Test | Checks |
 | --- | --- |
-| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, and the MASM cycle counter vs. its C fallback. |
+| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, the Lua engine and sandbox, script loading, and the MASM cycle counter vs. its C fallback. |
 | `proofrunkit_version` | `proofrunkit --version` prints the version and `asm-masm-x64`. |
 | `proofrunkit_builtin_checks` | `proofrunkit` with no scripts runs its built-in environment checks. |
 | `proofrunkit_rejects_unknown_option` | Bad options produce a usage error. |
@@ -65,6 +65,10 @@ resets, or discards changes.
 | `prk_version`, `prk_version_subcommand` | `prk --version` and `prk version` print the version. |
 | `prk_help_run`, `prk_list`, `prk_run_builtin_checks_json` | `prk help run`, `prk list`, and `prk run --json` work. |
 | `prk_rejects_unknown_command` | `prk help no-such-command` is a usage error. |
+| `prk_lua_api_selftest`, `prk_lua_api_selftest_exit_code`, `prk_lua_list` | `tests/lua/prk_lua_api_test.lua` runs through `prk` and passes (#9, #55). |
+| `prk_lua_reports_failures`, `prk_lua_failure_message` | A failing Lua test exits 1 with its message. |
+| `prk_lua_reports_syntax_error`, `prk_lua_reports_missing_file` | Broken or missing scripts exit 4 with `file:line:` or `cannot open file`. |
+| `prk_lua_stops_infinite_loop` | The instruction budget stops an endless loop. |
 | `proofrunkit_license_rtf_generation` | The installer license RTF is generated correctly from `LICENSE` (#58). |
 
 Run the self-test directly for per-test output: `build\windows-msvc-x64-debug\tests\selftest\Debug\proofrunkit_selftest.exe`

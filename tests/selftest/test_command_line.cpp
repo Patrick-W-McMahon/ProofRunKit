@@ -148,7 +148,9 @@ CapturedRun run_with_sample_registry(std::vector<std::string_view> arguments) {
     (void)prk_register_test_case(registry.get(), &fail_case);
     std::ostringstream output;
     std::ostringstream errors;
-    const int exit_code = run_command_line("prk", arguments, *registry, PrkClock{nullptr, nullptr}, output, errors);
+    const auto read_no_files = [](const std::string&) { return ScriptFileContent{false, {}, "cannot open file"}; };
+    const CommandLineEnvironment environment{*registry, PrkClock{nullptr, nullptr}, read_no_files, output, errors};
+    const int exit_code = run_command_line("prk", arguments, environment);
     return CapturedRun{exit_code, output.str(), errors.str()};
 }
 
@@ -156,7 +158,8 @@ void test_app_exit_codes(PrkTestContext* context, void*) {
     PRK_EXPECT(run_with_sample_registry({}).exit_code == kExitTestFailed);
     PRK_EXPECT(run_with_sample_registry({"--filter", "sample."}).exit_code == kExitAllPassed);
     PRK_EXPECT(run_with_sample_registry({"--nope"}).exit_code == kExitUsageError);
-    PRK_EXPECT(run_with_sample_registry({"suite.lua"}).exit_code == kExitNotImplemented);
+    PRK_EXPECT(run_with_sample_registry({"suite.lua"}).exit_code == kExitScriptError);
+    PRK_EXPECT(run_with_sample_registry({"suite.js"}).exit_code == kExitNotImplemented);
 }
 
 void test_app_help_version_and_list(PrkTestContext* context, void*) {
@@ -179,7 +182,7 @@ void test_app_runs_subcommands(PrkTestContext* context, void*) {
     PRK_EXPECT(listing.exit_code == kExitAllPassed && listing.output == "other.fail\n");
     const CapturedRun version = run_with_sample_registry({"version"});
     PRK_EXPECT(version.output.find(std::string("ProofRunKit ") + prk_get_version_string()) == 0);
-    PRK_EXPECT(run_with_sample_registry({"run", "suite.lua"}).exit_code == kExitNotImplemented);
+    PRK_EXPECT(run_with_sample_registry({"run", "suite.lua"}).exit_code == kExitScriptError);
 }
 
 void test_app_prints_command_help_and_errors(PrkTestContext* context, void*) {

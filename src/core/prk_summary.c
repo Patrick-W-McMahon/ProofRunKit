@@ -47,6 +47,8 @@ const char* prk_get_status_name(PrkStatus status) {
             return "out of memory";
         case PRK_STATUS_DUPLICATE_NAME:
             return "duplicate name";
+        case PRK_STATUS_SCRIPT_ERROR:
+            return "script error";
         default:
             return "unknown status";
     }

@@ -30,8 +30,8 @@ in another. Test names must be unique across all scripts in a run.
 
 The test-authoring API ([#12](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/12)) is engine-neutral: the
 JavaScript engine ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/11)) exposes the same functions with
-camelCase names (see [Lua and JavaScript names](#lua-and-javascript-names)). Process spawn arrives with
-[#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13).
+camelCase names (see [Lua and JavaScript names](#lua-and-javascript-names)). Processes are started with
+`prk.run_process` over the spawn layer ([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)).
 
 ### Registering tests
 
@@ -113,6 +113,40 @@ File access is read-only and limited to relative paths inside the working direct
 `:` (alternate data streams), and `..` components are refused with `access denied`. Symbolic links are not resolved,
 so this is a guard against mistakes, not a security boundary.
 
+### Processes
+
+```lua
+local result = prk.run_process{program = "gcc", args = {"-c", "hello.c", "-o", "hello.o"}, timeout_ms = 30000}
+prk.expect_exit_code(result, 0)        -- fails with the exit code (or why it did not run) and stderr
+local run = prk.run_process{program = "./hello", stdin = "input\n"}
+prk.expect_equal(run.stdout, "expected output\n")
+```
+
+`prk.run_process{...}` starts a program directly (never through a shell), waits for it, and returns a table.
+
+| Option | Meaning |
+| --- | --- |
+| `program` | Required. A path, or a bare name found on `PATH` (Windows adds `.exe`). |
+| `args` | Sequence of argument strings, passed exactly (spaces and quotes need no escaping). |
+| `cwd` | Working directory; default: ProofRunKit's. |
+| `env` | `{NAME = "value"}` added to (or, with `inherit_env = false`, replacing) ProofRunKit's environment. |
+| `stdin` | Bytes written to the program's standard input. |
+| `timeout_ms` | Default 60000. Never longer than the time left in the running test; at the limit the program and its children are killed. |
+| `output_limit` | Bytes kept per stream (default 16 MiB); the rest is dropped and flagged. |
+
+| Result field | Value |
+| --- | --- |
+| `ok` | `true` when the program exited with code 0. |
+| `outcome` | `"exited"`, `"timed out"`, `"failed to start"`, or `"killed by a signal"` (POSIX). |
+| `exit_code` | Exit code when `outcome == "exited"`, else `nil`. |
+| `stdout`, `stderr` | Captured output (strings); `stdout_truncated` / `stderr_truncated` flag the output limit. |
+| `elapsed_ms` | Wall-clock time of the run. |
+| `error` | Why it failed to start, e.g. `executable not found: gcc`. |
+
+A missing program or a timeout is returned, not raised, so a test can check for it; `prk.expect_exit_code(result,
+code [, message])` turns any unexpected result into a failure such as
+`build.lua:4: unexpected process result: expected exit code 0, got exit code 1` followed by the program's stderr.
+
 ### Other fields
 
 | Field | Value |
@@ -153,6 +187,9 @@ The JavaScript engine ([#11](https://github.com/Patrick-W-McMahon/ProofRunKit/is
 | `prk.fail_test`, `prk.skip_test` | `prk.failTest`, `prk.skipTest` |
 | `prk.read_clock_ms`, `prk.measure_elapsed_ms` | `prk.readClockMs`, `prk.measureElapsedMs` |
 | `prk.is_file_present`, `prk.read_text_file` | `prk.isFilePresent`, `prk.readTextFile` |
+| `prk.run_process{program=, args=, cwd=, env=, inherit_env=, stdin=, timeout_ms=, output_limit=}` | `prk.runProcess({program, args, cwd, env, inheritEnv, stdin, timeoutMs, outputLimit})` |
+| result `exit_code`, `elapsed_ms`, `stdout_truncated` | result `exitCode`, `elapsedMs`, `stdoutTruncated` |
+| `prk.expect_exit_code(result, code)` | `prk.expectExitCode(result, code)` |
 
 ## Sandbox
 
@@ -168,6 +205,7 @@ boundary for hostile code (see [DISCLAIMER.md](../DISCLAIMER.md)).
 | Instructions | Loading a script, and each test (its hooks and body together), may run at most 200 million Lua VM instructions. Exceeding the budget fails the test with `instruction limit of ... instructions exceeded`. Catching that error with `pcall` does not help: the script is stopped again at its next instruction. |
 | Time | Optional per-test wall-clock timeout (`timeout_ms` or `--timeout`), checked every 1000 instructions. |
 | Files | Read-only, relative paths inside the working directory, through `prk.is_file_present` and `prk.read_text_file` only. |
+| Processes | Only through `prk.run_process`, which the ProofRunKit front end grants. Programs run with the user's rights and are not sandboxed; they are always time-limited and killed with their children at the limit. |
 
 Long-running work inside a single standard-library C function (for example one enormous `string.rep`) is bounded by
 the memory limit rather than the instruction budget or the timeout, because both are checked between VM instructions.
@@ -202,13 +240,13 @@ executable on every build:
 | [`tests/lua/self/suites_and_hooks_test.lua`](../tests/lua/self/suites_and_hooks_test.lua) | `prk_self_suites_and_hooks_test` | Suites, the order of the four hooks, shared fixtures, and registration-only-while-loading rules. |
 | [`tests/lua/self/timing_and_files_test.lua`](../tests/lua/self/timing_and_files_test.lua) | `prk_self_timing_and_files_test` | The clock, `measure_elapsed_ms`, file checks against the source tree, and refusal of paths outside the working directory. |
 | [`tests/lua/self/tags_test.lua`](../tests/lua/self/tags_test.lua) | `prk_self_tags_test` | `--tag` / `--exclude-tag` selection, tag inheritance, the skip option, and hooks of unselected suites not running. |
+| [`tests/lua/self/process_test.lua`](../tests/lua/self/process_test.lua) | `prk_self_process_test` | `prk.run_process` starting `prk` itself: stdout, a non-zero exit with stderr, exact arguments, and a missing program as a result. |
 | [`tests/lua/self/reports_test.lua`](../tests/lua/self/reports_test.lua) | `prk_self_reports_test` (after `prk_self_reports_fixture` and `prk_self_reports_builtin`) | The runner and reporters, end to end. The fixture runs write JSON and JUnit files with `--filter`, `--exclude-tag`, `--json-file`, and `--junit-file`. The script then checks totals, order, outcomes, name mapping, escaping, and the built-in cycle-counter checks. |
 
 Samples under `tests/lua/samples/` show that failures, syntax errors, missing files, endless loops (instruction budget
 and `--timeout`) are reported correctly.
 
 The C++ harness `proofrunkit_selftest` stays in place as the fallback (#27). Some of its cases cover the C ABI
-directly (registry growth and duplicate names, invalid arguments, the memory limit, parser edge cases), and a script
-can only reach that behavior through process spawn
-([#13](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/13)). The harness can only be retired once the
+directly (registry growth and duplicate names, invalid arguments, the memory limit, parser edge cases). Scripts can
+now reach command-line behavior through `prk.run_process` (#13), but not the C ABI itself. The harness can only be retired once the
 self-hosted suite covers every case, is green on Windows x64 and x86, and Patrick approves.

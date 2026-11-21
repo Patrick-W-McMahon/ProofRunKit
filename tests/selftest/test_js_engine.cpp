@@ -53,6 +53,7 @@ std::unique_ptr<JsScriptRun> load_and_run_js_script(std::string_view source,
     auto run = std::make_unique<JsScriptRun>();
     run->clock_step_ms = setup.clock_step_ms;
     run->files = std::move(setup.files);
+    run->process_runner = setup.process_runner;
     const PrkScriptHost host = fixture_detail::make_fake_host(*run);
     run->script.reset(prk_create_js_script(setup.limits, setup.grants_host ? &host : nullptr, setup.settings));
     std::array<char, PRK_SCRIPT_ERROR_CAPACITY> error{};

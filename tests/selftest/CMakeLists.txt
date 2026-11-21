@@ -8,6 +8,7 @@ add_executable(proofrunkit_selftest
     test_lua_engine.cpp
     test_lua_test_api.cpp
     test_process_spawn.cpp
+    test_script_process_api.cpp
     test_junit_reporting.cpp
     test_registry.cpp
     test_reporting.cpp
@@ -117,6 +118,12 @@ set_tests_properties(prk_self_timing_and_files_test PROPERTIES WORKING_DIRECTORY
 add_test(NAME prk_self_tags_test
     COMMAND "${_prk_short_exe}" run --tag selected --exclude-tag excluded "${_prk_self}/tags_test.lua")
 set_tests_properties(prk_self_tags_test PROPERTIES PASS_REGULAR_EXPRESSION "3 tests: 2 passed, 0 failed, 1 skipped")
+
+# Process spawn from scripts (#12 over #13): run in prk's folder so the scripts can start "./prk".
+add_test(NAME prk_self_process_test COMMAND "${_prk_short_exe}" run "${_prk_self}/process_test.lua")
+set_tests_properties(prk_self_process_test PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:proofrunkit>")
+add_test(NAME prk_js_process_test COMMAND "${_prk_short_exe}" run "${_prk_js_tests}/process_test.js")
+set_tests_properties(prk_js_process_test PROPERTIES WORKING_DIRECTORY "$<TARGET_FILE_DIR:proofrunkit>")
 
 # Reports: fixture runs write JSON and JUnit files, then reports_test.lua checks them.
 set(_prk_self_reports_dir "${CMAKE_CURRENT_BINARY_DIR}/self-reports-run")

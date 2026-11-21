@@ -5,7 +5,8 @@
  *
  * Registration functions, the clock, and file access are C functions over the engine-neutral test
  * plan and PrkScriptHost; assertions, failTest, and skipTest are a JavaScript prelude (below) that
- * throws AssertionError / Skip objects, so tests can catch them with try/catch.
+ * throws AssertionError / Skip objects, so tests can catch them with try/catch. prk.runProcess lives in
+ * prk_js_process.c.
  *
  * Size: over the 400-line review mark because about 180 lines are the JavaScript prelude, a data table
  * kept beside the C functions it calls.
@@ -537,6 +538,22 @@ static const char* const prk_js_prelude[] = {
     "  if (!prk.readTextFile(path).includes(text)) fail(detail(message, 'text not found', 'expected file ' +\n"
     "    show(path) + ' to contain ' + show(text)));\n"
     "};\n"
+    "function describeProcess(result) {\n"
+    "  let text;\n"
+    "  if (result.outcome === 'exited') text = 'exit code ' + result.exitCode;\n"
+    "  else if (result.outcome === 'failed to start') text = 'failed to start: ' + result.error;\n"
+    "  else if (result.outcome === 'timed out') text = 'timed out after ' + result.elapsedMs + ' ms';\n"
+    "  else text = result.outcome + ' ' + result.signal;\n"
+    "  if (result.stderr) text += '\\nstderr: ' + result.stderr.slice(0, 2000);\n"
+    "  return text;\n"
+    "}\n"
+    "prk.expectExitCode = function expectExitCode(result, expected, message) {\n"
+    "  if (result === null || typeof result !== 'object' || result.outcome === undefined) {\n"
+    "    throw new TypeError('prk.expectExitCode: result must come from prk.runProcess');\n"
+    "  }\n"
+    "  if (result.outcome !== 'exited' || result.exitCode !== expected) fail(detail(message,\n"
+    "    'unexpected process result', 'expected exit code ' + expected + ', got ' + describeProcess(result)));\n"
+    "};\n"
     "prk.measureElapsedMs = function measureElapsedMs(action, ...args) {\n"
     "  const started = prk.readClockMs();\n"
     "  action(...args);\n"
@@ -616,6 +633,9 @@ int prk_open_js_test_api(JSContext* context) {
         JS_SetPropertyStr(context, prk, "jsEngine", JS_NewString(context, prk_get_js_engine_version_string()));
         JS_SetPropertyStr(context, console, "log", JS_NewCFunction(context, prk_js_print, "log", 1));
         JS_SetPropertyStr(context, global, "print", JS_NewCFunction(context, prk_js_print, "print", 1));
+        status = prk_add_js_process_api(context, prk);
+    }
+    if (status == 0) {
         status = prk_run_js_prelude(context, prk);
     }
     if (status == 0) {

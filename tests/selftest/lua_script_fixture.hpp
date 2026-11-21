@@ -28,6 +28,7 @@ struct FakeScriptHostState {
     std::uint64_t clock_ms = 1000;             ///< Fake monotonic clock.
     std::uint64_t clock_step_ms = 0;           ///< Added to clock_ms on every read.
     std::map<std::string, std::string> files;  ///< Readable files; "secret/denied" paths are refused.
+    PrkProcessRunner process_runner{};         ///< Process spawn granted to the script (none by default).
 };
 
 /** @brief A loaded script, its fake host, and what loading and running it produced. */
@@ -54,7 +55,8 @@ struct LuaScriptRunSetup {
     const PrkScriptRunSettings* settings = nullptr;
     std::uint64_t clock_step_ms = 0;
     std::map<std::string, std::string> files;
-    bool grants_host = true;  ///< False creates the script without any host services.
+    bool grants_host = true;            ///< False creates the script without any host services.
+    PrkProcessRunner process_runner{};  ///< Process spawn granted through the host (none by default).
 };
 
 namespace fixture_detail {
@@ -96,8 +98,12 @@ inline void record_test_finished(void* state, const PrkTestResult* result) {
 
 /** @brief A PrkScriptHost over @p state (captured print, scripted clock, in-memory files). */
 inline PrkScriptHost make_fake_host(FakeScriptHostState& state) {
-    return PrkScriptHost{&append_printed_text, &read_fake_clock, &find_fake_file, &read_fake_file,
-                         static_cast<FakeScriptHostState*>(&state)};
+    return PrkScriptHost{&append_printed_text,
+                         &read_fake_clock,
+                         &find_fake_file,
+                         &read_fake_file,
+                         static_cast<FakeScriptHostState*>(&state),
+                         state.process_runner};
 }
 
 }  // namespace fixture_detail
@@ -108,6 +114,7 @@ inline std::unique_ptr<LuaScriptRun> load_and_run_lua_script(std::string_view so
     auto run = std::make_unique<LuaScriptRun>();
     run->clock_step_ms = setup.clock_step_ms;
     run->files = std::move(setup.files);
+    run->process_runner = setup.process_runner;
     const PrkScriptHost host = fixture_detail::make_fake_host(*run);
     run->script.reset(prk_create_lua_script(setup.limits, setup.grants_host ? &host : nullptr, setup.settings));
     std::array<char, PRK_LUA_ERROR_CAPACITY> error{};

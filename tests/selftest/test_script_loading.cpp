@@ -76,7 +76,7 @@ void test_detects_script_language(PrkTestContext* context, void*) {
 }
 
 void test_loads_scripts_into_one_registry(PrkTestContext* context, void*) {
-    const PrkScriptHost no_host{nullptr, nullptr, nullptr, nullptr, nullptr};
+    const PrkScriptHost no_host{nullptr, nullptr, nullptr, nullptr, nullptr, PrkProcessRunner{nullptr, nullptr}};
     const LoadedTestScripts loaded =
         load_test_scripts({"pass.lua", "fail.lua", "pass.js", "y.txt", "missing.lua", "broken.lua", "broken.js"},
                           &read_sample_script, no_host, nullptr, nullptr);

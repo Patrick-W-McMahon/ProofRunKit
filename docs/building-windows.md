@@ -74,6 +74,7 @@ resets, or discards changes.
 | `prk_js_failure_message`, `prk_js_reports_failures`, `prk_js_reports_syntax_error` | A failing JavaScript test exits 1 with `file:line:`; a syntax error exits 4. |
 | `prk_js_stops_infinite_loop`, `prk_js_timeout_option` | The uncatchable instruction budget and `--timeout` stop an endless loop that tries `try`/`catch`. |
 | `prk_mixed_lua_and_js_list` | One `prk list` loads a Lua and a JavaScript script together. |
+| `prk_self_process_test`, `prk_js_process_test` | Lua and JavaScript scripts start `prk` itself with `prk.run_process` / `prk.runProcess` (run in prk's folder). |
 | `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow the contract in docs/exit-codes.md (#21). |
 | `prk_self_assertions_test` | Self-hosted (#55): every `prk.expect_*` assertion, run by `prk` on `tests/lua/self/assertions_test.lua`. |
 | `prk_self_suites_and_hooks_test` | Self-hosted: suites and hook order. |

@@ -70,7 +70,7 @@ std::string find_parent_folder(const std::string& path) {
     return separator == std::string::npos ? std::string() : path.substr(0, separator);
 }
 
-/** @brief Built-in variables: prk, config_dir, build_dir, work_dir, exe, os, sep. */
+/** @brief Built-in variables: prk, config_dir, build_dir, work_dir, exe, os. */
 TestVariables make_builtin_variables(const CommandLineOptions& options, const std::string& config_path,
                                      const TestSuiteServices& services) {
     TestVariables builtins;
@@ -78,7 +78,6 @@ TestVariables make_builtin_variables(const CommandLineOptions& options, const st
     builtins["config_dir"] = find_parent_folder(config_path);
     builtins["exe"] = services.executable_suffix;
     builtins["os"] = services.os_name;
-    builtins["sep"] = std::string(1, services.path_separator);
     if (!options.suite_build_dir.empty()) {
         builtins["build_dir"] = services.make_absolute_path(options.suite_build_dir);
     }

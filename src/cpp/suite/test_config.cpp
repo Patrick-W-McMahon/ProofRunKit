@@ -117,9 +117,10 @@ bool read_entry_numbers_and_flags(const JsonValue& object, const std::string& wh
 
 /** @brief Reads one entry object of `setup` or `tests`. */
 bool read_entry(const JsonValue& object, const std::string& where, ConfigReader& reader, TestEntry& entry) {
-    static const std::set<std::string_view> kKeys = {
-        "name",       "run",      "command", "args",          "cwd",           "env",         "expect_exit_code",
-        "timeout_ms", "template", "report",  "expect_output", "reject_output", "skip_unless", "description"};
+    static const std::set<std::string_view> kKeys = {"name",        "run",         "command",          "args",
+                                                     "cwd",         "env",         "expect_exit_code", "timeout_ms",
+                                                     "template",    "report",      "expect_output",    "reject_output",
+                                                     "skip_unless", "description", "make_dirs"};
     if (object.kind != JsonValue::Kind::Object) {
         return reader.fail(where, "expected an object");
     }
@@ -145,6 +146,10 @@ bool read_entry(const JsonValue& object, const std::string& where, ConfigReader&
     const JsonValue* arguments = object.find_member("args");
     const JsonValue* skip_unless = object.find_member("skip_unless");
     const JsonValue* env = object.find_member("env");
+    const JsonValue* make_dirs = object.find_member("make_dirs");
+    if (make_dirs != nullptr && !read_string_list(*make_dirs, at + ".make_dirs", reader, entry.make_dirs)) {
+        return false;
+    }
     if ((arguments != nullptr && !read_string_list(*arguments, at + ".args", reader, entry.arguments)) ||
         (skip_unless != nullptr && !read_string_list(*skip_unless, at + ".skip_unless", reader, entry.skip_unless)) ||
         (env != nullptr && !read_environment(*env, at + ".env", reader, entry.env))) {

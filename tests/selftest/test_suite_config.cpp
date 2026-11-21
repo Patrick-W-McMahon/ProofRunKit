@@ -26,7 +26,8 @@ const char kFullConfig[] = R"({
   "setup": [{"name": "fixture", "run": "a.lua", "expect_exit_code": 1, "report": "none"}],
   "tests": [
     {"name": "self.tags", "run": ["t.lua", "u.js"], "args": ["--tag", "x"], "cwd": "${bin}", "env": {"A": "b"},
-     "timeout_ms": 5, "template": true, "skip_unless": "${bin}/x", "expect_output": "ok", "reject_output": "bad"},
+     "timeout_ms": 5, "template": true, "skip_unless": "${bin}/x", "expect_output": "ok", "reject_output": "bad",
+     "make_dirs": ["a", "b"]},
     {"name": "cpp", "command": ["${bin}/selftest", "--json"], "report": "json"}
   ]
 })";
@@ -51,7 +52,7 @@ void test_parses_full_config(PrkTestContext* context, void*) {
     PRK_EXPECT(tags.name == "self.tags" && tags.scripts.size() == 2 && tags.arguments.size() == 2);
     PRK_EXPECT(tags.working_directory == "${bin}" && tags.env.size() == 1 && tags.timeout_ms == 5);
     PRK_EXPECT(tags.is_template && !tags.is_report_read.has_value() && tags.skip_unless.size() == 1);
-    PRK_EXPECT(tags.expected_output == "ok" && tags.rejected_output == "bad");
+    PRK_EXPECT(tags.expected_output == "ok" && tags.rejected_output == "bad" && tags.make_dirs.size() == 2);
     PRK_EXPECT(config->tests.at(1).command.size() == 2 && config->tests.at(1).is_report_read == true);
     const std::optional<TestConfig> minimal = parse_test_config(R"({"schema_version": 1})", error);
     PRK_EXPECT(minimal && minimal->runner == "${prk}" && minimal->default_timeout_ms == 600000);

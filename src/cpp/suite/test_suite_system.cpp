@@ -31,9 +31,9 @@ std::filesystem::path make_file_path(const std::string& text) {
     return std::filesystem::path(std::u8string(reinterpret_cast<const char8_t*>(text.data()), text.size()));
 }
 
-/** @brief A path to UTF-8 text. */
+/** @brief A path to UTF-8 text with forward slashes, which Windows accepts and scripts can embed in strings. */
 std::string format_file_path(const std::filesystem::path& path) {
-    const std::u8string text = path.u8string();
+    const std::u8string text = path.generic_u8string();
     return std::string(reinterpret_cast<const char*>(text.data()), text.size());
 }
 
@@ -62,13 +62,20 @@ std::string write_whole_file(const std::string& path, const std::string& text) {
     return file ? std::string() : std::string("cannot write file");
 }
 
+/** @brief Creates a folder and its parents; returns "" or why not. */
+std::string make_folders(const std::string& path) {
+    std::error_code error;
+    std::filesystem::create_directories(make_file_path(path), error);
+    return error ? error.message() : std::string();
+}
+
 /** @brief Tells whether a file or folder exists. */
 bool does_path_exist(const std::string& path) {
     std::error_code error;
     return !path.empty() && std::filesystem::exists(make_file_path(path), error);
 }
 
-/** @brief Returns @p path made absolute and normalised (native separators). */
+/** @brief Returns @p path made absolute and normalised, with forward slashes. */
 std::string make_absolute_normal_path(const std::string& path) {
     std::error_code error;
     const std::filesystem::path absolute = std::filesystem::absolute(make_file_path(path), error);
@@ -108,11 +115,11 @@ TestSuiteServices make_system_test_suite_services() {
     services.process_runner = prk_get_system_process_runner();
     services.read_file = &read_whole_file;
     services.write_file = &write_whole_file;
+    services.make_directories = &make_folders;
     services.path_exists = &does_path_exist;
     services.find_own_executable = &find_running_executable;
     services.make_absolute_path = &make_absolute_normal_path;
 #if defined(_WIN32)
-    services.path_separator = '\\';
     services.executable_suffix = ".exe";
     services.os_name = "windows";
 #elif defined(__APPLE__)

@@ -25,12 +25,13 @@ struct TestSuiteServices {
     std::function<std::optional<std::string>(const std::string& path)> read_file;  ///< Whole file, or nullopt.
     std::function<std::string(const std::string& path, const std::string& text)> write_file;  ///< "" or why not;
                                                                                               ///< makes folders.
+    std::function<std::string(const std::string& path)> make_directories;    ///< "" or why the folder cannot be made.
     PathExistsFunction path_exists;                                          ///< File or folder exists.
     std::function<std::string()> find_own_executable;                        ///< Absolute path of the running prk.
     std::function<std::string(const std::string& path)> make_absolute_path;  ///< Absolute, normalised path.
-    char path_separator = '/';                                               ///< '\\' on Windows.
-    std::string executable_suffix;                                           ///< ".exe" on Windows, else "".
-    std::string os_name = "linux";                                           ///< "windows", "linux", or "macos".
+    char path_separator = '/';      ///< '/' (Windows accepts it, and scripts can embed it).
+    std::string executable_suffix;  ///< ".exe" on Windows, else "".
+    std::string os_name = "linux";  ///< "windows", "linux", or "macos".
 };
 
 /** @brief One result in the combined run. */

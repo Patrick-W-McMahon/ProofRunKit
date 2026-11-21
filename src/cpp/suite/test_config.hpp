@@ -36,6 +36,7 @@ struct TestEntry {
     bool is_template = false;              ///< `template`: expand `${name}` inside the scripts before running.
     std::optional<bool> is_report_read;    ///< `report`: "json" = read the child's JSON report; unset = auto.
     std::vector<std::string> skip_unless;  ///< `skip_unless`: paths that must exist, else the entry is skipped.
+    std::vector<std::string> make_dirs;    ///< `make_dirs`: folders created before the entry starts.
 };
 
 /** @brief One config variable: a single value, or candidate paths of which the first existing one wins. */

@@ -35,6 +35,7 @@ struct PreparedEntry {
     std::string working_directory;          ///< Absolute or "" (config folder).
     std::vector<std::string> environment;   ///< NAME=VALUE.
     std::string report_path;                ///< Child JSON report, or "" when not read.
+    std::vector<std::string> directories;   ///< Folders to create first (make_dirs).
     std::string skip_reason;                ///< Non-empty: do not run; skip with this reason.
 };
 
@@ -145,6 +146,9 @@ PreparedEntry prepare_entry(const TestEntry& entry, const TestConfig& config, co
             prepared.skip_reason = "missing " + path;
         }
     }
+    for (const std::string& folder : entry.make_dirs) {
+        prepared.directories.push_back(join_suite_path(settings.config_dir, expander.expand(folder), separator));
+    }
     add_entry_command_line(entry, config, settings, services, expander, prepared);
     prepared.environment = build_entry_environment(entry, config, expander);
     const std::string cwd = entry.working_directory.empty() ? std::string() : expander.expand(entry.working_directory);
@@ -240,6 +244,12 @@ std::vector<SuiteTestResult> run_test_entry(const TestEntry& entry, const TestCo
     const PreparedEntry prepared = prepare_entry(entry, config, settings, services);
     if (!prepared.skip_reason.empty()) {
         return {SuiteTestResult{entry.name, PRK_OUTCOME_SKIPPED, prepared.skip_reason, 0}};
+    }
+    for (const std::string& folder : prepared.directories) {
+        const std::string problem = services.make_directories ? services.make_directories(folder) : "no file access";
+        if (!problem.empty()) {
+            return {SuiteTestResult{entry.name, PRK_OUTCOME_FAILED, "cannot create " + folder + ": " + problem, 0}};
+        }
     }
     if (!prepared.report_path.empty() && services.write_file) {
         (void)services.write_file(prepared.report_path, "");  // No stale report from an earlier run.

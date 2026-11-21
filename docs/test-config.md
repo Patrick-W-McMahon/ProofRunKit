@@ -76,6 +76,7 @@ Test logic stays in Lua and JavaScript test scripts. The configuration only says
 | `template` | `true`: expand `${name}` inside the scripts, write them to `${work_dir}/templates/<entry>/` (dropping `.in`), and run those. `$${` stays a literal `${`. |
 | `report` | `"json"`: append `--json-file` and list every test of the child's JSON report in the combined results. `"none"`: one result for the entry. Default: `"json"` for `run` entries that expect exit 0. |
 | `skip_unless` | Path or paths that must exist, otherwise the entry is skipped with a reason. |
+| `make_dirs` | Folder or folders created (with parents) before the entry starts, for example for report files. |
 | `description` | Free text. |
 
 Relative paths in `run`, `command` (when they contain a separator), `cwd`, and `skip_unless` start at the config
@@ -91,7 +92,9 @@ folder.
 | `${work_dir}` | See `work_dir` above. |
 | `${exe}` | `.exe` on Windows, empty elsewhere. |
 | `${os}` | `windows`, `linux`, or `macos`. |
-| `${sep}` | `\` on Windows, `/` elsewhere. |
+
+Built-in paths use forward slashes on every platform (Windows accepts them), so they can be pasted into Lua and
+JavaScript string literals by templates without escaping.
 
 `--var NAME=VALUE` sets or overrides any variable (repeatable). An entry that uses an unset variable is **skipped**
 with `needs ${name}`, so `prk test` without `--build-dir` still runs everything that does not need a build.

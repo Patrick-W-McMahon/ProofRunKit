@@ -78,6 +78,10 @@ TestSuiteServices make_fake_services(FakeWorld& world) {
         world.files[path] = text;
         return std::string();
     };
+    services.make_directories = [&world](const std::string& path) {
+        world.files[path + "/"] = "";
+        return path.starts_with("/ro") ? std::string("read-only") : std::string();
+    };
     services.path_exists = [&world](const std::string& path) { return world.files.count(path) > 0 || path == "/b"; };
     services.find_own_executable = [] { return std::string("/p/prk"); };
     services.make_absolute_path = [](const std::string& path) {
@@ -122,12 +126,16 @@ void test_runs_script_entries(PrkTestContext* context, void*) {
     entry.arguments = {"--tag", "${greeting}"};
     entry.env = {{"A", "${bin}"}};
     entry.working_directory = "${bin}";
+    entry.make_dirs = {"out/${greeting}"};
     const std::vector<SuiteTestResult> results =
         run_test_entry(entry, config, make_settings(), make_fake_services(world));
     PRK_EXPECT(world.command_lines.size() == 1);
     PRK_EXPECT((world.command_lines[0] == std::vector<std::string>{"/p/prk", "run", "/repo/t/a.lua", "--tag", "hi",
                                                                    "--json-file", "/w/results/e.json"}));
-    PRK_EXPECT(world.directories[0] == "/b");
+    PRK_EXPECT(world.directories[0] == "/b" && world.files.count("/repo/out/hi/") == 1);
+    entry.make_dirs = {"/ro/x"};
+    PRK_EXPECT(run_test_entry(entry, config, make_settings(), make_fake_services(world))[0].message ==
+               "cannot create /ro/x: read-only");
     PRK_EXPECT((world.environments[0] == std::vector<std::string>{"PRK_OFFLINE=1", "A=/b"}));
     PRK_EXPECT(results.size() == 2 && results[0].name == "e/a.one" && results[0].outcome == PRK_OUTCOME_PASSED);
     PRK_EXPECT(results[1].outcome == PRK_OUTCOME_SKIPPED && results[1].message == "later");
@@ -288,7 +296,8 @@ void test_system_services(PrkTestContext* context, void*) {
     PRK_EXPECT(services.path_exists(".") && !services.path_exists("") && !services.path_exists("no/such/prk/file"));
     PRK_EXPECT(!services.read_file("no/such/prk/file").has_value());
     const std::string absolute = services.make_absolute_path("x");
-    PRK_EXPECT(absolute.size() > 2 && absolute.ends_with("x") && join_suite_path("/q", absolute, '/') == absolute);
+    PRK_EXPECT(absolute.size() > 2 && absolute.ends_with("/x") && join_suite_path("/q", absolute, '/') == absolute);
+    PRK_EXPECT(absolute.find('\\') == std::string::npos && services.make_directories(".").empty());
     PRK_EXPECT(services.path_exists(services.find_own_executable()));
 }
 

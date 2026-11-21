@@ -249,22 +249,23 @@ in the engine-neutral test plan (`src/script/prk_test_plan.c`), so both engines 
 ## Self-hosted tests
 
 ProofRunKit tests itself with its own Lua platform
-([#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55)). CTest runs these scripts through the shipped `prk`
-executable on every build:
+([#55](https://github.com/Patrick-W-McMahon/ProofRunKit/issues/55)). Each script is an entry in
+[`prk.tests.json`](../prk.tests.json), run by `prk test` ([test-config.md](test-config.md)); CTest runs `prk test` once
+on every build:
 
-| Script | CTest | Covers |
+| Script | `prk.tests.json` entry | Covers |
 | --- | --- | --- |
-| [`tests/lua/prk_lua_api_test.lua`](../tests/lua/prk_lua_api_test.lua) | `prk_lua_api_selftest` | Versions, skips, and the sandbox (no `io`/`os`/`package`/`debug`, text-only `load`, safe libraries). |
-| [`tests/lua/self/assertions_test.lua`](../tests/lua/self/assertions_test.lua) | `prk_self_assertions_test` | Every `prk.expect_*` assertion, passing and failing, including exact failure messages, `file:line:` locations, and catchable error objects. |
-| [`tests/lua/self/suites_and_hooks_test.lua`](../tests/lua/self/suites_and_hooks_test.lua) | `prk_self_suites_and_hooks_test` | Suites, the order of the four hooks, shared fixtures, and registration-only-while-loading rules. |
-| [`tests/lua/self/timing_and_files_test.lua`](../tests/lua/self/timing_and_files_test.lua) | `prk_self_timing_and_files_test` | The clock, `measure_elapsed_ms`, file checks against the source tree, and refusal of paths outside the working directory. |
-| [`tests/lua/self/tags_test.lua`](../tests/lua/self/tags_test.lua) | `prk_self_tags_test` | `--tag` / `--exclude-tag` selection, tag inheritance, the skip option, and hooks of unselected suites not running. |
-| [`tests/lua/self/process_test.lua`](../tests/lua/self/process_test.lua) | `prk_self_process_test` | `prk.run_process` starting `prk` itself: stdout, a non-zero exit with stderr, exact arguments, and a missing program as a result. |
-| [`tests/lua/self/compile_test.lua.in`](../tests/lua/self/compile_test.lua.in) | `prk_self_compile_test` | `prk.compile` on the samples in `tests/drivers/c`: C and C++ programs built and run, warnings, `werror`, parsed errors; skips without a compiler. |
-| [`tests/lua/self/reports_test.lua`](../tests/lua/self/reports_test.lua) | `prk_self_reports_test` (after `prk_self_reports_fixture` and `prk_self_reports_builtin`) | The runner and reporters, end to end. The fixture runs write JSON and JUnit files with `--filter`, `--exclude-tag`, `--json-file`, and `--junit-file`. The script then checks totals, order, outcomes, name mapping, escaping, and the built-in cycle-counter checks. |
-| [`tests/lua/self/sandbox_test.lua`](../tests/lua/self/sandbox_test.lua) | `prk_self_sandbox_test` | Ambient access hidden, text-only `load`, the memory limit as a catchable failure, `add_test` only while loading, versions. |
-| [`tests/lua/self/process_options_test.lua`](../tests/lua/self/process_options_test.lua) | `prk_self_process_options_test` | `prk.run_process` options with the `prk_spawn_child` helper: `env`, `inherit_env = false`, `cwd`, exact `stdin`, the timeout kill, and `output_limit`. |
-| [`tests/js/self/cli_test.js.in`](../tests/js/self/cli_test.js.in) | `prk_js_cli_test` | The command line and runner by running `./prk`: help, usage errors, exit codes, the version line, order and counts, filters, JSON escapes, script problems, report errors, the Lua memory limit. |
+| [`tests/lua/prk_lua_api_test.lua`](../tests/lua/prk_lua_api_test.lua) | `lua.api` | Versions, skips, and the sandbox (no `io`/`os`/`package`/`debug`, text-only `load`, safe libraries). |
+| [`tests/lua/self/assertions_test.lua`](../tests/lua/self/assertions_test.lua) | `self.assertions` | Every `prk.expect_*` assertion, passing and failing, including exact failure messages, `file:line:` locations, and catchable error objects. |
+| [`tests/lua/self/suites_and_hooks_test.lua`](../tests/lua/self/suites_and_hooks_test.lua) | `self.suites_and_hooks` | Suites, the order of the four hooks, shared fixtures, and registration-only-while-loading rules. |
+| [`tests/lua/self/timing_and_files_test.lua`](../tests/lua/self/timing_and_files_test.lua) | `self.timing_and_files` | The clock, `measure_elapsed_ms`, file checks against the source tree, and refusal of paths outside the working directory. |
+| [`tests/lua/self/tags_test.lua`](../tests/lua/self/tags_test.lua) | `self.tags` | `--tag` / `--exclude-tag` selection, tag inheritance, the skip option, and hooks of unselected suites not running. |
+| [`tests/lua/self/process_test.lua`](../tests/lua/self/process_test.lua) | `self.process` | `prk.run_process` starting `prk` itself: stdout, a non-zero exit with stderr, exact arguments, and a missing program as a result. |
+| [`tests/lua/self/compile_test.lua.in`](../tests/lua/self/compile_test.lua.in) | `self.compile` | `prk.compile` on the samples in `tests/drivers/c`: C and C++ programs built and run, warnings, `werror`, parsed errors; skips without a compiler. |
+| [`tests/lua/self/reports_test.lua`](../tests/lua/self/reports_test.lua) | `self.reports` (after the setup steps `reports_fixture` and `reports_builtin`) | The runner and reporters, end to end. The fixture runs write JSON and JUnit files with `--filter`, `--exclude-tag`, `--json-file`, and `--junit-file`. The script then checks totals, order, outcomes, name mapping, escaping, and the built-in cycle-counter checks. |
+| [`tests/lua/self/sandbox_test.lua`](../tests/lua/self/sandbox_test.lua) | `self.sandbox` | Ambient access hidden, text-only `load`, the memory limit as a catchable failure, `add_test` only while loading, versions. |
+| [`tests/lua/self/process_options_test.lua`](../tests/lua/self/process_options_test.lua) | `self.process_options` | `prk.run_process` options with the `prk_spawn_child` helper: `env`, `inherit_env = false`, `cwd`, exact `stdin`, the timeout kill, and `output_limit`. |
+| [`tests/js/self/cli_test.js.in`](../tests/js/self/cli_test.js.in) | `self.cli` | The command line and runner by running `./prk`: help, usage errors, exit codes, the version line, order and counts, filters, JSON escapes, script problems, report errors, the Lua memory limit. |
 
 Samples under `tests/lua/samples/` show that failures, syntax errors, missing files, endless loops (instruction budget
 and `--timeout`) are reported correctly.

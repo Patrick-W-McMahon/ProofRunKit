@@ -55,36 +55,29 @@ resets, or discards changes.
 
 ## What CTest runs
 
+CTest has five entries. Everything that runs through `prk` is listed once, in [`prk.tests.json`](../prk.tests.json),
+and CTest runs it with a single `prk test` (#83).
+
 | Test | Checks |
 | --- | --- |
-| `proofrunkit_selftest` | Registry, runner, reporters, CLI parsing, the Lua and QuickJS-ng engines and sandboxes, script loading, process spawn (with the `prk_spawn_child` helper), the C/C++ compiler driver, and the MASM cycle counter vs. its C fallback. |
-| `proofrunkit_version` | `proofrunkit --version` prints the version and `asm-masm-x64`. |
-| `proofrunkit_builtin_checks` | `proofrunkit` with no scripts runs its built-in environment checks. |
-| `proofrunkit_rejects_unknown_option` | Bad options produce a usage error. |
+| `proofrunkit_selftest` | The C++ harness (the fallback, #27): registry, runner, reporters, CLI parsing, engines and sandboxes, script loading, process spawn, the compiler and assembler drivers, `prk test`, the update helpers, and the MASM cycle counter vs. its C fallback. |
 | `prk_is_identical_copy` | `prk.exe` is byte-identical to `proofrunkit.exe` (#60). |
-| `prk_version`, `prk_version_subcommand` | `prk --version` and `prk version` print the version. |
-| `prk_help_run`, `prk_list`, `prk_run_builtin_checks_json` | `prk help run`, `prk list`, and `prk run --json` work. |
-| `prk_rejects_unknown_command` | `prk help no-such-command` is a usage error. |
-| `prk_lua_api_selftest`, `prk_lua_api_selftest_exit_code`, `prk_lua_list` | `tests/lua/prk_lua_api_test.lua` runs through `prk` and passes (#9, #55). |
-| `prk_lua_reports_failures`, `prk_lua_failure_message` | A failing Lua test exits 1 with its message. |
-| `prk_lua_reports_syntax_error`, `prk_lua_reports_missing_file` | Broken or missing scripts exit 4 with `file:line:` or `cannot open file`. |
-| `prk_lua_stops_infinite_loop` | The instruction budget stops an endless loop. |
-| `prk_lua_timeout_option` | `--timeout 200` stops an endless loop with a wall-clock timeout (#12). |
-| `prk_js_api_selftest`, `prk_js_api_selftest_exit_code` | `tests/js/prk_js_api_test.js` runs through `prk` on QuickJS-ng and passes (#11). |
-| `prk_js_failure_message`, `prk_js_reports_failures`, `prk_js_reports_syntax_error` | A failing JavaScript test exits 1 with `file:line:`; a syntax error exits 4. |
-| `prk_js_stops_infinite_loop`, `prk_js_timeout_option` | The uncatchable instruction budget and `--timeout` stop an endless loop that tries `try`/`catch`. |
-| `prk_mixed_lua_and_js_list` | One `prk list` loads a Lua and a JavaScript script together. |
-| `prk_self_process_test`, `prk_js_process_test` | Lua and JavaScript scripts start `prk` itself with `prk.run_process` / `prk.runProcess` (run in prk's folder). |
-| `prk_self_compile_test`, `prk_js_compile_test` | `prk.compile` builds and runs the samples in `tests/drivers/c` (programs, compile-then-link, a static and a shared library) with `cl` from PATH or found with vswhere/vcvarsall, or clang/gcc; each test skips when there is none. The self-test `c_driver.discovers_real_msvc` always runs the real vswhere/vcvarsall discovery and skips only when Visual Studio's C++ tools are missing. |
-| `prk_self_assemble_test`, `prk_js_assemble_test` | `prk.assemble` assembles the samples in `tests/drivers/asm`: a GAS object (skipped without `as`) and MASM syntax errors with `ml64` / `ml` from PATH or vswhere (NASM off Windows). The self-test `asm_driver.assembles_links_and_runs` assembles an `add` function with MASM, links it with `cl`, and runs it; it skips only when MASM is missing. |
-| `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow the contract in docs/exit-codes.md (#21). |
-| `prk_self_assertions_test` | Self-hosted (#55): every `prk.expect_*` assertion, run by `prk` on `tests/lua/self/assertions_test.lua`. |
-| `prk_self_suites_and_hooks_test` | Self-hosted: suites and hook order. |
-| `prk_self_timing_and_files_test` | Self-hosted: clock, timing, and read-only file checks (runs in the repository root). |
-| `prk_self_tags_test` | Self-hosted: `--tag` / `--exclude-tag` selection. |
-| `prk_self_reports_fixture`, `prk_self_reports_builtin` | Write JSON and JUnit reports for `prk_self_reports_test`. The fixture run exits 1 by design. |
-| `prk_self_reports_test` | Self-hosted: checks those reports (runner, reporters, `--filter`, cycle-counter checks). |
 | `proofrunkit_license_rtf_generation` | The installer license RTF is generated correctly from `LICENSE` (#58). |
+| `prk_reports_and_exit_codes` | `--json-file` and `--junit-file` write correct reports, and exit codes 0-5 follow docs/exit-codes.md (#21). |
+| `prk_test_suite` | `prk test --build-dir <this build>`: every entry of `prk.tests.json`, as described below. |
+
+`prk.tests.json` covers:
+- **Smoke tests:** `proofrunkit` / `prk` version lines, built-in checks, usage errors, help, list, `-v -offline`, and `-update` without the network.
+- **Lua and JS API scripts and samples:** failures with messages (exit 1), syntax errors and missing files (exit 4), endless loops stopped by the instruction budget and by `--timeout`, and mixed Lua + JS listings.
+- **The self-hosted suite** (`tests/lua/self`, `tests/js/self`): assertions, suites and hooks, timing and files, tags, sandbox, reports (after two setup runs that write the fixture reports), process spawn, process options with `prk_spawn_child`, the CLI suite, and the compiler and assembler drivers. The compile and assemble tests skip when no compiler or assembler is found.
+
+Run the same suite without CTest from the repository root, with the built or the installed `prk`:
+
+```powershell
+build\windows-msvc-x64-debug\Debug\prk.exe test --build-dir build\windows-msvc-x64-debug
+prk test --build-dir build\windows-msvc-x64-debug     # installed prk drives the run; the built prk is tested
+prk test                                               # no build: tests the installed prk, skips build-only entries
+```
 
 Run the self-test directly for per-test output: `build\windows-msvc-x64-debug\tests\selftest\Debug\proofrunkit_selftest.exe`
 (it accepts `--list`, `--filter TEXT`, and `--format json`).

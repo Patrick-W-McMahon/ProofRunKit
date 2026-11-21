@@ -1,4 +1,4 @@
--- Fixture for reports_test.lua (#21, #55): a known mix of outcomes. CTest runs it with
+-- Fixture for reports_test.lua (#21, #55): a known mix of outcomes. prk test (prk.tests.json) runs it with
 -- --filter fixture. --exclude-tag slow --json-file ... --junit-file ...; it exits 1 by design.
 prk.add_test("fixture.passes", function() prk.expect_true(true) end)
 prk.add_test("fixture.fails", function()

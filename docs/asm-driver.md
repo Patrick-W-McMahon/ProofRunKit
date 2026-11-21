@@ -69,6 +69,6 @@ MASM is Windows only.
   (including the MASM fallback to discovery and `ml.exe` for x86), the Lua and JavaScript bindings, and a real
   assemble, link, and run of an `add` function (MASM x64 or x86 on Windows, GAS x86-64 elsewhere; skipped when the
   assembler is missing or the host is arm64).
-- CTest `prk_self_assemble_test` and `prk_js_assemble_test` run [`tests/lua/self/assemble_test.lua.in`](../tests/lua/self/assemble_test.lua.in)
+- The `prk.tests.json` entries `self.assemble` and `js.assemble` run [`tests/lua/self/assemble_test.lua.in`](../tests/lua/self/assemble_test.lua.in)
   and [`tests/js/assemble_test.js.in`](../tests/js/assemble_test.js.in) over the samples in
   [`tests/drivers/asm`](../tests/drivers/asm); each test skips when its assembler is missing.

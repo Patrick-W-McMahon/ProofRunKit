@@ -1,4 +1,4 @@
--- Self-hosted tests for tag selection (#12, #55). CTest runs this file with
+-- Self-hosted tests for tag selection (#12, #55). prk test (prk.tests.json) runs this file with
 -- `--tag selected --exclude-tag excluded`; the tests that must not run fail if they do.
 -- Run with:  prk run --tag selected --exclude-tag excluded tests/lua/self/tags_test.lua
 

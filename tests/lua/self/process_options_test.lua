@@ -1,5 +1,5 @@
 -- Self-hosted twin of the C++ process.* spawn cases (#55): environment, working directory, standard
--- input, timeout kill, and output limits, through prk.run_process. CTest runs this file from the folder
+-- input, timeout kill, and output limits, through prk.run_process. prk test (prk.tests.json) runs this file from the folder
 -- that holds the prk_spawn_child helper, so "./prk_spawn_child" works on every platform.
 
 local child = "./prk_spawn_child"

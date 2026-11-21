@@ -1,6 +1,6 @@
 -- ProofRunKit testing itself with its own Lua platform (#9, first step of #55).
 -- Run with:  prk run tests/lua/prk_lua_api_test.lua
--- Every test here must pass; CTest runs this file through the shipped prk executable.
+-- Every test here must pass; prk test (prk.tests.json) runs this file through the shipped prk executable.
 
 prk.add_test("lua_api.expect_equal_accepts_equal_values", function()
     prk.expect_equal(6 * 7, 42)

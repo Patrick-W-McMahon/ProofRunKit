@@ -1,10 +1,17 @@
-# Invoked by the package-msi target (cmake -P). Builds the x64 MSI with WiX v4.
+# Invoked by the package-msi target (cmake -P). Builds the x64 or x86 MSI with WiX v4.
 # Expected -D variables: PRK_EXE, PRK_VERSION, PRK_WXS, PRK_LICENSE_RTF,
 # PRK_LICENSE_TXT, PRK_URL_SHORTCUT, PRK_MSI_OUTPUT, PRK_INTERMEDIATE_DIR,
-# and optionally PRK_WIX_EXECUTABLE.
+# optionally PRK_MSI_ARCH (x64 or x86, default x64), and optionally PRK_WIX_EXECUTABLE.
+
+if(NOT PRK_MSI_ARCH)
+    set(PRK_MSI_ARCH "x64")
+endif()
+if(NOT PRK_MSI_ARCH MATCHES "^(x64|x86)$")
+    message(FATAL_ERROR "package-msi: PRK_MSI_ARCH must be x64 or x86 (got '${PRK_MSI_ARCH}')")
+endif()
 
 if(NOT PRK_EXE OR NOT EXISTS "${PRK_EXE}")
-    message(FATAL_ERROR "package-msi: proofrunkit executable not found (PRK_EXE='${PRK_EXE}'). Build the windows-msvc-x64-release preset first.")
+    message(FATAL_ERROR "package-msi: proofrunkit executable not found (PRK_EXE='${PRK_EXE}'). Build the matching windows-msvc-${PRK_MSI_ARCH}-release preset first.")
 endif()
 
 foreach(_prk_required IN ITEMS PRK_VERSION PRK_WXS PRK_LICENSE_RTF PRK_LICENSE_TXT PRK_URL_SHORTCUT PRK_MSI_OUTPUT PRK_INTERMEDIATE_DIR)
@@ -86,7 +93,7 @@ message(STATUS "package-msi: output     ${PRK_MSI_OUTPUT}")
 
 execute_process(
     COMMAND "${PRK_WIX_EXECUTABLE}" build
-        -arch x64
+        -arch ${PRK_MSI_ARCH}
         -ext WixToolset.UI.wixext
         -d "PrkVersion=${PRK_VERSION}"
         -d "PrkExePath=${_prk_exe}"

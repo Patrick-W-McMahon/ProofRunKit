@@ -62,9 +62,10 @@ if(PRK_BUILD_SELFTEST)
     add_subdirectory(tests/selftest)
 endif()
 
-# ---------------------------------------------------------------------- x64 MSI (#37, #40)
+# ---------------------------------------------------------- Windows MSI (#37, #38, #40)
 # Windows only. The target is not part of ALL; build it with --target package-msi.
-# x86 packaging is #38 and is intentionally omitted here.
+# An x64 tree packages ProofRunKit-<version>-win-x64.msi; a Win32 tree packages
+# ProofRunKit-<version>-win-x86.msi.
 if(WIN32)
     include(ProofRunKitMsi)
 endif()

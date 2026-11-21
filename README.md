@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="INSTALL.md"><img src="docs/assets/badge-install.svg" alt="Install: Windows x64 MSI"></a>
   <img src="docs/assets/badge-license.svg" alt="License: Apache-2.0">
   <img src="docs/assets/badge-windows.svg" alt="Platform: Windows">
   <img src="docs/assets/badge-status.svg" alt="Status: planning / pre-alpha">
@@ -12,7 +13,16 @@
 
 A single high-performance test executable, compiled once. Tests change; the binary does not.
 
+**[⬇ Install ProofRunKit](INSTALL.md)**: Windows x64 MSI (v0.1.0). Other platforms are coming soon.
+
 **Status: pre-alpha.** The core executable, Assembly hot paths, Windows x64 and x86 builds with a self-test, both Windows MSI installers, the `prk` command, and sandboxed Lua 5.4 and JavaScript (QuickJS-ng) test scripts are in the tree. Language drivers are next. Features below are marked Done, In progress, or Planned; see the [open issues](https://github.com/Patrick-W-McMahon/ProofRunKit/issues).
+
+## Install
+
+Download the Windows x64 installer from the [latest release](https://github.com/Patrick-W-McMahon/ProofRunKit/releases/latest),
+then keep it current with `prk -update`. [INSTALL.md](INSTALL.md) has every platform and architecture (Windows x64
+now; Windows x86, macOS, and Linux coming soon), checksum verification, the install location, uninstalling, and
+building from source.
 
 ## Why ProofRunKit
 
